@@ -21,15 +21,15 @@ const (
 	endBlockPrefix   = "BLOCK_END"
 )
 
-type logDataProcessor struct {
+type dataProcessor struct {
 	marshaller        marshal.Marshalizer
 	operationHandlers map[string]func(marshalledData []byte) error
 	writer            io.Writer
 	blockCreator      BlockContainerHandler
 }
 
-// NewLogDataProcessor creates a data processor able to receive data from a ws outport driver and log events
-func NewLogDataProcessor(
+// NewFirehoseDataProcessor creates a data processor able to receive data from a ws outport driver and print saved blocks
+func NewFirehoseDataProcessor(
 	writer io.Writer,
 	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
@@ -44,7 +44,7 @@ func NewLogDataProcessor(
 		return nil, errNilBlockCreator
 	}
 
-	dp := &logDataProcessor{
+	dp := &dataProcessor{
 		marshaller:   marshaller,
 		writer:       writer,
 		blockCreator: blockCreator,
@@ -64,7 +64,7 @@ func NewLogDataProcessor(
 }
 
 // ProcessPayload will process the received payload, if the topic is known.
-func (dp *logDataProcessor) ProcessPayload(payload []byte, topic string) error {
+func (dp *dataProcessor) ProcessPayload(payload []byte, topic string) error {
 	operationHandler, found := dp.operationHandlers[topic]
 	if !found {
 		return fmt.Errorf("%w, operation type for topic = %s, received data = %s",
@@ -74,7 +74,7 @@ func (dp *logDataProcessor) ProcessPayload(payload []byte, topic string) error {
 	return operationHandler(payload)
 }
 
-func (dp *logDataProcessor) saveBlock(marshalledData []byte) error {
+func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 	outportBlock := &outport.OutportBlock{}
 	err := dp.marshaller.Unmarshal(outportBlock, marshalledData)
 	if err != nil {
@@ -126,12 +126,12 @@ func noOpHandler(_ []byte) error {
 }
 
 // Close will signal via a log that the data processor is closed
-func (dp *logDataProcessor) Close() error {
+func (dp *dataProcessor) Close() error {
 	log.Info("data processor closed")
 	return nil
 }
 
 // IsInterfaceNil checks if the underlying pointer is nil
-func (dp *logDataProcessor) IsInterfaceNil() bool {
+func (dp *dataProcessor) IsInterfaceNil() bool {
 	return dp == nil
 }

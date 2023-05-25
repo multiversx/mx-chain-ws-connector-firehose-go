@@ -35,13 +35,20 @@ func createOutportBlock() *outportcore.OutportBlock {
 	}
 }
 
-func TestNewLogDataProcessor(t *testing.T) {
+func createContainer() BlockContainerHandler {
+	container := block.NewEmptyBlockCreatorsContainer()
+	_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
+
+	return container
+}
+
+func TestNewFirehoseDataProcessor(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil io writer, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewLogDataProcessor(nil, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+		fi, err := NewFirehoseDataProcessor(nil, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 		require.Nil(t, fi)
 		require.Equal(t, errNilWriter, err)
 	})
@@ -49,7 +56,7 @@ func TestNewLogDataProcessor(t *testing.T) {
 	t.Run("nil block creator, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, nil, protoMarshaller)
+		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, nil, protoMarshaller)
 		require.Nil(t, fi)
 		require.Equal(t, errNilBlockCreator, err)
 	})
@@ -57,7 +64,7 @@ func TestNewLogDataProcessor(t *testing.T) {
 	t.Run("nil marshaller, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), nil)
+		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), nil)
 		require.Nil(t, fi)
 		require.Equal(t, errNilMarshaller, err)
 	})
@@ -65,7 +72,7 @@ func TestNewLogDataProcessor(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 		require.Nil(t, err)
 		require.False(t, check.IfNil(fi))
 	})
@@ -77,7 +84,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 	t.Run("nil outport block, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 
 		err := fi.ProcessPayload(nil, outportcore.TopicSaveBlock)
 		require.Equal(t, errNilOutportBlockData, err)
@@ -85,6 +92,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		outportBlock := createOutportBlock()
 		outportBlock.BlockData = nil
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.Equal(t, errNilOutportBlockData, err)
 	})
@@ -92,13 +100,13 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 	t.Run("invalid payload, cannot unmarshall, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 
 		err := fi.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock)
 		require.NotNil(t, err)
 	})
 
-	t.Run("unknown block creator, should return error", func(t *testing.T) {
+	t.Run("unknown block creator for header type, should return error", func(t *testing.T) {
 		t.Parallel()
 
 		outportBlock := createOutportBlock()
@@ -112,10 +120,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		container := block.NewEmptyBlockCreatorsContainer()
-		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
-
-		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
 
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
@@ -137,31 +142,27 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		outportBlock := createOutportBlock()
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		unmarshalCalled := false
+		firstUnmarshalCalled := false
 		errUnmarshal := errors.New("err unmarshal")
 		marshaller := &testscommon.MarshallerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
 				defer func() {
-					unmarshalCalled = true
+					firstUnmarshalCalled = true
 				}()
 
-				if !unmarshalCalled {
-					require.Equal(t, outportBlockBytes, buff)
-
-					err := protoMarshaller.Unmarshal(obj, buff)
-					require.Nil(t, err)
-
-					return nil
-
+				if firstUnmarshalCalled {
+					return errUnmarshal
 				}
-				return errUnmarshal
+
+				require.Equal(t, outportBlockBytes, buff)
+				err := protoMarshaller.Unmarshal(obj, buff)
+				require.Nil(t, err)
+
+				return nil
 			},
 		}
 
-		container := block.NewEmptyBlockCreatorsContainer()
-		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
-
-		fi, _ := NewLogDataProcessor(ioWriter, container, marshaller)
+		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), marshaller)
 		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.Equal(t, errUnmarshal, err)
 	})
@@ -191,10 +192,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		container := block.NewEmptyBlockCreatorsContainer()
-		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
-
-		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
 
 		outportBlock := createOutportBlock()
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
@@ -253,10 +251,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		container := block.NewEmptyBlockCreatorsContainer()
-		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
-
-		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
 
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.Nil(t, err)
@@ -268,7 +263,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
 	t.Parallel()
 
-	fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+	fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 
 	err := fi.ProcessPayload([]byte("payload"), "invalid topic")
 	require.True(t, strings.Contains(err.Error(), errInvalidOperationType.Error()))

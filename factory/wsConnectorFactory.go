@@ -29,7 +29,7 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	dataProcessor, err := process.NewLogDataProcessor(
+	dataProcessor, err := process.NewFirehoseDataProcessor(
 		os.Stdout, // DO NOT CHANGE
 		blockContainer,
 		&marshal.GogoProtoMarshalizer{}, // DO NOT CHANGE
