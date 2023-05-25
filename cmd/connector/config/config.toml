@@ -3,7 +3,7 @@
     # from https://github.com/multiversx/mx-chain-go/blob/master/cmd/node/config/external.toml.
     url = "localhost:22111"
     # Possible values: json, gogo protobuf. Should be compatible with [HostDriverConfig].MarshallerType
-    marshaller_type = "json"
+    marshaller_type = "gogo protobuf"
     # This flag describes the mode to start the WebSocket connector. Can be "client" or "server"
     mode = "client"
     # Retry duration (receive/send data/acknowledge) in seconds
