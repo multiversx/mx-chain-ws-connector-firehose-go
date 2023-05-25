@@ -1,0 +1,15 @@
+[web_socket]
+    # IP with port used to recieve data via ws. Should be compatible with the one from node. See [HostDriverConfig].URL
+    # from https://github.com/multiversx/mx-chain-go/blob/master/cmd/node/config/external.toml.
+    url = "localhost:22111"
+    # Possible values: json, gogo protobuf. Should be compatible with [HostDriverConfig].MarshallerType
+    marshaller_type = "json"
+    # This flag describes the mode to start the WebSocket connector. Can be "client" or "server"
+    mode = "client"
+    # Retry duration (receive/send data/acknowledge) in seconds
+    retry_duration = 5
+    # This flag specifies if we should send an acknowledge signal upon recieving data
+    with_acknowledge = true
+    # Signals if in case of data payload processing error, we should send the ack signal or not. If you want to block
+    # incoming data in case of a local error, this should be set to true.
+    blocking_ack_on_error = false
