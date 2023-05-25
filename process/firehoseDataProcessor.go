@@ -34,14 +34,14 @@ func NewFirehoseDataProcessor(
 	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
 ) (DataProcessor, error) {
-	if check.IfNil(marshaller) {
-		return nil, errNilMarshaller
-	}
 	if writer == nil {
 		return nil, errNilWriter
 	}
 	if check.IfNil(blockCreator) {
 		return nil, errNilBlockCreator
+	}
+	if check.IfNil(marshaller) {
+		return nil, errNilMarshaller
 	}
 
 	dp := &dataProcessor{
