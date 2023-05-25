@@ -1,5 +1,10 @@
 package process
 
+import (
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/data/block"
+)
+
 // WSConnector defines a ws connector that receives incoming data and can be closed
 type WSConnector interface {
 	Close() error
@@ -15,5 +20,12 @@ type DataProcessor interface {
 // Logger defines the behavior of a data logger component
 type Logger interface {
 	Info(message string, args ...interface{})
+	IsInterfaceNil() bool
+}
+
+// BlockContainerHandler defines a block creator container
+type BlockContainerHandler interface {
+	Add(headerType core.HeaderType, creator block.EmptyBlockCreator) error
+	Get(headerType core.HeaderType) (block.EmptyBlockCreator, error)
 	IsInterfaceNil() bool
 }

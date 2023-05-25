@@ -1,8 +1,12 @@
 package factory
 
 import (
+	"os"
+
 	"github.com/multiversx/mx-chain-communication-go/websocket/data"
 	factoryHost "github.com/multiversx/mx-chain-communication-go/websocket/factory"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-core-go/marshal/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
@@ -20,7 +24,16 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	dataProcessor, err := process.NewLogDataProcessor(marshaller, log)
+	blockContainer, err := createBlockContainer()
+	if err != nil {
+		return nil, err
+	}
+
+	dataProcessor, err := process.NewLogDataProcessor(
+		&marshal.GogoProtoMarshalizer{}, // DO NOT CHANGE
+		blockContainer,
+		os.Stdout, // DO NOT CHANGE
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +49,25 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 	}
 
 	return wsHost, nil
+}
+
+func createBlockContainer() (process.BlockContainerHandler, error) {
+	container := block.NewEmptyBlockCreatorsContainer()
+
+	err := container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
+	if err != nil {
+		return nil, err
+	}
+	err = container.Add(core.ShardHeaderV2, block.NewEmptyHeaderV2Creator())
+	if err != nil {
+		return nil, err
+	}
+	err = container.Add(core.MetaHeader, block.NewEmptyMetaBlockCreator())
+	if err != nil {
+		return nil, err
+	}
+
+	return container, nil
 }
 
 func createWsHost(wsMarshaller marshal.Marshalizer, cfg config.WebSocketConfig) (factoryHost.FullDuplexHost, error) {

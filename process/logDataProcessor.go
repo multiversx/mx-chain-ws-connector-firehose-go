@@ -1,41 +1,59 @@
 package process
 
 import (
+	"encoding/hex"
 	"fmt"
+	"io"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	logger "github.com/multiversx/mx-chain-logger-go"
+)
+
+var log = logger.GetOrCreate("firehose")
+
+const (
+	firehosePrefix   = "FIRE"
+	beginBlockPrefix = "BLOCK_BEGIN"
+	endBlockPrefix   = "BLOCK_END"
 )
 
 type logDataProcessor struct {
 	marshaller        marshal.Marshalizer
-	logger            Logger
 	operationHandlers map[string]func(marshalledData []byte) error
+	writer            io.Writer
+	blockCreator      BlockContainerHandler
 }
 
 // NewLogDataProcessor creates a data processor able to receive data from a ws outport driver and log events
-func NewLogDataProcessor(marshaller marshal.Marshalizer, logger Logger) (DataProcessor, error) {
+func NewLogDataProcessor(marshaller marshal.Marshalizer, blockCreator BlockContainerHandler, writer io.Writer) (DataProcessor, error) {
 	if check.IfNil(marshaller) {
 		return nil, errNilMarshaller
 	}
-	if check.IfNil(logger) {
-		return nil, errNilLogger
+	if writer == nil {
+		return nil, errNilWriter
+	}
+	if check.IfNil(blockCreator) {
+		return nil, errNilBlockCreator
 	}
 
 	dp := &logDataProcessor{
-		marshaller: marshaller,
-		logger:     logger,
+		marshaller:   marshaller,
+		writer:       writer,
+		blockCreator: blockCreator,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
 		outport.TopicSaveBlock:             dp.saveBlock,
-		outport.TopicRevertIndexedBlock:    dp.revertIndexedBlock,
-		outport.TopicSaveRoundsInfo:        dp.saveRounds,
-		outport.TopicSaveValidatorsRating:  dp.saveValidatorsRating,
-		outport.TopicSaveValidatorsPubKeys: dp.saveValidatorsPubKeys,
-		outport.TopicSaveAccounts:          dp.saveAccounts,
-		outport.TopicFinalizedBlock:        dp.finalizedBlock,
+		outport.TopicRevertIndexedBlock:    noOpHandler,
+		outport.TopicSaveRoundsInfo:        noOpHandler,
+		outport.TopicSaveValidatorsRating:  noOpHandler,
+		outport.TopicSaveValidatorsPubKeys: noOpHandler,
+		outport.TopicSaveAccounts:          noOpHandler,
+		outport.TopicFinalizedBlock:        noOpHandler,
 	}
 
 	return dp, nil
@@ -59,90 +77,58 @@ func (dp *logDataProcessor) saveBlock(marshalledData []byte) error {
 		return err
 	}
 
-	if outportBlock.BlockData == nil {
+	if outportBlock == nil || outportBlock.BlockData == nil {
 		return errNilOutportBlockData
 	}
 
-	dp.logger.Info("received payload", "topic", outport.TopicSaveBlock, "hash", outportBlock.BlockData.HeaderHash)
-
-	return nil
-}
-
-func (dp *logDataProcessor) revertIndexedBlock(marshalledData []byte) error {
-	blockData := &outport.BlockData{}
-	err := dp.marshaller.Unmarshal(blockData, marshalledData)
+	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
 	if err != nil {
 		return err
 	}
 
-	dp.logger.Info("received payload", "topic", outport.TopicRevertIndexedBlock)
-
-	return nil
-}
-
-func (dp *logDataProcessor) saveRounds(marshalledData []byte) error {
-	roundsInfo := &outport.RoundsInfo{}
-	err := dp.marshaller.Unmarshal(roundsInfo, marshalledData)
+	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
 	if err != nil {
 		return err
 	}
 
-	dp.logger.Info("received payload", "topic", outport.TopicSaveRoundsInfo)
+	log.Info("firehose: saving block", "nonce", header.GetNonce(), "hash", outportBlock.BlockData.HeaderHash)
 
-	return nil
-}
+	_, err = fmt.Fprintf(dp.writer, "%s %s %d\n",
+		firehosePrefix,
+		beginBlockPrefix,
+		header.GetNonce(),
+	)
+	if err != nil {
+		return fmt.Errorf("could not write %s prefix , err: %w", beginBlockPrefix, err)
+	}
 
-func (dp *logDataProcessor) saveValidatorsRating(marshalledData []byte) error {
-	ratingData := &outport.ValidatorsRating{}
-	err := dp.marshaller.Unmarshal(ratingData, marshalledData)
+	marshalledBlock, err := dp.marshaller.Marshal(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	dp.logger.Info("received payload", "topic", outport.TopicSaveValidatorsRating)
+	_, err = fmt.Fprintf(dp.writer, "%s %s %d %s %d %x\n",
+		firehosePrefix,
+		endBlockPrefix,
+		header.GetNonce(),
+		hex.EncodeToString(header.GetPrevHash()),
+		header.GetTimeStamp(),
+		marshalledBlock,
+	)
+	if err != nil {
+		return fmt.Errorf("could not write %s prefix , err: %w", endBlockPrefix, err)
+	}
 
 	return nil
 }
 
-func (dp *logDataProcessor) saveValidatorsPubKeys(marshalledData []byte) error {
-	validatorsPubKeys := &outport.ValidatorsPubKeys{}
-	err := dp.marshaller.Unmarshal(validatorsPubKeys, marshalledData)
-	if err != nil {
-		return err
-	}
-
-	dp.logger.Info("received payload", "topic", outport.TopicSaveValidatorsPubKeys)
-
-	return nil
-}
-
-func (dp *logDataProcessor) saveAccounts(marshalledData []byte) error {
-	accounts := &outport.Accounts{}
-	err := dp.marshaller.Unmarshal(accounts, marshalledData)
-	if err != nil {
-		return err
-	}
-
-	dp.logger.Info("received payload", "topic", outport.TopicSaveAccounts)
-
-	return nil
-}
-
-func (dp *logDataProcessor) finalizedBlock(marshalledData []byte) error {
-	finalizedBlock := &outport.FinalizedBlock{}
-	err := dp.marshaller.Unmarshal(finalizedBlock, marshalledData)
-	if err != nil {
-		return err
-	}
-
-	dp.logger.Info("received payload", "topic", outport.TopicFinalizedBlock)
-
+func noOpHandler(_ []byte) error {
 	return nil
 }
 
 // Close will signal via a log that the data processor is closed
 func (dp *logDataProcessor) Close() error {
-	dp.logger.Info("data processor closed")
+	log.Info("data processor closed")
 	return nil
 }
 
