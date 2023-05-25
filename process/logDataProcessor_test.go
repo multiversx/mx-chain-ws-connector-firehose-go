@@ -1,249 +1,285 @@
 package process
 
 import (
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-core-go/data/block"
+	outportcore "github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/require"
 )
 
+var protoMarshaller = &marshal.GogoProtoMarshalizer{}
+
+func createOutportBlock() *outportcore.OutportBlock {
+	header := &block.Header{
+		Nonce:     1,
+		PrevHash:  []byte("prev hash"),
+		TimeStamp: 100,
+	}
+	headerBytes, _ := protoMarshaller.Marshal(header)
+
+	return &outportcore.OutportBlock{
+		BlockData: &outportcore.BlockData{
+			HeaderHash:  []byte("hash"),
+			HeaderBytes: headerBytes,
+			HeaderType:  string(core.ShardHeaderV1),
+		},
+	}
+}
+
 func TestNewLogDataProcessor(t *testing.T) {
 	t.Parallel()
 
+	t.Run("nil io writer, should return error", func(t *testing.T) {
+		t.Parallel()
+
+		fi, err := NewLogDataProcessor(nil, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+		require.Nil(t, fi)
+		require.Equal(t, errNilWriter, err)
+	})
+
+	t.Run("nil block creator, should return error", func(t *testing.T) {
+		t.Parallel()
+
+		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, nil, protoMarshaller)
+		require.Nil(t, fi)
+		require.Equal(t, errNilBlockCreator, err)
+	})
+
 	t.Run("nil marshaller, should return error", func(t *testing.T) {
-		dp, err := NewLogDataProcessor(nil, &testscommon.LoggerStub{})
-		require.True(t, check.IfNil(dp))
+		t.Parallel()
+
+		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), nil)
+		require.Nil(t, fi)
 		require.Equal(t, errNilMarshaller, err)
 	})
 
-	t.Run("nil logger, should return error", func(t *testing.T) {
-		dp, err := NewLogDataProcessor(&testscommon.MarshallerMock{}, nil)
-		require.True(t, check.IfNil(dp))
-		require.Equal(t, errNilLogger, err)
-	})
-
 	t.Run("should work", func(t *testing.T) {
-		dp, err := NewLogDataProcessor(&testscommon.MarshallerMock{}, &testscommon.LoggerStub{})
-		require.False(t, check.IfNil(dp))
-		require.Nil(t, err)
+		t.Parallel()
 
-		err = dp.Close()
+		fi, err := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 		require.Nil(t, err)
+		require.False(t, check.IfNil(fi))
 	})
 }
 
-func TestLogDataProcessor_ProcessPayload(t *testing.T) {
+func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 	t.Parallel()
 
-	marshaller := &testscommon.MarshallerMock{}
-
-	t.Run("invalid topic, should return error", func(t *testing.T) {
+	t.Run("nil outport block, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		dp, _ := NewLogDataProcessor(marshaller, &testscommon.LoggerStub{})
-		err := dp.ProcessPayload([]byte("payload"), "invalid topic")
-		require.True(t, strings.Contains(err.Error(), errInvalidOperationType.Error()))
-		require.True(t, strings.Contains(err.Error(), "payload"))
-		require.True(t, strings.Contains(err.Error(), "invalid topic"))
-	})
+		fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 
-	t.Run("save block", func(t *testing.T) {
-		t.Parallel()
-
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicSaveBlock, "hash", []byte("hash")}, args[0])
-				logInfoCalledCt++
-			},
-		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
-
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicSaveBlock)
-		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
-
-		outportBlock := &outport.OutportBlock{}
-		outportBlockBytes, err := marshaller.Marshal(outportBlock)
-		require.Nil(t, err)
-
-		err = dp.ProcessPayload(outportBlockBytes, outport.TopicSaveBlock)
+		err := fi.ProcessPayload(nil, outportcore.TopicSaveBlock)
 		require.Equal(t, errNilOutportBlockData, err)
-		require.Equal(t, 0, logInfoCalledCt)
 
-		outportBlock.BlockData = &outport.BlockData{HeaderHash: []byte("hash")}
-		outportBlockBytes, err = marshaller.Marshal(outportBlock)
-		require.Nil(t, err)
-
-		err = dp.ProcessPayload(outportBlockBytes, outport.TopicSaveBlock)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
+		outportBlock := createOutportBlock()
+		outportBlock.BlockData = nil
+		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		require.Equal(t, errNilOutportBlockData, err)
 	})
 
-	t.Run("revert indexed block", func(t *testing.T) {
+	t.Run("invalid payload, cannot unmarshall, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicRevertIndexedBlock}, args[0])
-				logInfoCalledCt++
-			},
-		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
+		fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
 
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicRevertIndexedBlock)
+		err := fi.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock)
 		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
-
-		blockData := &outport.BlockData{}
-		blockDataBytes, err := marshaller.Marshal(blockData)
-		require.Nil(t, err)
-
-		err = dp.ProcessPayload(blockDataBytes, outport.TopicRevertIndexedBlock)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
 	})
 
-	t.Run("save rounds", func(t *testing.T) {
+	t.Run("unknown block creator, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicSaveRoundsInfo}, args[0])
-				logInfoCalledCt++
+		outportBlock := createOutportBlock()
+		outportBlock.BlockData.HeaderType = "unknown"
+
+		ioWriterCalledCt := 0
+		ioWriter := &testscommon.IoWriterStub{
+			WriteCalled: func(p []byte) (n int, err error) {
+				ioWriterCalledCt++
+				return 0, nil
 			},
 		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
 
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicSaveRoundsInfo)
+		container := block.NewEmptyBlockCreatorsContainer()
+		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
+
+		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+
+		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
-
-		roundsInfo := &outport.RoundsInfo{}
-		roundsInfoBytes, err := marshaller.Marshal(roundsInfo)
-		require.Nil(t, err)
-
-		err = dp.ProcessPayload(roundsInfoBytes, outport.TopicSaveRoundsInfo)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
+		require.Equal(t, 0, ioWriterCalledCt)
 	})
 
-	t.Run("save validators rating", func(t *testing.T) {
+	t.Run("cannot unmarshall to get header from bytes, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicSaveValidatorsRating}, args[0])
-				logInfoCalledCt++
+		ioWriterCalledCt := 0
+		ioWriter := &testscommon.IoWriterStub{
+			WriteCalled: func(p []byte) (n int, err error) {
+				ioWriterCalledCt++
+				return 0, nil
 			},
 		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
 
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicSaveValidatorsRating)
-		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
+		outportBlock := createOutportBlock()
+		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		ratingData := &outport.ValidatorsRating{}
-		ratingDataBytes, err := marshaller.Marshal(ratingData)
-		require.Nil(t, err)
+		unmarshalCalled := false
+		errUnmarshal := errors.New("err unmarshal")
+		marshaller := &testscommon.MarshallerStub{
+			UnmarshalCalled: func(obj interface{}, buff []byte) error {
+				defer func() {
+					unmarshalCalled = true
+				}()
 
-		err = dp.ProcessPayload(ratingDataBytes, outport.TopicSaveValidatorsRating)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
+				if !unmarshalCalled {
+					require.Equal(t, outportBlockBytes, buff)
+
+					err := protoMarshaller.Unmarshal(obj, buff)
+					require.Nil(t, err)
+
+					return nil
+
+				}
+				return errUnmarshal
+			},
+		}
+
+		container := block.NewEmptyBlockCreatorsContainer()
+		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
+
+		fi, _ := NewLogDataProcessor(ioWriter, container, marshaller)
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		require.Equal(t, errUnmarshal, err)
 	})
 
-	t.Run("save validators pubKeys", func(t *testing.T) {
+	t.Run("cannot write in console, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicSaveValidatorsPubKeys}, args[0])
-				logInfoCalledCt++
+		ioWriterCalledCt := 0
+		err1 := errors.New("err1")
+		err2 := errors.New("err2")
+		ioWriter := &testscommon.IoWriterStub{
+			WriteCalled: func(p []byte) (n int, err error) {
+				defer func() {
+					ioWriterCalledCt++
+				}()
+
+				switch ioWriterCalledCt {
+				case 0:
+					return 0, err1
+				case 1:
+					return 0, nil
+				case 2:
+					return 0, err2
+				}
+
+				return 0, nil
 			},
 		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
 
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicSaveValidatorsPubKeys)
-		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
+		container := block.NewEmptyBlockCreatorsContainer()
+		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
 
-		validatorsPubKeys := &outport.ValidatorsPubKeys{}
-		validatorsPubKeysBytes, err := marshaller.Marshal(validatorsPubKeys)
+		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+
+		outportBlock := createOutportBlock()
+		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		require.True(t, strings.Contains(err.Error(), err1.Error()))
+
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		require.True(t, strings.Contains(err.Error(), err2.Error()))
+
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.Nil(t, err)
 
-		err = dp.ProcessPayload(validatorsPubKeysBytes, outport.TopicSaveValidatorsPubKeys)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
+		require.Equal(t, 5, ioWriterCalledCt)
 	})
 
-	t.Run("save accounts", func(t *testing.T) {
+	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicSaveAccounts}, args[0])
-				logInfoCalledCt++
+		header := &block.Header{
+			Nonce:     1,
+			PrevHash:  []byte("prev hash"),
+			TimeStamp: 100,
+		}
+		headerBytes, err := protoMarshaller.Marshal(header)
+		require.Nil(t, err)
+
+		outportBlock := &outportcore.OutportBlock{
+			BlockData: &outportcore.BlockData{
+				HeaderHash:  []byte("hash"),
+				HeaderBytes: headerBytes,
+				HeaderType:  string(core.ShardHeaderV1),
 			},
 		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
-
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicSaveAccounts)
-		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
-
-		accounts := &outport.Accounts{}
-		accountsBytes, err := marshaller.Marshal(accounts)
+		outportBlockBytes, err := protoMarshaller.Marshal(outportBlock)
 		require.Nil(t, err)
 
-		err = dp.ProcessPayload(accountsBytes, outport.TopicSaveAccounts)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
-	})
+		ioWriterCalledCt := 0
+		ioWriter := &testscommon.IoWriterStub{
+			WriteCalled: func(p []byte) (n int, err error) {
+				defer func() {
+					ioWriterCalledCt++
+				}()
 
-	t.Run("finalized block", func(t *testing.T) {
-		t.Parallel()
-
-		logInfoCalledCt := 0
-		logger := &testscommon.LoggerStub{
-			InfoCalled: func(message string, args ...interface{}) {
-				require.Equal(t, "received payload", message)
-				require.Len(t, args, 1)
-				require.Equal(t, []interface{}{"topic", outport.TopicFinalizedBlock}, args[0])
-				logInfoCalledCt++
+				switch ioWriterCalledCt {
+				case 0:
+					require.Equal(t, []byte("FIRE BLOCK_BEGIN 1\n"), p)
+				case 1:
+					require.Equal(t, []byte(fmt.Sprintf("FIRE BLOCK_END 1 %s 100 %x\n",
+						hex.EncodeToString(header.PrevHash),
+						outportBlockBytes)), p)
+				default:
+					require.Fail(t, "should not write again")
+				}
+				return 0, nil
 			},
 		}
-		dp, _ := NewLogDataProcessor(marshaller, logger)
 
-		err := dp.ProcessPayload([]byte("payload"), outport.TopicFinalizedBlock)
-		require.NotNil(t, err)
-		require.Equal(t, 0, logInfoCalledCt)
+		container := block.NewEmptyBlockCreatorsContainer()
+		_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
 
-		finalizedBlock := &outport.FinalizedBlock{}
-		finalizedBlockBytes, err := marshaller.Marshal(finalizedBlock)
+		fi, _ := NewLogDataProcessor(ioWriter, container, protoMarshaller)
+
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
 		require.Nil(t, err)
-
-		err = dp.ProcessPayload(finalizedBlockBytes, outport.TopicFinalizedBlock)
-		require.Nil(t, err)
-		require.Equal(t, 1, logInfoCalledCt)
+		require.Equal(t, 2, ioWriterCalledCt)
 	})
+
+}
+
+func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
+	t.Parallel()
+
+	fi, _ := NewLogDataProcessor(&testscommon.IoWriterStub{}, block.NewEmptyBlockCreatorsContainer(), protoMarshaller)
+
+	err := fi.ProcessPayload([]byte("payload"), "invalid topic")
+	require.True(t, strings.Contains(err.Error(), errInvalidOperationType.Error()))
+	require.True(t, strings.Contains(err.Error(), "payload"))
+	require.True(t, strings.Contains(err.Error(), "invalid topic"))
+
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicRevertIndexedBlock))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveRoundsInfo))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsRating))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsPubKeys))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveAccounts))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicFinalizedBlock))
+	require.Nil(t, fi.Close())
 }

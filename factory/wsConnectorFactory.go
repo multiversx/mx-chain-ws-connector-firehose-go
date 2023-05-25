@@ -30,9 +30,9 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 	}
 
 	dataProcessor, err := process.NewLogDataProcessor(
-		&marshal.GogoProtoMarshalizer{}, // DO NOT CHANGE
-		blockContainer,
 		os.Stdout, // DO NOT CHANGE
+		blockContainer,
+		&marshal.GogoProtoMarshalizer{}, // DO NOT CHANGE
 	)
 	if err != nil {
 		return nil, err

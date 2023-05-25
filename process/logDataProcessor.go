@@ -29,7 +29,11 @@ type logDataProcessor struct {
 }
 
 // NewLogDataProcessor creates a data processor able to receive data from a ws outport driver and log events
-func NewLogDataProcessor(marshaller marshal.Marshalizer, blockCreator BlockContainerHandler, writer io.Writer) (DataProcessor, error) {
+func NewLogDataProcessor(
+	writer io.Writer,
+	blockCreator BlockContainerHandler,
+	marshaller marshal.Marshalizer,
+) (DataProcessor, error) {
 	if check.IfNil(marshaller) {
 		return nil, errNilMarshaller
 	}
@@ -102,18 +106,13 @@ func (dp *logDataProcessor) saveBlock(marshalledData []byte) error {
 		return fmt.Errorf("could not write %s prefix , err: %w", beginBlockPrefix, err)
 	}
 
-	marshalledBlock, err := dp.marshaller.Marshal(outportBlock)
-	if err != nil {
-		return err
-	}
-
 	_, err = fmt.Fprintf(dp.writer, "%s %s %d %s %d %x\n",
 		firehosePrefix,
 		endBlockPrefix,
 		header.GetNonce(),
 		hex.EncodeToString(header.GetPrevHash()),
 		header.GetTimeStamp(),
-		marshalledBlock,
+		marshalledData,
 	)
 	if err != nil {
 		return fmt.Errorf("could not write %s prefix , err: %w", endBlockPrefix, err)
