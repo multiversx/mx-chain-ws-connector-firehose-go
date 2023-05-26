@@ -35,7 +35,7 @@ setupObserver(){
   sed -i "s@DestinationShardAsObserver =.*@DestinationShardAsObserver = \"$1\"@" $OBSERVER_PATH/config/prefs.toml
   sed -i '/HostDriverConfig\]/!b;n;n;c\    Enabled = true' "$EXTERNAL_CONFIG_DIR"
   sed -i "s@Mode =.*@Mode = \"$OBSERVER_MODE\"@" "$EXTERNAL_CONFIG_DIR"
-  sed -i 's/MarshallerType =.*/MarshallerType = "json"/' "$EXTERNAL_CONFIG_DIR"
+  sed -i 's/MarshallerType =.*/MarshallerType = "gogo protobuf"/' "$EXTERNAL_CONFIG_DIR"
   sed -i 's/BlockingAckOnError =.*/BlockingAckOnError = false/' "$EXTERNAL_CONFIG_DIR"
 
   ./node --log-level *:INFO --rest-api-interface :10044
