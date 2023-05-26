@@ -1,4 +1,4 @@
-# mx-chain-ws-connector-template-go
+# mx-chain-ws-connector-firehose-go
 
 ## Introduction
 
@@ -11,33 +11,14 @@ receiving up-to-date data from the node. By establishing a websocket connection,
 transmission of essential information, including blocks, validator details, account changes, and other processing
 results.
 
-One of the key features of the MultiversX blockchain node is its flexible configuration file. By simply setting a flag
-to "true" within this file, the node can initiate the delivery of data via a websocket connection to any connected
-websocket client. This capability provides a reliable and efficient method for receiving live updates from the
-MultiversX blockchain.
-
-To simplify the process of setting up your own data receiver from the MultiversX blockchain node, we have created this
-repository as a comprehensive template. It serves as a valuable resource, guiding you through the necessary steps to
-establish a successful connection with the MultiversX blockchain node and receive the exported data effortlessly.
-
-Whether you are building a decentralized application, monitoring the blockchain network, or conducting in-depth data
-analysis, this template repository equips you with the foundation to swiftly integrate and leverage the exported data
-from the MultiversX blockchain node.
-
-Begin your journey towards seamless data integration and take advantage of the Outport Driver's robust websocket
-connector by exploring the contents of this repository. We look forward to witnessing the innovative applications and
-services that will emerge as a result of this collaborative ecosystem.
-
-_Note: The Outport Driver is an open-source project, and we encourage active contributions and feedback from the
-community to further enhance its capabilities and compatibility with different blockchain networks._
+This repository utilizes the [ws connector template](https://github.com/multiversx/mx-chain-ws-connector-template-go)
+to serve as a robust data provider for the firehose ingestion processor. It receives incoming data and seamlessly
+streams it to the standard output. The streamed data is appropriately prefixed with markers (such as `FIRE BLOCK BEGIN`)
+, enabling easy identification and integration with downstream systems.
 
 ## How to use
 
 ### Use cases
-
-The Outport Driver operates on a robust websocket connection architecture, supporting both server and client roles. The
-system is designed to seamlessly export data from the MultiversX blockchain node, which adopts a sharded architecture
-where each shard represents a separate running chain, interconnected by the meta chain.
 
 To export data from a specific shard, you need to enable an observer node within that shard to export data. One can do
 that
@@ -49,20 +30,13 @@ binaries, each responsible for receiving data from its respective shard. This di
 integrity and allows for shard-specific data processing.
 
 However, the websocket connection in the Outport Driver is highly flexible and parameterizable. By customizing the
-configuration, you can configure the observer nodes to function as clients and the driver (this template binary) as a
+configuration, you can configure the observer nodes to function as clients and the ws firehose connector as a
 server. This configuration reduces the number of driver receiver binaries to just one, acting as a server that receives
 data from each observer, from each shard. To set your receiver as a server, you need set **mode**
 from `cmd/connector/config/config.toml` to **"server"**.
 
 Alternatively, you have the option to set up the observer node as a server capable of handling multiple clients. This
-setup proves advantageous when multiple services within your ecosystem need to receive exported data. For instance, a
-single node could export data to various services, such as an elastic indexer, a monitoring tool, a notifier, or other
-implementations.
-
-By tailoring the configuration of the observer nodes and the driver (this template binary) to suit your specific
-requirements, you can effectively streamline and centralize the reception of data from the MultiversX blockchain node.
-This flexibility empowers you to design a data distribution strategy that aligns with your ecosystem's needs while
-ensuring efficient and reliable data transmission.
+setup proves advantageous when multiple services within your ecosystem need to receive exported data.
 
 ### Illustration
 
@@ -101,43 +75,10 @@ ensuring efficient and reliable data transmission.
                              |                   |
         +----------------+   |                   |
         |   Observer 3   |-->|                   |
-        +----------------+   |                   |
-                             |                   |
-        +----------------+   |                   |
-        |    Receiver    |-->|                   |
         +----------------+   +-------------------+
 ```
 
-### Start building
+### Example
 
-Once you have an observer node running and configured to export data (either server or client) you can test your
-receiver.
-
-1. Start by navigating to the `cmd/connector` directory in your terminal or file explorer. This is where you'll find
-   the `main.go` file.
-
-2. Build the binary by running the `go build` command. This will compile the code and create the `connector` binary
-   executable.
-
-3. After building, you can start the `connector` binary by executing the generated executable file. This will launch the
-   websocket data receiver.
-
-4. In the `cmd/connector/config/config.toml` file, you can configure the settings for your receiver. Adjust the
-   necessary parameters such as the url, port, or any other relevant options.
-
-5. The provided code is a dummy implementation that logs events upon receiving data from the blockchain node. To
-   customize the actions taken when receiving exported data, you need to define your own logic in the `process` package.
-
-6. In the `process` package, there is a `logDataProcessor.go`. This processor is capable of handling data from the
-   websocket outport driver and logging events.
-
-7. One can see that `operationHandlers` defines a map of actions and their handler functions for the received payload.
-   All you need to do is to replace the dummy code (which only logs events) with your specific use case on how to handle
-   received data  (`saveBlock`, `revertIndexedBlock`, etc.). Modify the logic according to your requirements,
-   such as saving to a database, triggering other processes, or performing any necessary data transformations.
-
-8. Once you have customized the code to handle the received data as desired, you can build and run the `connector`
-   binary again to see your changes in action.
-
-_If you want to test the ws receiver within a local setup testnet environment, you can use the provided demo
-within `cmd/demo` directory._
+If you want to test the firehose ws receiver within a local setup testnet environment, you can use the provided demo
+within [demo directory](cmd/demo).
