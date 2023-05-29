@@ -1,6 +1,8 @@
 package process
 
 import (
+	"io"
+
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 )
@@ -28,4 +30,10 @@ type BlockContainerHandler interface {
 	Add(headerType core.HeaderType, creator block.EmptyBlockCreator) error
 	Get(headerType core.HeaderType) (block.EmptyBlockCreator, error)
 	IsInterfaceNil() bool
+}
+
+// Writer defines a handler for the Write method
+type Writer interface {
+	io.Writer
+	Close() error
 }

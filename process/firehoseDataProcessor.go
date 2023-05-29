@@ -3,7 +3,6 @@ package process
 import (
 	"encoding/hex"
 	"fmt"
-	"io"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -24,13 +23,13 @@ const (
 type dataProcessor struct {
 	marshaller        marshal.Marshalizer
 	operationHandlers map[string]func(marshalledData []byte) error
-	writer            io.Writer
+	writer            Writer
 	blockCreator      BlockContainerHandler
 }
 
 // NewFirehoseDataProcessor creates a data processor able to receive data from a ws outport driver and print saved blocks
 func NewFirehoseDataProcessor(
-	writer io.Writer,
+	writer Writer,
 	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
 ) (DataProcessor, error) {
@@ -51,24 +50,17 @@ func NewFirehoseDataProcessor(
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
-		outport.TopicSaveBlock:             dp.saveBlock,
-		outport.TopicRevertIndexedBlock:    noOpHandler,
-		outport.TopicSaveRoundsInfo:        noOpHandler,
-		outport.TopicSaveValidatorsRating:  noOpHandler,
-		outport.TopicSaveValidatorsPubKeys: noOpHandler,
-		outport.TopicSaveAccounts:          noOpHandler,
-		outport.TopicFinalizedBlock:        noOpHandler,
+		outport.TopicSaveBlock: dp.saveBlock,
 	}
 
 	return dp, nil
 }
 
-// ProcessPayload will process the received payload, if the topic is known.
+// ProcessPayload will process the received payload only for TopicSaveBlock, otherwise ignores it.
 func (dp *dataProcessor) ProcessPayload(payload []byte, topic string) error {
 	operationHandler, found := dp.operationHandlers[topic]
 	if !found {
-		return fmt.Errorf("%w, operation type for topic = %s, received data = %s",
-			errInvalidOperationType, topic, string(payload))
+		return nil
 	}
 
 	return operationHandler(payload)
@@ -121,14 +113,9 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 	return nil
 }
 
-func noOpHandler(_ []byte) error {
-	return nil
-}
-
-// Close will signal via a log that the data processor is closed
+// Close will close the internal writer
 func (dp *dataProcessor) Close() error {
-	log.Info("data processor closed")
-	return nil
+	return dp.writer.Close()
 }
 
 // IsInterfaceNil checks if the underlying pointer is nil

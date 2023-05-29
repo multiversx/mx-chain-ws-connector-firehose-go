@@ -265,16 +265,25 @@ func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
 
 	fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 
-	err := fi.ProcessPayload([]byte("payload"), "invalid topic")
-	require.True(t, strings.Contains(err.Error(), errInvalidOperationType.Error()))
-	require.True(t, strings.Contains(err.Error(), "payload"))
-	require.True(t, strings.Contains(err.Error(), "invalid topic"))
-
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicRevertIndexedBlock))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), "random topic"))
 	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveRoundsInfo))
 	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsRating))
 	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsPubKeys))
 	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveAccounts))
 	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicFinalizedBlock))
-	require.Nil(t, fi.Close())
+}
+
+func TestFirehoseIndexer_Close(t *testing.T) {
+	t.Parallel()
+
+	closeError := errors.New("error closing")
+	writer := &testscommon.IoWriterStub{
+		CloseCalled: func() error {
+			return closeError
+		},
+	}
+
+	fi, _ := NewFirehoseDataProcessor(writer, createContainer(), protoMarshaller)
+	err := fi.Close()
+	require.Equal(t, closeError, err)
 }
