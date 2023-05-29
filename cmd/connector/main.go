@@ -22,7 +22,7 @@ const (
 	configPath = "config/config.toml"
 
 	logsPath       = "logs"
-	logFilePrefix  = "sovereign-notifier"
+	logFilePrefix  = "ws-connector-firehose"
 	logLifeSpanSec = 432000 // 5 days
 	logLifeSpanMb  = 1024   // 1 GB
 )
@@ -75,7 +75,7 @@ func startConnector(ctx *cli.Context) error {
 
 	wsClient, err := factory.CreateWSConnector(cfg.WebSocketConfig)
 	if err != nil {
-		return fmt.Errorf("cannot create sovereign notifier, error: %w", err)
+		return fmt.Errorf("cannot create ws firehose connector, error: %w", err)
 	}
 
 	interrupt := make(chan os.Signal, 1)
