@@ -12,4 +12,7 @@
     with_acknowledge = true
     # Signals if in case of data payload processing error, we should send the ack signal or not. If you want to block
     # incoming data in case of a local error, this should be set to true.
-    blocking_ack_on_error = false
+    blocking_ack_on_error = true
+    # This flag specifies if we should drop messages if there is no connection to the host
+    dropMessagesIfNoConnection = false
+    Version = 1

@@ -14,7 +14,7 @@ type WSConnector interface {
 
 // DataProcessor defines a payload processor for incoming ws data
 type DataProcessor interface {
-	ProcessPayload(payload []byte, topic string) error
+	ProcessPayload(payload []byte, topic string, version uint32) error
 	Close() error
 	IsInterfaceNil() bool
 }
