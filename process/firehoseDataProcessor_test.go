@@ -1,6 +1,7 @@
 package process
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -202,12 +203,12 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		require.True(t, strings.Contains(err.Error(), err1.Error()))
 
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
-		require.True(t, strings.Contains(err.Error(), err2.Error()))
-
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
 
-		require.Equal(t, 5, ioWriterCalledCt)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		require.True(t, errors.Is(err, err2))
+
+		require.Equal(t, 3, ioWriterCalledCt)
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -227,6 +228,8 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 				HeaderBytes: headerBytes,
 				HeaderType:  string(core.ShardHeaderV1),
 			},
+
+			HighestFinalBlockNonce: 0,
 		}
 		outportBlockBytes, err := protoMarshaller.Marshal(outportBlock)
 		require.Nil(t, err)
@@ -240,11 +243,21 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 				switch ioWriterCalledCt {
 				case 0:
-					require.Equal(t, []byte("FIRE BLOCK_BEGIN 1\n"), p)
-				case 1:
-					require.Equal(t, []byte(fmt.Sprintf("FIRE BLOCK_END 1 %s 100 %x\n",
+					num := header.GetNonce()
+					parentNum := num - 1
+					libNum := parentNum
+					encodedMvxBlock := base64.StdEncoding.EncodeToString(outportBlockBytes)
+
+					require.Equal(t, []byte(fmt.Sprintf("%s %s %d %s %d %s %d %d %s\n",
+						firehosePrefix,
+						blockPrefix,
+						num,
+						hex.EncodeToString(outportBlock.BlockData.HeaderHash),
+						parentNum,
 						hex.EncodeToString(header.PrevHash),
-						outportBlockBytes)), p)
+						libNum,
+						header.TimeStamp,
+						encodedMvxBlock)), p)
 				default:
 					require.Fail(t, "should not write again")
 				}
@@ -256,9 +269,8 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
-		require.Equal(t, 2, ioWriterCalledCt)
+		require.Equal(t, 1, ioWriterCalledCt)
 	})
-
 }
 
 func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
