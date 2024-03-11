@@ -107,11 +107,8 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		header.GetTimeStamp(),
 		encodedMarshalledData,
 	)
-	if err != nil {
-		return fmt.Errorf("could not write %s , err: %w", blockPrefix, err)
-	}
 
-	return nil
+	return err
 }
 
 // Close will close the internal writer
