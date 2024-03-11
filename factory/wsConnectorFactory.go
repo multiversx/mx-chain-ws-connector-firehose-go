@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-core-go/marshal/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
@@ -79,6 +80,8 @@ func createWsHost(wsMarshaller marshal.Marshalizer, cfg config.WebSocketConfig) 
 			RetryDurationInSec:         int(cfg.RetryDuration),
 			BlockingAckOnError:         cfg.BlockingAckOnError,
 			DropMessagesIfNoConnection: false,
+			AcknowledgeTimeoutInSec:    cfg.AcknowledgeTimeoutInSec,
+			Version:                    cfg.Version,
 		},
 		Marshaller: wsMarshaller,
 		Log:        log,

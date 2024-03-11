@@ -10,6 +10,11 @@
     retry_duration = 5
     # This flag specifies if we should send an acknowledge signal upon recieving data
     with_acknowledge = true
+    # The duration in seconds to wait for an acknowledgement message
+    acknowledge_timeout_in_sec = 5
     # Signals if in case of data payload processing error, we should send the ack signal or not. If you want to block
     # incoming data in case of a local error, this should be set to true.
-    blocking_ack_on_error = false
+    blocking_ack_on_error = true
+    # This flag specifies if we should drop messages if there is no connection to the host
+    drop_messages_if_no_connection = false
+    version = 1

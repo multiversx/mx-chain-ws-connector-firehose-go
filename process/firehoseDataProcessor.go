@@ -57,7 +57,7 @@ func NewFirehoseDataProcessor(
 }
 
 // ProcessPayload will process the received payload only for TopicSaveBlock, otherwise ignores it.
-func (dp *dataProcessor) ProcessPayload(payload []byte, topic string) error {
+func (dp *dataProcessor) ProcessPayload(payload []byte, topic string, _ uint32) error {
 	operationHandler, found := dp.operationHandlers[topic]
 	if !found {
 		return nil

@@ -12,8 +12,9 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	outportcore "github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
 var protoMarshaller = &marshal.GogoProtoMarshalizer{}
@@ -86,14 +87,14 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 
-		err := fi.ProcessPayload(nil, outportcore.TopicSaveBlock)
+		err := fi.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
 		require.Equal(t, errNilOutportBlockData, err)
 
 		outportBlock := createOutportBlock()
 		outportBlock.BlockData = nil
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Equal(t, errNilOutportBlockData, err)
 	})
 
@@ -102,7 +103,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 
-		err := fi.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock)
+		err := fi.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
 		require.NotNil(t, err)
 	})
 
@@ -123,7 +124,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
 
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.NotNil(t, err)
 		require.Equal(t, 0, ioWriterCalledCt)
 	})
@@ -163,7 +164,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		}
 
 		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), marshaller)
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Equal(t, errUnmarshal, err)
 	})
 
@@ -197,13 +198,13 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		outportBlock := createOutportBlock()
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.True(t, strings.Contains(err.Error(), err1.Error()))
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.True(t, strings.Contains(err.Error(), err2.Error()))
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
 
 		require.Equal(t, 5, ioWriterCalledCt)
@@ -253,7 +254,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock)
+		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
 		require.Equal(t, 2, ioWriterCalledCt)
 	})
@@ -265,12 +266,12 @@ func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
 
 	fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), "random topic"))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveRoundsInfo))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsRating))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsPubKeys))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveAccounts))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicFinalizedBlock))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), "random topic", 1))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveRoundsInfo, 1))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsRating, 1))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsPubKeys, 1))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveAccounts, 1))
+	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicFinalizedBlock, 1))
 }
 
 func TestFirehoseIndexer_Close(t *testing.T) {
