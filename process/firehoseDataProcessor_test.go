@@ -127,7 +127,8 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.NotNil(t, err)
-		require.Equal(t, 0, ioWriterCalledCt)
+		// New does the first write
+		require.Equal(t, 1, ioWriterCalledCt)
 	})
 
 	t.Run("cannot unmarshall to get header from bytes, should return error", func(t *testing.T) {
@@ -183,10 +184,12 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 				switch ioWriterCalledCt {
 				case 0:
-					return 0, err1
-				case 1:
 					return 0, nil
+				case 1:
+					return 0, err1
 				case 2:
+					return 0, nil
+				case 3:
 					return 0, err2
 				}
 
@@ -208,7 +211,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.True(t, errors.Is(err, err2))
 
-		require.Equal(t, 3, ioWriterCalledCt)
+		require.Equal(t, 4, ioWriterCalledCt)
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -243,6 +246,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 				switch ioWriterCalledCt {
 				case 0:
+				case 1:
 					num := header.GetNonce()
 					parentNum := num - 1
 					libNum := parentNum
@@ -269,7 +273,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
-		require.Equal(t, 1, ioWriterCalledCt)
+		require.Equal(t, 2, ioWriterCalledCt)
 	})
 }
 
