@@ -18,6 +18,10 @@ var log = logger.GetOrCreate("firehose")
 const (
 	firehosePrefix = "FIRE"
 	blockPrefix    = "BLOCK"
+	initPrefix     = "INIT"
+
+	protocolReaderVersion = "1.0"
+	protoMessageType      = "type.googleapis.com/bstream.pb.sf.bstream.v1.OutportBlock"
 )
 
 type dataProcessor struct {
@@ -52,6 +56,8 @@ func NewFirehoseDataProcessor(
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
 		outport.TopicSaveBlock: dp.saveBlock,
 	}
+
+	_, _ = fmt.Fprintf(dp.writer, "%s %s %s %s\n", firehosePrefix, initPrefix, protocolReaderVersion, protoMessageType)
 
 	return dp, nil
 }
