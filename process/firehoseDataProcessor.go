@@ -87,7 +87,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		return err
 	}
 
-	log.Info("firehose: saving block", "nonce", header.GetNonce(), "hash", outportBlock.BlockData.HeaderHash)
+	log.Info("saving block", "nonce", header.GetNonce(), "hash", outportBlock.BlockData.HeaderHash)
 
 	blockNum := header.GetNonce()
 	parentNum := blockNum - 1
