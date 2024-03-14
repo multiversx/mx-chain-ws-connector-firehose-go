@@ -48,6 +48,8 @@ func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) 
 		notarizedShardOutportBlocks = append(notarizedShardOutportBlocks, notarizedShardOutportBlock)
 	}
 
+	hyperOutportBlock.NotarizedHeadersOutportData = notarizedShardOutportBlocks
+
 	return hyperOutportBlock, nil
 }
 

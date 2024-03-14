@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -13,6 +14,8 @@ import (
 )
 
 var errNilMarshaller = errors.New("nil marshaller")
+
+var headerHash = []byte("headerHash1")
 
 type blockData struct {
 	marshaller marshal.Marshalizer
@@ -28,7 +31,7 @@ func NewBlockData(marshaller marshal.Marshalizer) (*blockData, error) {
 }
 
 // OutportBlockV1 -
-func (bd *blockData) OutportBlockV1() *outport.OutportBlock {
+func (bd *blockData) OutportMetaBlockV1() *outport.OutportBlock {
 	header := &block.MetaBlock{
 		TimeStamp: 1234,
 	}
@@ -39,7 +42,73 @@ func (bd *blockData) OutportBlockV1() *outport.OutportBlock {
 		BlockData: &outport.BlockData{
 			HeaderBytes: headerBytes,
 			HeaderType:  "MetaBlock",
-			HeaderHash:  []byte("headerHash1"),
+			HeaderHash:  []byte("metaHash1"),
+			Body: &block.Body{
+				MiniBlocks: []*block.MiniBlock{
+					{
+						TxHashes:        [][]byte{},
+						ReceiverShardID: 1,
+						SenderShardID:   1,
+					},
+				},
+			},
+		},
+		HeaderGasConsumption: &outport.HeaderGasConsumption{},
+		TransactionPool: &outport.TransactionPool{
+			Transactions: map[string]*outport.TxInfo{
+				"txHash1": {
+					Transaction: &transaction.Transaction{
+						Nonce:    1,
+						GasPrice: 1,
+						GasLimit: 1,
+					},
+					FeeInfo: &outport.FeeInfo{
+						GasUsed: 1,
+					},
+					ExecutionOrder: 2,
+				},
+			},
+			SmartContractResults: map[string]*outport.SCRInfo{
+				"scrHash1": {
+					SmartContractResult: &smartContractResult.SmartContractResult{
+						Nonce:    2,
+						GasLimit: 2,
+						GasPrice: 2,
+						CallType: 2,
+					},
+					FeeInfo: &outport.FeeInfo{
+						GasUsed: 2,
+					},
+					ExecutionOrder: 0,
+				},
+			},
+			Logs: []*outport.LogData{
+				{
+					Log: &transaction.Log{
+						Address: []byte("logaddr1"),
+						Events:  []*transaction.Event{},
+					},
+					TxHash: "logHash1",
+				},
+			},
+		},
+		NumberOfShards:         2,
+		NotarizedHeadersHashes: []string{hex.EncodeToString(headerHash)},
+	}
+}
+
+func (bd *blockData) OutportShardBlockV1() *outport.OutportBlock {
+	header := &block.MetaBlock{
+		TimeStamp: 1234,
+	}
+	headerBytes, _ := bd.marshaller.Marshal(header)
+
+	return &outport.OutportBlock{
+		ShardID: 1,
+		BlockData: &outport.BlockData{
+			HeaderBytes: headerBytes,
+			HeaderType:  "Header",
+			HeaderHash:  headerHash,
 			Body: &block.Body{
 				MiniBlocks: []*block.MiniBlock{
 					{
@@ -90,38 +159,5 @@ func (bd *blockData) OutportBlockV1() *outport.OutportBlock {
 			},
 		},
 		NumberOfShards: 2,
-	}
-}
-
-// RevertBlockV1 -
-func (bd *blockData) RevertBlockV1() *outport.BlockData {
-	header := &block.Header{
-		ShardID:   1,
-		TimeStamp: 1234,
-	}
-	headerBytes, _ := bd.marshaller.Marshal(header)
-
-	return &outport.BlockData{
-		ShardID:     1,
-		HeaderBytes: headerBytes,
-		HeaderType:  "Header",
-		HeaderHash:  []byte("headerHash1"),
-		Body: &block.Body{
-			MiniBlocks: []*block.MiniBlock{
-				{
-					TxHashes:        [][]byte{},
-					ReceiverShardID: 1,
-					SenderShardID:   1,
-				},
-			},
-		},
-	}
-}
-
-// FinalizedBlockV1 -
-func (bd *blockData) FinalizedBlockV1() *outport.FinalizedBlock {
-	return &outport.FinalizedBlock{
-		ShardID:    1,
-		HeaderHash: []byte("headerHash1"),
 	}
 }

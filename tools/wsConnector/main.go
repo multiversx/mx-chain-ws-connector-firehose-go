@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	wsData "github.com/multiversx/mx-chain-communication-go/websocket/data"
 	wsFactory "github.com/multiversx/mx-chain-communication-go/websocket/factory"
@@ -25,19 +28,29 @@ func main() {
 		return
 	}
 
-	err = wsClient.PushEventsRequest(blockData.OutportBlockV1())
+	err = wsClient.PushEventsRequest(blockData.OutportShardBlockV1())
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	err = wsClient.RevertEventsRequest(blockData.RevertBlockV1())
+	fmt.Println("pushed shard event")
+
+	err = wsClient.PushEventsRequest(blockData.OutportMetaBlockV1())
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	err = wsClient.FinalizedEventsRequest(blockData.FinalizedBlockV1())
+	fmt.Println("pushed meta event")
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	<-interrupt
+	fmt.Println("closing app at user's signal")
+
+	err = wsClient.Close()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
