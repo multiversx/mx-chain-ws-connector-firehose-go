@@ -5,8 +5,12 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/multiversx/mx-chain-core-go/data"
+	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/block"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 var log = logger.GetOrCreate("firehose")
@@ -21,19 +25,31 @@ const (
 )
 
 type firehosePublisher struct {
-	writer Writer
+	marshaller   marshal.Marshalizer
+	writer       Writer
+	blockCreator BlockContainerHandler
 }
 
 // NewFirehosePublisher creates a data processor able to receive data from a ws outport driver and print saved blocks
 func NewFirehosePublisher(
 	writer Writer,
+	blockCreator BlockContainerHandler,
+	marshaller marshal.Marshalizer,
 ) (*firehosePublisher, error) {
 	if writer == nil {
 		return nil, errNilWriter
 	}
+	if check.IfNil(blockCreator) {
+		return nil, errNilBlockCreator
+	}
+	if check.IfNil(marshaller) {
+		return nil, errNilMarshaller
+	}
 
 	fp := &firehosePublisher{
-		writer: writer,
+		marshaller:   marshaller,
+		writer:       writer,
+		blockCreator: blockCreator,
 	}
 
 	_, err := fmt.Fprintf(fp.writer, "%s %s %s %s\n", firehosePrefix, initPrefix, protocolReaderVersion, protoMessageType)
@@ -44,8 +60,18 @@ func NewFirehosePublisher(
 	return fp, nil
 }
 
-func (fp *firehosePublisher) PublishHyperBlock(header data.HeaderHandler, headerHash []byte, marshalledData []byte) error {
-	log.Info("saving block", "nonce", header.GetNonce(), "hash", headerHash)
+func (fp *firehosePublisher) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
+	outportBlock := hyperOutportBlock.MetaOutportBlock
+
+	blockCreator, err := fp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+	if err != nil {
+		return err
+	}
+
+	header, err := block.GetHeaderFromBytes(fp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+	if err != nil {
+		return err
+	}
 
 	blockNum := header.GetNonce()
 	parentNum := blockNum - 1
@@ -53,16 +79,21 @@ func (fp *firehosePublisher) PublishHyperBlock(header data.HeaderHandler, header
 		parentNum = 0
 	}
 
+	marshalledData, err := fp.marshaller.Marshal(hyperOutportBlock)
+	if err != nil {
+		return err
+	}
+
 	encodedMarshalledData := base64.StdEncoding.EncodeToString(marshalledData)
 
-	_, err := fmt.Fprintf(fp.writer, "%s %s %d %s %d %s %d %d %s\n",
+	_, err = fmt.Fprintf(fp.writer, "%s %s %d %s %d %s %d %d %s\n",
 		firehosePrefix,
 		blockPrefix,
 		blockNum,
-		hex.EncodeToString(headerHash),
+		hex.EncodeToString(outportBlock.BlockData.HeaderHash),
 		parentNum,
 		hex.EncodeToString(header.GetPrevHash()),
-		// outportBlock.HighestFinalBlockNonce,
+		outportBlock.HighestFinalBlockNonce,
 		header.GetTimeStamp(),
 		encodedMarshalledData,
 	)

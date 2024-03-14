@@ -70,6 +70,8 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		return errNilOutportBlockData
 	}
 
+	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
+
 	if outportBlock.ShardID == core.MetachainShardId {
 		return dp.handleMetaOutportBlock(outportBlock)
 	}
@@ -78,15 +80,12 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 }
 
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
-	header, marshalledData, err := dp.dataAggregator.ProcessHyperBlock(outportBlock)
+	hyperOutportBlock, err := dp.dataAggregator.ProcessHyperBlock(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	// test
-	headerHash := header.GetRootHash()
-
-	err = dp.publisher.PublishHyperBlock(header, headerHash, marshalledData)
+	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
 	if err != nil {
 		return err
 	}

@@ -31,8 +31,12 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
+	protoMarshaller := &marshal.GogoProtoMarshalizer{}
+
 	firehosePublisher, err := process.NewFirehosePublisher(
 		os.Stdout, // DO NOT CHANGE
+		blockContainer,
+		protoMarshaller,
 	)
 	if err != nil {
 		return nil, err
@@ -54,13 +58,12 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	protoMarshaller := &marshal.GogoProtoMarshalizer{}
-
-	dataAggregator, err := process.NewDataAggregator(blockContainer, blocksPool, protoMarshaller)
+	dataAggregator, err := process.NewDataAggregator(blocksPool)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: move to separate factory
 	dataProcessor, err := process.NewDataProcessor(firehosePublisher, protoMarshaller, blocksPool, dataAggregator)
 	if err != nil {
 		return nil, err
