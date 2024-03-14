@@ -23,6 +23,7 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) 
 func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	data, ok := bp.cacher.Get(hash)
 	if !ok {
+		// TODO: handle retry/fallback mechanism
 		return nil, fmt.Errorf("failed to get data from pool")
 	}
 
