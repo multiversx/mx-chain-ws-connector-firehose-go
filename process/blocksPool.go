@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-go/storage"
+	"github.com/multiversx/mx-chain-storage-go/types"
 )
 
 type blocksPool struct {
-	cacher storage.Cacher
+	cacher types.Cacher
 }
 
-func NewBlocksPool(cacher storage.Cacher) (*blocksPool, error) {
+func NewBlocksPool(cacher types.Cacher) (*blocksPool, error) {
 	return &blocksPool{cacher: cacher}, nil
 }
 
