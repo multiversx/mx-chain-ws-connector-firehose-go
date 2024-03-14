@@ -79,7 +79,7 @@ func createWsHost(wsMarshaller marshal.Marshalizer, cfg config.WebSocketConfig) 
 			Mode:                       cfg.Mode,
 			RetryDurationInSec:         int(cfg.RetryDuration),
 			BlockingAckOnError:         cfg.BlockingAckOnError,
-			DropMessagesIfNoConnection: false,
+			DropMessagesIfNoConnection: cfg.DropMessagesIfNoConnection,
 			AcknowledgeTimeoutInSec:    cfg.AcknowledgeTimeoutInSec,
 			Version:                    cfg.Version,
 		},

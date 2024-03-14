@@ -1,6 +1,7 @@
 package process
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 
@@ -15,9 +16,12 @@ import (
 var log = logger.GetOrCreate("firehose")
 
 const (
-	firehosePrefix   = "FIRE"
-	beginBlockPrefix = "BLOCK_BEGIN"
-	endBlockPrefix   = "BLOCK_END"
+	firehosePrefix = "FIRE"
+	blockPrefix    = "BLOCK"
+	initPrefix     = "INIT"
+
+	protocolReaderVersion = "1.0"
+	protoMessageType      = "type.googleapis.com/proto.OutportBlock"
 )
 
 type dataProcessor struct {
@@ -53,6 +57,8 @@ func NewFirehoseDataProcessor(
 		outport.TopicSaveBlock: dp.saveBlock,
 	}
 
+	_, _ = fmt.Fprintf(dp.writer, "%s %s %s %s\n", firehosePrefix, initPrefix, protocolReaderVersion, protoMessageType)
+
 	return dp, nil
 }
 
@@ -87,30 +93,28 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		return err
 	}
 
-	log.Info("firehose: saving block", "nonce", header.GetNonce(), "hash", outportBlock.BlockData.HeaderHash)
+	log.Info("saving block", "nonce", header.GetNonce(), "hash", outportBlock.BlockData.HeaderHash)
 
-	_, err = fmt.Fprintf(dp.writer, "%s %s %d\n",
-		firehosePrefix,
-		beginBlockPrefix,
-		header.GetNonce(),
-	)
-	if err != nil {
-		return fmt.Errorf("could not write %s prefix , err: %w", beginBlockPrefix, err)
+	blockNum := header.GetNonce()
+	parentNum := blockNum - 1
+	if blockNum == 0 {
+		parentNum = 0
 	}
+	encodedMarshalledData := base64.StdEncoding.EncodeToString(marshalledData)
 
-	_, err = fmt.Fprintf(dp.writer, "%s %s %d %s %d %x\n",
+	_, err = fmt.Fprintf(dp.writer, "%s %s %d %s %d %s %d %d %s\n",
 		firehosePrefix,
-		endBlockPrefix,
-		header.GetNonce(),
+		blockPrefix,
+		blockNum,
+		hex.EncodeToString(outportBlock.BlockData.HeaderHash),
+		parentNum,
 		hex.EncodeToString(header.GetPrevHash()),
+		outportBlock.HighestFinalBlockNonce,
 		header.GetTimeStamp(),
-		marshalledData,
+		encodedMarshalledData,
 	)
-	if err != nil {
-		return fmt.Errorf("could not write %s prefix , err: %w", endBlockPrefix, err)
-	}
 
-	return nil
+	return err
 }
 
 // Close will close the internal writer
