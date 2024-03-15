@@ -2,86 +2,111 @@ package process
 
 import (
 	"fmt"
+	"math"
+	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/types"
 )
 
-type blocksData struct {
-	blocksCacher types.Cacher
-	delta        uint32
-}
-
 type blocksPool struct {
-	cacher    types.Cacher
-	blocksMap map[uint32]*blocksData
+	cacher       types.Cacher
+	blockCreator BlockContainerHandler
+	marshaller   marshal.Marshalizer
+	maxDelta     uint64
+
+	roundsMap map[uint32]uint64
+	mutMap    sync.RWMutex
 }
 
-func NewBlocksPool(cacher types.Cacher) (*blocksPool, error) {
-	bp := &blocksPool{
-		cacher: cacher,
+func NewBlocksPool(
+	cacher types.Cacher,
+	blockCreator BlockContainerHandler,
+	marshaller marshal.Marshalizer,
+) (*blocksPool, error) {
+	numberOfShards := uint32(3)
+
+	roundsMap := make(map[uint32]uint64)
+	for shardID := uint32(0); shardID < numberOfShards; shardID++ {
+		roundsMap[shardID] = 0
 	}
+	roundsMap[core.MetachainShardId] = 0
 
-	numOfShards := uint32(3)
-
-	bp.createBlocksMap(numOfShards)
+	bp := &blocksPool{
+		cacher:       cacher,
+		blockCreator: blockCreator,
+		roundsMap:    roundsMap,
+		marshaller:   marshaller,
+		maxDelta:     10,
+	}
 
 	return bp, nil
 }
 
-func (bp *blocksPool) createBlocksMap(numOfShards uint32) error {
-	blocksMap := make(map[uint32]*blocksData)
+func (bp *blocksPool) UpdateMetaRound(round uint64) {
+	bp.mutMap.Lock()
+	defer bp.mutMap.Unlock()
 
-	for i := uint32(0); i < numOfShards; i++ {
-		cacher, err := bp.createCacher()
-		if err != nil {
-			return err
-		}
+	bp.roundsMap[core.MetachainShardId] = round
+}
 
-		blocksMap[i] = &blocksData{
-			blocksCacher: cacher,
-			delta:        0,
-		}
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) error {
+	bp.mutMap.Lock()
+	defer bp.mutMap.Unlock()
+
+	shardID := outportBlock.ShardID
+
+	round, ok := bp.roundsMap[shardID]
+	if !ok {
+		return fmt.Errorf("did not find shard id %d in blocksMap", shardID)
 	}
 
-	cacher, err := bp.createCacher()
+	if round == 0 {
+		bp.putOutportBlock(hash, outportBlock)
+	}
+
+	metaRound := bp.roundsMap[core.MetachainShardId]
+
+	if !bp.shouldPutOutportBlock(round, metaRound) {
+		log.Error("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
+		return fmt.Errorf("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
+	}
+
+	return bp.putOutportBlock(hash, outportBlock)
+}
+
+// should be run under mutex
+func (bp *blocksPool) shouldPutOutportBlock(round, metaRound uint64) bool {
+	diff := float64(int64(round) - int64(metaRound))
+	delta := math.Abs(diff)
+
+	if math.Abs(delta) > float64(bp.maxDelta) {
+		return false
+	}
+
+	return true
+}
+
+// should be run under mutex
+func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.OutportBlock) error {
+	shardID := outportBlock.ShardID
+
+	blockCreator, err := bp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
 	if err != nil {
 		return err
 	}
 
-	blocksMap[core.MetachainShardId] = &blocksData{
-		blocksCacher: cacher,
-	}
-
-	bp.blocksMap = blocksMap
-
-	return nil
-}
-
-func (bp *blocksPool) createCacher() (types.Cacher, error) {
-	cacheConfig := storageUnit.CacheConfig{
-		Type:        storageUnit.SizeLRUCache,
-		SizeInBytes: 209715200, // 200MB
-		Capacity:    100,
-	}
-
-	cacher, err := storageUnit.NewCache(cacheConfig)
+	header, err := block.GetHeaderFromBytes(bp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
 	if err != nil {
-		return nil, err
-	}
-
-	return cacher, nil
-}
-
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) error {
-	blocksData, ok := bp.blocksMap[outportBlock.ShardID]
-	if !ok {
-		return fmt.Errorf("did not find shard id %d in blocksMap", outportBlock.ShardID)
+		return err
 	}
 
 	_ = bp.cacher.Put(hash, outportBlock, 0)
+	bp.roundsMap[shardID] = header.GetRound()
+
 	return nil
 }
 
