@@ -54,7 +54,7 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	blocksPool, err := process.NewBlocksPool(cacher)
+	blocksPool, err := process.NewBlocksPool(cacher, blockContainer, protoMarshaller)
 	if err != nil {
 		return nil, err
 	}
