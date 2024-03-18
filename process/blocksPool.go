@@ -13,7 +13,7 @@ import (
 )
 
 type blocksPool struct {
-	cacher       types.Cacher
+	storer       types.Storer
 	blockCreator BlockContainerHandler
 	marshaller   marshal.Marshalizer
 	maxDelta     uint64
@@ -23,7 +23,7 @@ type blocksPool struct {
 }
 
 func NewBlocksPool(
-	cacher types.Cacher,
+	storer types.Storer,
 	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
 ) (*blocksPool, error) {
@@ -36,7 +36,7 @@ func NewBlocksPool(
 	roundsMap[core.MetachainShardId] = 0
 
 	bp := &blocksPool{
-		cacher:       cacher,
+		storer:       storer,
 		blockCreator: blockCreator,
 		roundsMap:    roundsMap,
 		marshaller:   marshaller,
@@ -104,22 +104,33 @@ func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.Outport
 		return err
 	}
 
-	_ = bp.cacher.Put(hash, outportBlock, 0)
+	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
+	if err != nil {
+		return err
+	}
+
+	err = bp.storer.Put(hash, outportBlockBytes)
+	if err != nil {
+		return err
+	}
+
 	bp.roundsMap[shardID] = header.GetRound()
 
 	return nil
 }
 
 func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
-	data, ok := bp.cacher.Get(hash)
-	if !ok {
+	data, err := bp.storer.Get(hash)
+	if err != nil {
 		// TODO: handle retry/fallback mechanism
 		return nil, fmt.Errorf("failed to get data from pool")
 	}
 
-	outportBlock, ok := data.(*outport.OutportBlock)
-	if !ok {
-		return nil, ErrWrongTypeAssertion
+	outportBlock := &outport.OutportBlock{}
+
+	err = bp.marshaller.Unmarshal(outportBlock, data)
+	if err != nil {
+		return nil, err
 	}
 
 	return outportBlock, nil

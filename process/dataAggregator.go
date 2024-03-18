@@ -29,6 +29,10 @@ func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) 
 	hyperOutportBlock.MetaOutportBlock = outportBlock
 
 	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0)
+
+	log.Info("dataAggregator: notarizedHashes", "block hash", outportBlock.BlockData.HeaderHash,
+		"num notarizedHashes", len(outportBlock.NotarizedHeadersHashes))
+
 	for _, notarizedHash := range outportBlock.NotarizedHeadersHashes {
 		hash, err := hex.DecodeString(notarizedHash)
 		if err != nil {
@@ -39,6 +43,8 @@ func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) 
 		if err != nil {
 			return nil, err
 		}
+
+		log.Info("dataAggregator: get block", "hash", hash)
 
 		notarizedShardOutportBlock := &data.NotarizedHeaderOutportData{
 			NotarizedHeaderHash: notarizedHash,

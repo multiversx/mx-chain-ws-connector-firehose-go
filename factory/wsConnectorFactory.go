@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-core-go/marshal/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-storage-go/leveldb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
@@ -53,7 +54,18 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	blocksPool, err := process.NewBlocksPool(cacher, blockContainer, protoMarshaller)
+	path := "shardBlocks"
+	persister, err := leveldb.NewDB(path, 2, 100, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	storageUnit, err := storageUnit.NewStorageUnit(cacher, persister)
+	if err != nil {
+		return nil, err
+	}
+
+	blocksPool, err := process.NewBlocksPool(storageUnit, blockContainer, protoMarshaller)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +76,7 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 	}
 
 	// TODO: move to separate factory
-	dataProcessor, err := process.NewDataProcessor(firehosePublisher, protoMarshaller, blocksPool, dataAggregator)
+	dataProcessor, err := process.NewDataProcessor(firehosePublisher, protoMarshaller, blocksPool, dataAggregator, blockContainer)
 	if err != nil {
 		return nil, err
 	}
