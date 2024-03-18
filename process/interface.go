@@ -58,5 +58,6 @@ type DataAggregator interface {
 type BlocksPool interface {
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
+	UpdateMetaRound(round uint64)
 	IsInterfaceNil() bool
 }

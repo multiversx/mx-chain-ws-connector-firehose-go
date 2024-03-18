@@ -3,6 +3,7 @@ package process
 import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 )
@@ -13,6 +14,7 @@ type dataProcessor struct {
 	publisher         Publisher
 	blocksPool        BlocksPool
 	dataAggregator    DataAggregator
+	blockCreator      BlockContainerHandler
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -21,6 +23,7 @@ func NewDataProcessor(
 	marshaller marshal.Marshalizer,
 	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
+	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -40,6 +43,7 @@ func NewDataProcessor(
 		publisher:      publisher,
 		blocksPool:     blocksPool,
 		dataAggregator: dataAggregator,
+		blockCreator:   blockCreator,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -89,6 +93,20 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	if err != nil {
 		return err
 	}
+
+	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+	if err != nil {
+		return err
+	}
+
+	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+	if err != nil {
+		return err
+	}
+
+	dp.blocksPool.UpdateMetaRound(header.GetRound())
+
+	log.Info("dataProcessor:", "hash", outportBlock.BlockData.HeaderHash, "round", header.GetRound())
 
 	return nil
 }
