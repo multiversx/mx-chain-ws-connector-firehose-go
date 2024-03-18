@@ -51,6 +51,46 @@ func (bp *blocksPool) UpdateMetaRound(round uint64) {
 	defer bp.mutMap.Unlock()
 
 	bp.roundsMap[core.MetachainShardId] = round
+
+	err := bp.prunePersister(round)
+	if err != nil {
+		log.Warn("failed to prune persister", "error", err.Error())
+	}
+}
+
+func (bp *blocksPool) prunePersister(round uint64) error {
+	if round%10 != 0 {
+		return nil
+	}
+
+	bp.storer.RangeKeys(func(key, val []byte) bool {
+		outportBlock := &outport.OutportBlock{}
+		err := bp.marshaller.Unmarshal(outportBlock, val)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		blockCreator, err := bp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		header, err := block.GetHeaderFromBytes(bp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		if header.GetRound() < round {
+			err = bp.storer.Remove(key)
+			if err != nil {
+				log.Error(err.Error())
+			}
+		}
+
+		return true
+	})
+
+	return nil
 }
 
 func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) error {
@@ -122,12 +162,10 @@ func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.Outport
 func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	data, err := bp.storer.Get(hash)
 	if err != nil {
-		// TODO: handle retry/fallback mechanism
 		return nil, fmt.Errorf("failed to get data from pool")
 	}
 
 	outportBlock := &outport.OutportBlock{}
-
 	err = bp.marshaller.Unmarshal(outportBlock, data)
 	if err != nil {
 		return nil, err
