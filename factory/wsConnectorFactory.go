@@ -42,6 +42,7 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
+	// TODO: move cache to config
 	cacheConfig := storageUnit.CacheConfig{
 		Type:        storageUnit.SizeLRUCache,
 		SizeInBytes: 209715200, // 200MB

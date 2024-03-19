@@ -60,6 +60,7 @@ func NewFirehosePublisher(
 	return fp, nil
 }
 
+// PublishHyperBlock will push aggregated outport block data to the firehose writer
 func (fp *firehosePublisher) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
 	outportBlock := hyperOutportBlock.MetaOutportBlock
 
