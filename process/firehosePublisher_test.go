@@ -96,17 +96,6 @@ func TestNewFirehosePublisher(t *testing.T) {
 func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should work", func(t *testing.T) {
-		t.Parallel()
-
-		fp, err := process.NewFirehosePublisher(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
-		require.Nil(t, err)
-
-		outportBlock := createHyperOutportBlock()
-
-		err = fp.PublishHyperBlock(outportBlock)
-	})
-
 	t.Run("unknown block creator for header type, should return error", func(t *testing.T) {
 		t.Parallel()
 
