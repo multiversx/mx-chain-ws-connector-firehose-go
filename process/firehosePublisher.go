@@ -21,7 +21,7 @@ const (
 	initPrefix     = "INIT"
 
 	protocolReaderVersion = "1.0"
-	protoMessageType      = "type.googleapis.com/bstream.pb.sf.bstream.v1.OutportBlock"
+	protoMessageType      = "type.googleapis.com/proto.OutportBlock"
 )
 
 type firehosePublisher struct {
