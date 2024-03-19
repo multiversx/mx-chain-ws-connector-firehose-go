@@ -17,7 +17,7 @@ func NewDataAggregator(
 	blocksPool BlocksPool,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
-		return nil, errNilBlocksPool
+		return nil, ErrNilBlocksPool
 	}
 
 	return &dataAggregator{

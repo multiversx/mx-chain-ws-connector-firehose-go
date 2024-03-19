@@ -37,13 +37,13 @@ func NewFirehosePublisher(
 	marshaller marshal.Marshalizer,
 ) (*firehosePublisher, error) {
 	if writer == nil {
-		return nil, errNilWriter
+		return nil, ErrNilWriter
 	}
 	if check.IfNil(blockCreator) {
-		return nil, errNilBlockCreator
+		return nil, ErrNilBlockCreator
 	}
 	if check.IfNil(marshaller) {
-		return nil, errNilMarshaller
+		return nil, ErrNilMarshaller
 	}
 
 	fp := &firehosePublisher{

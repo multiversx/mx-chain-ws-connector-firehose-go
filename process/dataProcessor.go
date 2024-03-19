@@ -23,16 +23,16 @@ func NewDataProcessor(
 	dataAggregator DataAggregator,
 ) (DataProcessor, error) {
 	if publisher == nil {
-		return nil, errNilWriter
+		return nil, ErrNilPublisher
 	}
 	if check.IfNil(blocksPool) {
-		return nil, errNilBlocksPool
+		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {
-		return nil, errNilMarshaller
+		return nil, ErrNilMarshaller
 	}
 	if check.IfNil(dataAggregator) {
-		return nil, errNilDataAggregator
+		return nil, ErrNilDataAggregator
 	}
 
 	dp := &dataProcessor{
@@ -67,7 +67,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 	}
 
 	if outportBlock == nil || outportBlock.BlockData == nil {
-		return errNilOutportBlockData
+		return ErrNilOutportBlockData
 	}
 
 	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
