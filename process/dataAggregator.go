@@ -12,11 +12,12 @@ type dataAggregator struct {
 	blocksPool BlocksPool
 }
 
+// NewDataAggregator will create a new data aggregator instance
 func NewDataAggregator(
 	blocksPool BlocksPool,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
-		return nil, errNilBlocksPool
+		return nil, ErrNilBlocksPool
 	}
 
 	return &dataAggregator{
@@ -24,6 +25,8 @@ func NewDataAggregator(
 	}, nil
 }
 
+// ProcessHyperBlock will process meta outport block. It will try to fetch and aggregate
+// notarized shards data
 func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error) {
 	hyperOutportBlock := &data.HyperOutportBlock{}
 	hyperOutportBlock.MetaOutportBlock = outportBlock

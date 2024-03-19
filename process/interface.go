@@ -40,16 +40,20 @@ type Writer interface {
 	Close() error
 }
 
+// Publisher defines the behaviour of an aggregated outport block publisher component
 type Publisher interface {
 	PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error
 	Close() error
 }
 
+// DataAggregator defines the behaviour of a component that is able to aggregate outport
+// block data for shards
 type DataAggregator interface {
 	ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error)
 	IsInterfaceNil() bool
 }
 
+// BlocksPool defines the behaviour of a blocks pool handler component
 type BlocksPool interface {
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)

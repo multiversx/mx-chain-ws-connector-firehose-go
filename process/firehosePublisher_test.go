@@ -1,4 +1,4 @@
-package process
+package process_test
 
 import (
 	"encoding/base64"
@@ -15,12 +15,14 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
 var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 
-func createOutportBlock() *outportcore.OutportBlock {
+func createHyperOutportBlock() *data.HyperOutportBlock {
 	header := &block.Header{
 		Nonce:     1,
 		PrevHash:  []byte("prev hash"),
@@ -28,91 +30,77 @@ func createOutportBlock() *outportcore.OutportBlock {
 	}
 	headerBytes, _ := protoMarshaller.Marshal(header)
 
-	return &outportcore.OutportBlock{
-		BlockData: &outportcore.BlockData{
-			HeaderHash:  []byte("hash"),
-			HeaderBytes: headerBytes,
-			HeaderType:  string(core.ShardHeaderV1),
+	hyperOutportBlock := &data.HyperOutportBlock{
+		MetaOutportBlock: &outportcore.OutportBlock{
+			ShardID: 1,
+			BlockData: &outportcore.BlockData{
+				HeaderBytes: headerBytes,
+				HeaderType:  string(core.ShardHeaderV1),
+				HeaderHash:  []byte("hash"),
+			},
+			NotarizedHeadersHashes: []string{},
+			NumberOfShards:         0,
+			SignersIndexes:         []uint64{},
+			HighestFinalBlockNonce: 0,
+			HighestFinalBlockHash:  []byte{},
 		},
+		NotarizedHeadersOutportData: []*data.NotarizedHeaderOutportData{},
 	}
+
+	return hyperOutportBlock
 }
 
-func createContainer() BlockContainerHandler {
+func createContainer() process.BlockContainerHandler {
 	container := block.NewEmptyBlockCreatorsContainer()
 	_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
 
 	return container
 }
 
-func TestNewFirehoseDataProcessor(t *testing.T) {
+func TestNewFirehosePublisher(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil io writer, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewFirehoseDataProcessor(nil, createContainer(), protoMarshaller)
-		require.Nil(t, fi)
-		require.Equal(t, errNilWriter, err)
+		fp, err := process.NewFirehosePublisher(nil, createContainer(), protoMarshaller)
+		require.Nil(t, fp)
+		require.Equal(t, process.ErrNilWriter, err)
 	})
 
 	t.Run("nil block creator, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, nil, protoMarshaller)
-		require.Nil(t, fi)
-		require.Equal(t, errNilBlockCreator, err)
+		fp, err := process.NewFirehosePublisher(&testscommon.IoWriterStub{}, nil, protoMarshaller)
+		require.Nil(t, fp)
+		require.Equal(t, process.ErrNilBlockCreator, err)
 	})
 
 	t.Run("nil marshaller, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), nil)
-		require.Nil(t, fi)
-		require.Equal(t, errNilMarshaller, err)
+		fp, err := process.NewFirehosePublisher(&testscommon.IoWriterStub{}, createContainer(), nil)
+		require.Nil(t, fp)
+		require.Equal(t, process.ErrNilMarshaller, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		fi, err := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
+		fp, err := process.NewFirehosePublisher(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
 		require.Nil(t, err)
-		require.False(t, check.IfNil(fi))
+		require.False(t, check.IfNil(fp))
 	})
 }
 
-func TestFirehoseIndexer_SaveBlock(t *testing.T) {
+func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 	t.Parallel()
-
-	t.Run("nil outport block, should return error", func(t *testing.T) {
-		t.Parallel()
-
-		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
-
-		err := fi.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
-		require.Equal(t, errNilOutportBlockData, err)
-
-		outportBlock := createOutportBlock()
-		outportBlock.BlockData = nil
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
-		require.Equal(t, errNilOutportBlockData, err)
-	})
-
-	t.Run("invalid payload, cannot unmarshall, should return error", func(t *testing.T) {
-		t.Parallel()
-
-		fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
-
-		err := fi.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
-		require.NotNil(t, err)
-	})
 
 	t.Run("unknown block creator for header type, should return error", func(t *testing.T) {
 		t.Parallel()
 
-		outportBlock := createOutportBlock()
-		outportBlock.BlockData.HeaderType = "unknown"
+		outportBlock := createHyperOutportBlock()
+		outportBlock.MetaOutportBlock.BlockData.HeaderType = "unknown"
 
 		ioWriterCalledCt := 0
 		ioWriter := &testscommon.IoWriterStub{
@@ -122,13 +110,11 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
+		fi, _ := process.NewFirehosePublisher(ioWriter, createContainer(), protoMarshaller)
 
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err := fi.PublishHyperBlock(outportBlock)
 		require.NotNil(t, err)
-		// New does the first write
-		require.Equal(t, 1, ioWriterCalledCt)
+		require.Equal(t, 1, ioWriterCalledCt) // 1 write comes from constructor
 	})
 
 	t.Run("cannot unmarshall to get header from bytes, should return error", func(t *testing.T) {
@@ -142,32 +128,18 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		outportBlock := createOutportBlock()
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-
-		unmarshalCalledBefore := false
-		errUnmarshal := errors.New("err unmarshal")
+		expectedErr := errors.New("expected err")
 		marshaller := &testscommon.MarshallerStub{
 			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				defer func() {
-					unmarshalCalledBefore = true
-				}()
-
-				if unmarshalCalledBefore {
-					return errUnmarshal
-				}
-
-				require.Equal(t, outportBlockBytes, buff)
-				err := protoMarshaller.Unmarshal(obj, buff)
-				require.Nil(t, err)
-
-				return nil
+				return expectedErr
 			},
 		}
 
-		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), marshaller)
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
-		require.Equal(t, errUnmarshal, err)
+		fp, _ := process.NewFirehosePublisher(ioWriter, createContainer(), marshaller)
+
+		outportBlock := createHyperOutportBlock()
+		err := fp.PublishHyperBlock(outportBlock)
+		require.Equal(t, expectedErr, err)
 	})
 
 	t.Run("cannot write in console, should return error", func(t *testing.T) {
@@ -197,18 +169,17 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
+		fp, _ := process.NewFirehosePublisher(ioWriter, createContainer(), protoMarshaller)
 
-		outportBlock := createOutportBlock()
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+		outportBlock := createHyperOutportBlock()
 
-		err := fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err := fp.PublishHyperBlock(outportBlock)
 		require.True(t, strings.Contains(err.Error(), err1.Error()))
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err = fp.PublishHyperBlock(outportBlock)
 		require.Nil(t, err)
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err = fp.PublishHyperBlock(outportBlock)
 		require.True(t, errors.Is(err, err2))
 
 		require.Equal(t, 4, ioWriterCalledCt)
@@ -222,17 +193,23 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			PrevHash:  []byte("prev hash"),
 			TimeStamp: 100,
 		}
-		headerBytes, err := protoMarshaller.Marshal(header)
-		require.Nil(t, err)
+		headerBytes, _ := protoMarshaller.Marshal(header)
 
-		outportBlock := &outportcore.OutportBlock{
-			BlockData: &outportcore.BlockData{
-				HeaderHash:  []byte("hash"),
-				HeaderBytes: headerBytes,
-				HeaderType:  string(core.ShardHeaderV1),
+		outportBlock := &data.HyperOutportBlock{
+			MetaOutportBlock: &outportcore.OutportBlock{
+				ShardID: 1,
+				BlockData: &outportcore.BlockData{
+					HeaderBytes: headerBytes,
+					HeaderType:  string(core.ShardHeaderV1),
+					HeaderHash:  []byte("hash"),
+				},
+				NotarizedHeadersHashes: []string{},
+				NumberOfShards:         0,
+				SignersIndexes:         []uint64{},
+				HighestFinalBlockNonce: 0,
+				HighestFinalBlockHash:  []byte{},
 			},
-
-			HighestFinalBlockNonce: 0,
+			NotarizedHeadersOutportData: []*data.NotarizedHeaderOutportData{},
 		}
 		outportBlockBytes, err := protoMarshaller.Marshal(outportBlock)
 		require.Nil(t, err)
@@ -253,10 +230,10 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 					encodedMvxBlock := base64.StdEncoding.EncodeToString(outportBlockBytes)
 
 					require.Equal(t, []byte(fmt.Sprintf("%s %s %d %s %d %s %d %d %s\n",
-						firehosePrefix,
-						blockPrefix,
+						process.FirehosePrefix,
+						process.BlockPrefix,
 						num,
-						hex.EncodeToString(outportBlock.BlockData.HeaderHash),
+						hex.EncodeToString(outportBlock.MetaOutportBlock.BlockData.HeaderHash),
 						parentNum,
 						hex.EncodeToString(header.PrevHash),
 						libNum,
@@ -269,28 +246,15 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 			},
 		}
 
-		fi, _ := NewFirehoseDataProcessor(ioWriter, createContainer(), protoMarshaller)
+		fp, _ := process.NewFirehosePublisher(ioWriter, createContainer(), protoMarshaller)
 
-		err = fi.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err = fp.PublishHyperBlock(outportBlock)
 		require.Nil(t, err)
 		require.Equal(t, 2, ioWriterCalledCt)
 	})
 }
 
-func TestFirehoseIndexer_NoOperationFunctions(t *testing.T) {
-	t.Parallel()
-
-	fi, _ := NewFirehoseDataProcessor(&testscommon.IoWriterStub{}, createContainer(), protoMarshaller)
-
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), "random topic", 1))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveRoundsInfo, 1))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsRating, 1))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveValidatorsPubKeys, 1))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicSaveAccounts, 1))
-	require.Nil(t, fi.ProcessPayload([]byte("payload"), outportcore.TopicFinalizedBlock, 1))
-}
-
-func TestFirehoseIndexer_Close(t *testing.T) {
+func TestFirehosePublisher_Close(t *testing.T) {
 	t.Parallel()
 
 	closeError := errors.New("error closing")
@@ -300,7 +264,7 @@ func TestFirehoseIndexer_Close(t *testing.T) {
 		},
 	}
 
-	fi, _ := NewFirehoseDataProcessor(writer, createContainer(), protoMarshaller)
+	fi, _ := process.NewFirehosePublisher(writer, createContainer(), protoMarshaller)
 	err := fi.Close()
 	require.Equal(t, closeError, err)
 }

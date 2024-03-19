@@ -21,7 +21,7 @@ const (
 	initPrefix     = "INIT"
 
 	protocolReaderVersion = "1.0"
-	protoMessageType      = "type.googleapis.com/bstream.pb.sf.bstream.v1.OutportBlock"
+	protoMessageType      = "type.googleapis.com/proto.OutportBlock"
 )
 
 type firehosePublisher struct {
@@ -37,13 +37,13 @@ func NewFirehosePublisher(
 	marshaller marshal.Marshalizer,
 ) (*firehosePublisher, error) {
 	if writer == nil {
-		return nil, errNilWriter
+		return nil, ErrNilWriter
 	}
 	if check.IfNil(blockCreator) {
-		return nil, errNilBlockCreator
+		return nil, ErrNilBlockCreator
 	}
 	if check.IfNil(marshaller) {
-		return nil, errNilMarshaller
+		return nil, ErrNilMarshaller
 	}
 
 	fp := &firehosePublisher{
@@ -60,6 +60,7 @@ func NewFirehosePublisher(
 	return fp, nil
 }
 
+// PublishHyperBlock will push aggregated outport block data to the firehose writer
 func (fp *firehosePublisher) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
 	outportBlock := hyperOutportBlock.MetaOutportBlock
 

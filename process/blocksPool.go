@@ -93,6 +93,7 @@ func (bp *blocksPool) prunePersister(round uint64) error {
 	return nil
 }
 
+// PutBlock will put the provided outport block data to the pool
 func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
@@ -159,6 +160,7 @@ func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.Outport
 	return nil
 }
 
+// GetBlock will return outport block data from the pool
 func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	data, err := bp.storer.Get(hash)
 	if err != nil {
@@ -174,6 +176,7 @@ func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	return outportBlock, nil
 }
 
+// IsInterfaceNil returns nil if there is no value under the interface
 func (bp *blocksPool) IsInterfaceNil() bool {
 	return bp == nil
 }
