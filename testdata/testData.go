@@ -98,7 +98,7 @@ func (bd *blockData) OutportMetaBlockV1() *outport.OutportBlock {
 }
 
 func (bd *blockData) OutportShardBlockV1() *outport.OutportBlock {
-	header := &block.MetaBlock{
+	header := &block.Header{
 		TimeStamp: 1234,
 	}
 	headerBytes, _ := bd.marshaller.Marshal(header)
