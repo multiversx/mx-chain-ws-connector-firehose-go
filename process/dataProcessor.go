@@ -37,6 +37,9 @@ func NewDataProcessor(
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
+	if check.IfNil(blockCreator) {
+		return nil, ErrNilBlockCreator
+	}
 
 	dp := &dataProcessor{
 		marshaller:     marshaller,
@@ -94,19 +97,12 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+	round, err := dp.getHeaderRound(hyperOutportBlock.MetaOutportBlock)
 	if err != nil {
 		return err
 	}
 
-	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
-	if err != nil {
-		return err
-	}
-
-	dp.blocksPool.UpdateMetaRound(header.GetRound())
-
-	log.Info("dataProcessor:", "hash", outportBlock.BlockData.HeaderHash, "round", header.GetRound())
+	dp.blocksPool.UpdateMetaRound(round)
 
 	return nil
 }
@@ -114,12 +110,31 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
 	blockHash := outportBlock.BlockData.HeaderHash
 
-	err := dp.blocksPool.PutBlock(blockHash, outportBlock)
+	round, err := dp.getHeaderRound(outportBlock)
+	if err != nil {
+		return err
+	}
+
+	err = dp.blocksPool.PutBlock(blockHash, outportBlock, round)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (dp *dataProcessor) getHeaderRound(outportBlock *outport.OutportBlock) (uint64, error) {
+	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+	if err != nil {
+		return 0, err
+	}
+
+	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+	if err != nil {
+		return 0, err
+	}
+
+	return header.GetRound(), nil
 }
 
 // Close will close the internal writer

@@ -3,6 +3,7 @@ package factory
 import (
 	"testing"
 
+	"github.com/multiversx/mx-chain-communication-go/websocket"
 	"github.com/multiversx/mx-chain-communication-go/websocket/data"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/stretchr/testify/require"
@@ -27,7 +28,7 @@ func TestCreateWSConnector(t *testing.T) {
 
 		cfg := createConfig()
 		cfg.MarshallerType = "invalid"
-		ws, err := CreateWSConnector(cfg)
+		ws, err := CreateWSConnector(cfg, websocket.NewNilPayloadHandler())
 		require.NotNil(t, err)
 		require.Nil(t, ws)
 	})
@@ -37,7 +38,7 @@ func TestCreateWSConnector(t *testing.T) {
 
 		cfg := createConfig()
 		cfg.RetryDuration = 0
-		ws, err := CreateWSConnector(cfg)
+		ws, err := CreateWSConnector(cfg, websocket.NewNilPayloadHandler())
 		require.NotNil(t, err)
 		require.Nil(t, ws)
 	})
@@ -46,7 +47,7 @@ func TestCreateWSConnector(t *testing.T) {
 		t.Parallel()
 
 		cfg := createConfig()
-		ws, err := CreateWSConnector(cfg)
+		ws, err := CreateWSConnector(cfg, websocket.NewNilPayloadHandler())
 		require.Nil(t, err)
 		require.NotNil(t, ws)
 
