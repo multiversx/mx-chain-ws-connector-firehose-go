@@ -6,17 +6,16 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
-	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/types"
 )
 
 type blocksPool struct {
-	storer       types.Storer
-	blockCreator BlockContainerHandler
-	marshaller   marshal.Marshalizer
-	maxDelta     uint64
+	storer      types.Storer
+	marshaller  marshal.Marshalizer
+	maxDelta    uint64
+	numOfShards uint32
 
 	roundsMap map[uint32]uint64
 	mutMap    sync.RWMutex
@@ -24,26 +23,30 @@ type blocksPool struct {
 
 func NewBlocksPool(
 	storer types.Storer,
-	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
+	numOfShards uint32,
+	maxDelta uint64,
 ) (*blocksPool, error) {
-	numberOfShards := uint32(3)
+	bp := &blocksPool{
+		storer:      storer,
+		marshaller:  marshaller,
+		maxDelta:    maxDelta,
+		numOfShards: numOfShards,
+	}
 
+	bp.initRoundsMap()
+
+	return bp, nil
+}
+
+func (bp *blocksPool) initRoundsMap() {
 	roundsMap := make(map[uint32]uint64)
-	for shardID := uint32(0); shardID < numberOfShards; shardID++ {
+	for shardID := uint32(0); shardID < bp.numOfShards; shardID++ {
 		roundsMap[shardID] = 0
 	}
 	roundsMap[core.MetachainShardId] = 0
 
-	bp := &blocksPool{
-		storer:       storer,
-		blockCreator: blockCreator,
-		roundsMap:    roundsMap,
-		marshaller:   marshaller,
-		maxDelta:     10,
-	}
-
-	return bp, nil
+	bp.roundsMap = roundsMap
 }
 
 func (bp *blocksPool) UpdateMetaRound(round uint64) {
@@ -63,38 +66,13 @@ func (bp *blocksPool) prunePersister(round uint64) error {
 		return nil
 	}
 
-	bp.storer.RangeKeys(func(key, val []byte) bool {
-		outportBlock := &outport.OutportBlock{}
-		err := bp.marshaller.Unmarshal(outportBlock, val)
-		if err != nil {
-			log.Error(err.Error())
-		}
-
-		blockCreator, err := bp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
-		if err != nil {
-			log.Error(err.Error())
-		}
-
-		header, err := block.GetHeaderFromBytes(bp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
-		if err != nil {
-			log.Error(err.Error())
-		}
-
-		if header.GetRound() < round {
-			err = bp.storer.Remove(key)
-			if err != nil {
-				log.Error(err.Error())
-			}
-		}
-
-		return true
-	})
+	// TODO: improve prune persister
 
 	return nil
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) error {
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, currentRound uint64) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
@@ -106,17 +84,17 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock) 
 	}
 
 	if round == 0 {
-		bp.putOutportBlock(hash, outportBlock)
+		bp.putOutportBlock(hash, outportBlock, currentRound)
 	}
 
 	metaRound := bp.roundsMap[core.MetachainShardId]
 
 	if !bp.shouldPutOutportBlock(round, metaRound) {
 		log.Error("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
-		return fmt.Errorf("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
+		return fmt.Errorf("failed to put outport block")
 	}
 
-	return bp.putOutportBlock(hash, outportBlock)
+	return bp.putOutportBlock(hash, outportBlock, currentRound)
 }
 
 // should be run under mutex
@@ -132,18 +110,12 @@ func (bp *blocksPool) shouldPutOutportBlock(round, metaRound uint64) bool {
 }
 
 // should be run under mutex
-func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.OutportBlock) error {
+func (bp *blocksPool) putOutportBlock(
+	hash []byte,
+	outportBlock *outport.OutportBlock,
+	currentRound uint64,
+) error {
 	shardID := outportBlock.ShardID
-
-	blockCreator, err := bp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
-	if err != nil {
-		return err
-	}
-
-	header, err := block.GetHeaderFromBytes(bp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
-	if err != nil {
-		return err
-	}
 
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
 	if err != nil {
@@ -155,7 +127,7 @@ func (bp *blocksPool) putOutportBlock(hash []byte, outportBlock *outport.Outport
 		return err
 	}
 
-	bp.roundsMap[shardID] = header.GetRound()
+	bp.roundsMap[shardID] = currentRound
 
 	return nil
 }

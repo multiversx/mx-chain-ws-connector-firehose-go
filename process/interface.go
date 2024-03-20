@@ -55,7 +55,7 @@ type DataAggregator interface {
 
 // BlocksPool defines the behaviour of a blocks pool handler component
 type BlocksPool interface {
-	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
+	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
 	UpdateMetaRound(round uint64)
 	IsInterfaceNil() bool
