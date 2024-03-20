@@ -38,10 +38,10 @@ func CreateWSConnector(cfg config.WebSocketConfig, dataProcessor websocket.Paylo
 func createWsHost(wsMarshaller marshal.Marshalizer, cfg config.WebSocketConfig) (factoryHost.FullDuplexHost, error) {
 	return factoryHost.CreateWebSocketHost(factoryHost.ArgsWebSocketHost{
 		WebSocketConfig: data.WebSocketConfig{
-			URL:                        cfg.Url,
+			URL:                        cfg.URL,
 			WithAcknowledge:            cfg.WithAcknowledge,
 			Mode:                       cfg.Mode,
-			RetryDurationInSec:         int(cfg.RetryDuration),
+			RetryDurationInSec:         int(cfg.RetryDurationInSec),
 			BlockingAckOnError:         cfg.BlockingAckOnError,
 			DropMessagesIfNoConnection: cfg.DropMessagesIfNoConnection,
 			AcknowledgeTimeoutInSec:    cfg.AcknowledgeTimeoutInSec,

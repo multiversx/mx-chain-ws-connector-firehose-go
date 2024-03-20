@@ -57,7 +57,7 @@ func CreateDataProcessor(cfg config.Config) (websocket.PayloadHandler, error) {
 		return nil, err
 	}
 
-	blocksPool, err := process.NewBlocksPool(storageUnit, protoMarshaller, cfg.DataPoolConfig.NumberOfShards, cfg.DataPoolConfig.MaxDelta)
+	blocksPool, err := process.NewBlocksPool(storageUnit, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta)
 	if err != nil {
 		return nil, err
 	}
