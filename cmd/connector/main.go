@@ -78,7 +78,7 @@ func startConnector(ctx *cli.Context) error {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
 
-	wsClient, err := factory.CreateWSConnector(cfg.WebSocketConfig, dataProcessor)
+	wsClient, err := factory.CreateWSConnector(cfg.WebSocket, dataProcessor)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose connector, error: %w", err)
 	}
