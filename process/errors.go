@@ -25,3 +25,6 @@ var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 
 // ErrWrongTypeAssertion signals that a type assertion faled
 var ErrWrongTypeAssertion = errors.New("type assertion failed")
+
+// ErrNotSupportedDBType signals that a not supported db type has been provided
+var ErrNotSupportedDBType = errors.New("not supported db type")

@@ -49,7 +49,7 @@ func (bp *blocksPool) initRoundsMap() {
 	bp.roundsMap = roundsMap
 }
 
-func (bp *blocksPool) UpdateMetaRound(round uint64) {
+func (bp *blocksPool) UpdateMetaState(round uint64) {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 

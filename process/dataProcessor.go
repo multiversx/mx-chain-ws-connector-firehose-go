@@ -102,7 +102,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	dp.blocksPool.UpdateMetaRound(round)
+	dp.blocksPool.UpdateMetaState(round)
 
 	return nil
 }
