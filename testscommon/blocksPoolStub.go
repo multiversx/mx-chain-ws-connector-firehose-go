@@ -4,8 +4,9 @@ import "github.com/multiversx/mx-chain-core-go/data/outport"
 
 // BlocksPoolStub -
 type BlocksPoolStub struct {
-	PutBlockCalled func(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
-	GetBlockCalled func(hash []byte) (*outport.OutportBlock, error)
+	PutBlockCalled        func(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
+	GetBlockCalled        func(hash []byte) (*outport.OutportBlock, error)
+	UpdateMetaStateCalled func(round uint64)
 }
 
 // PutBlock -
@@ -26,8 +27,11 @@ func (b *BlocksPoolStub) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	return &outport.OutportBlock{}, nil
 }
 
-// UpdateMetaRound -
-func (b *BlocksPoolStub) UpdateMetaRound(round uint64) {
+// UpdateMetaState -
+func (b *BlocksPoolStub) UpdateMetaState(round uint64) {
+	if b.UpdateMetaStateCalled != nil {
+		b.UpdateMetaStateCalled(round)
+	}
 }
 
 // IsInterfaceNil -

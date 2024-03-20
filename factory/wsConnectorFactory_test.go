@@ -11,9 +11,9 @@ import (
 
 func createConfig() config.WebSocketConfig {
 	return config.WebSocketConfig{
-		Url:                "localhost",
+		URL:                "localhost",
 		MarshallerType:     "json",
-		RetryDuration:      1,
+		RetryDurationInSec: 1,
 		WithAcknowledge:    false,
 		BlockingAckOnError: false,
 		Mode:               data.ModeClient,
@@ -37,7 +37,7 @@ func TestCreateWSConnector(t *testing.T) {
 		t.Parallel()
 
 		cfg := createConfig()
-		cfg.RetryDuration = 0
+		cfg.RetryDurationInSec = 0
 		ws, err := CreateWSConnector(cfg, websocket.NewNilPayloadHandler())
 		require.NotNil(t, err)
 		require.Nil(t, ws)
