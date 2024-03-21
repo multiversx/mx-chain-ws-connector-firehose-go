@@ -22,10 +22,17 @@ type pruningStorer struct {
 	numPersistersToKeep int
 }
 
-func NewPruningStorer(cfg config.DBConfig, numPersistersToKeep int) (*pruningStorer, error) {
+func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int) (*pruningStorer, error) {
+	if cfg.FilePath == "" {
+		return nil, ErrInvalidFilePath
+	}
+	if numPersistersToKeep < 1 {
+		return nil, ErrInvalidNumberOfPersisters
+	}
 
 	ps := &pruningStorer{
 		dbConf:              cfg,
+		cacher:              cacher,
 		numPersistersToKeep: numPersistersToKeep,
 	}
 
@@ -144,6 +151,7 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	ps.persistersMut.RLock()
 	defer ps.persistersMut.RUnlock()
 
+	// always put to last active persister
 	persisterToUse := ps.activePersisters[0]
 
 	err := persisterToUse.Put(key, data)
@@ -155,9 +163,40 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	return nil
 }
 
-func (ps *pruningStorer) DBChange(round uint64) error {
+func (ps *pruningStorer) DBChange(index uint64) error {
+	return ps.updateActivePersisters(index)
+}
+
+func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 	ps.persistersMut.Lock()
 	defer ps.persistersMut.Unlock()
+
+	basePath := ps.dbConf.FilePath
+	newPath := filepath.Join(basePath, fmt.Sprintf("%d", index))
+
+	newPersister, err := ps.createPersister(newPath)
+	if err != nil {
+		return err
+	}
+
+	numPersistersToKeep := ps.numPersistersToKeep
+	if len(ps.activePersisters) < numPersistersToKeep {
+		numPersistersToKeep = len(ps.activePersisters)
+	}
+	numPersistersToKeep--
+
+	if numPersistersToKeep < 1 {
+		numPersistersToKeep = 1
+	}
+
+	newActivePersisters := make([]types.Persister, 0)
+	for i := 0; i < numPersistersToKeep; i++ {
+		newActivePersisters = append(newActivePersisters, ps.activePersisters[i])
+	}
+
+	newActivePersisters = append([]types.Persister{newPersister}, newActivePersisters...)
+
+	ps.activePersisters = newActivePersisters
 
 	return nil
 }
