@@ -341,7 +341,7 @@ func TestPruningStorer_Put(t *testing.T) {
 	})
 }
 
-func TestPruningStorer_DBChange(t *testing.T) {
+func TestPruningStorer_Prune(t *testing.T) {
 	t.Parallel()
 
 	t.Run("with one already existing db", func(t *testing.T) {
@@ -372,7 +372,7 @@ func TestPruningStorer_DBChange(t *testing.T) {
 		persister4 := ps.GetActivePersisters()[0]
 		_ = persister4.Put([]byte("key4"), []byte("value4"))
 
-		err = ps.DBChange(5)
+		err = ps.Prune(5)
 		require.Nil(t, err)
 
 		// new persister will not have the data but the last one will have it
@@ -417,14 +417,21 @@ func TestPruningStorer_DBChange(t *testing.T) {
 		require.Equal(t, "3", filepath.Base(persistersPaths[1]))
 		require.Equal(t, "2", filepath.Base(persistersPaths[2]))
 
+		require.Equal(t, 4, len(persistersPaths))
+
 		persister4 := ps.GetActivePersisters()[0]
 		_ = persister4.Put([]byte("key4"), []byte("value4"))
 
 		persister3 := ps.GetActivePersisters()[1]
 		_ = persister3.Put([]byte("key3"), []byte("value3"))
 
-		err = ps.DBChange(5)
+		err = ps.Prune(5)
 		require.Nil(t, err)
+
+		persistersPaths, err = ps.GetPersisterPaths()
+		require.Nil(t, err)
+
+		require.Equal(t, numPersistersToKeep, len(persistersPaths))
 
 		// new persister will not have the data but the last one will have it
 		persister5 := ps.GetActivePersisters()[0]
