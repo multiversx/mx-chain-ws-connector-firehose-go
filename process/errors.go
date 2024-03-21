@@ -28,3 +28,9 @@ var ErrWrongTypeAssertion = errors.New("type assertion failed")
 
 // ErrNotSupportedDBType signals that a not supported db type has been provided
 var ErrNotSupportedDBType = errors.New("not supported db type")
+
+// ErrInvalidNumberOfPersisters signals that an invalid number of persisters has been provided
+var ErrInvalidNumberOfPersisters = errors.New("invalid number of persisters")
+
+// ErrInvalidFilePath signals that an invalid file path has been provided
+var ErrInvalidFilePath = errors.New("invalid file path provided")
