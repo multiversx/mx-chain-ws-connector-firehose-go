@@ -164,6 +164,7 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	return nil
 }
 
+// Prune will update active peristers list and will delete old persisters
 func (ps *pruningStorer) Prune(index uint64) error {
 	err := ps.updateActivePersisters(index)
 	if err != nil {

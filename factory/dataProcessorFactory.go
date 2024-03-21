@@ -7,7 +7,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-storage-go/leveldb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -42,22 +41,12 @@ func CreateDataProcessor(cfg config.Config) (websocket.PayloadHandler, error) {
 		return nil, err
 	}
 
-	persister, err := leveldb.NewDB(
-		cfg.OutportBlocksStorage.DB.FilePath,
-		cfg.OutportBlocksStorage.DB.BatchDelaySeconds,
-		cfg.OutportBlocksStorage.DB.MaxBatchSize,
-		cfg.OutportBlocksStorage.DB.MaxOpenFiles,
-	)
+	storer, err := process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep)
 	if err != nil {
 		return nil, err
 	}
 
-	storageUnit, err := storageUnit.NewStorageUnit(cacher, persister)
-	if err != nil {
-		return nil, err
-	}
-
-	blocksPool, err := process.NewBlocksPool(storageUnit, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta)
+	blocksPool, err := process.NewBlocksPool(storer, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
 	if err != nil {
 		return nil, err
 	}
