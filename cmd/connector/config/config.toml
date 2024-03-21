@@ -30,7 +30,13 @@
 
 [DataPool]
     NumberOfShards = 3
+
+    # Should be smaller then PruningWindow
     MaxDelta = 10
+    PruningWindow = 1000
+
+    # Defines the number of active persisters to keep open
+    NumPersistersToKeep = 2
 
 [OutportBlocksStorage]
     [OutportBlocksStorage.Cache]

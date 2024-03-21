@@ -60,3 +60,11 @@ type BlocksPool interface {
 	UpdateMetaState(round uint64)
 	IsInterfaceNil() bool
 }
+
+// PruningStorer defines the behaviour of a pruning storer component
+type PruningStorer interface {
+	Get(key []byte) ([]byte, error)
+	Put(key, data []byte) error
+	Prune(index uint64) error
+	IsInterfaceNil() bool
+}

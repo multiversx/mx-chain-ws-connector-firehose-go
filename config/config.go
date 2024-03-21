@@ -22,8 +22,10 @@ type WebSocketConfig struct {
 
 // DataPoolConfig will map data poil configuration
 type DataPoolConfig struct {
-	NumberOfShards uint32
-	MaxDelta       uint64
+	NumberOfShards      uint32
+	MaxDelta            uint64
+	PruningWindow       uint64
+	NumPersistersToKeep int
 }
 
 // StorageConfig will map the storage unit configuration

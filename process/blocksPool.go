@@ -8,30 +8,32 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-storage-go/types"
 )
 
 type blocksPool struct {
-	storer      types.Storer
-	marshaller  marshal.Marshalizer
-	maxDelta    uint64
-	numOfShards uint32
+	storer          PruningStorer
+	marshaller      marshal.Marshalizer
+	maxDelta        uint64
+	numOfShards     uint32
+	cleanupInterval uint64
 
 	roundsMap map[uint32]uint64
 	mutMap    sync.RWMutex
 }
 
 func NewBlocksPool(
-	storer types.Storer,
+	storer PruningStorer,
 	marshaller marshal.Marshalizer,
 	numOfShards uint32,
 	maxDelta uint64,
+	cleanupInterval uint64,
 ) (*blocksPool, error) {
 	bp := &blocksPool{
-		storer:      storer,
-		marshaller:  marshaller,
-		maxDelta:    maxDelta,
-		numOfShards: numOfShards,
+		storer:          storer,
+		marshaller:      marshaller,
+		maxDelta:        maxDelta,
+		numOfShards:     numOfShards,
+		cleanupInterval: cleanupInterval,
 	}
 
 	bp.initRoundsMap()
@@ -62,13 +64,11 @@ func (bp *blocksPool) UpdateMetaState(round uint64) {
 }
 
 func (bp *blocksPool) prunePersister(round uint64) error {
-	if round%10 != 0 {
+	if round%bp.cleanupInterval != 0 {
 		return nil
 	}
 
-	// TODO: improve prune persister
-
-	return nil
+	return bp.storer.Prune(round)
 }
 
 // PutBlock will put the provided outport block data to the pool
