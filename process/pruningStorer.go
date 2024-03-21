@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -163,8 +164,45 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	return nil
 }
 
-func (ps *pruningStorer) DBChange(index uint64) error {
-	return ps.updateActivePersisters(index)
+func (ps *pruningStorer) Prune(index uint64) error {
+	err := ps.updateActivePersisters(index)
+	if err != nil {
+		return err
+	}
+
+	return ps.cleanupOldPersisters()
+}
+
+func (ps *pruningStorer) cleanupOldPersisters() error {
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
+
+	numPersistersToKeep := ps.numPersistersToKeep
+	if len(ps.activePersisters) > ps.numPersistersToKeep {
+		numPersistersToKeep = len(ps.activePersisters)
+	}
+
+	persistersPaths, err := ps.getPersisterPaths()
+	if err != nil {
+		return err
+	}
+
+	if len(persistersPaths) <= numPersistersToKeep {
+		// should not remove old persisters
+		return nil
+	}
+
+	persistersPathsToRemove := persistersPaths[numPersistersToKeep:]
+
+	for _, path := range persistersPathsToRemove {
+		err := os.RemoveAll(path)
+		if err != nil {
+			log.Warn("failed to remove db dir", "path", path)
+			continue
+		}
+	}
+
+	return nil
 }
 
 func (ps *pruningStorer) updateActivePersisters(index uint64) error {
@@ -179,6 +217,30 @@ func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 		return err
 	}
 
+	// numTmpPersistersToKeep := ps.getTmpNumPersistersToKeep()
+	numTmpPersistersToKeep := ps.getTmpNumPersistersToKeep()
+
+	newActivePersisters := make([]types.Persister, 0)
+	for i := 0; i < numTmpPersistersToKeep; i++ {
+		newActivePersisters = append(newActivePersisters, ps.activePersisters[i])
+	}
+
+	newActivePersisters = append([]types.Persister{newPersister}, newActivePersisters...)
+
+	if len(ps.activePersisters) >= ps.numPersistersToKeep {
+		inactivePersister := ps.activePersisters[len(ps.activePersisters)-1]
+		err = inactivePersister.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	ps.activePersisters = newActivePersisters
+
+	return nil
+}
+
+func (ps *pruningStorer) getTmpNumPersistersToKeep() int {
 	numPersistersToKeep := ps.numPersistersToKeep
 	if len(ps.activePersisters) < numPersistersToKeep {
 		numPersistersToKeep = len(ps.activePersisters)
@@ -189,16 +251,7 @@ func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 		numPersistersToKeep = 1
 	}
 
-	newActivePersisters := make([]types.Persister, 0)
-	for i := 0; i < numPersistersToKeep; i++ {
-		newActivePersisters = append(newActivePersisters, ps.activePersisters[i])
-	}
-
-	newActivePersisters = append([]types.Persister{newPersister}, newActivePersisters...)
-
-	ps.activePersisters = newActivePersisters
-
-	return nil
+	return numPersistersToKeep
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
