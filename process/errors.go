@@ -34,3 +34,6 @@ var ErrInvalidNumberOfPersisters = errors.New("invalid number of persisters")
 
 // ErrInvalidFilePath signals that an invalid file path has been provided
 var ErrInvalidFilePath = errors.New("invalid file path provided")
+
+// ErrNilPruningStorer signals that a nil pruning storer was provide
+var ErrNilPruningStorer = errors.New("nil pruning storer")

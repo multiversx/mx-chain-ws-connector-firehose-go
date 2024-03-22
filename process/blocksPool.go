@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 )
@@ -28,6 +29,13 @@ func NewBlocksPool(
 	maxDelta uint64,
 	cleanupInterval uint64,
 ) (*blocksPool, error) {
+	if check.IfNil(storer) {
+		return nil, ErrNilPruningStorer
+	}
+	if check.IfNil(marshaller) {
+		return nil, ErrNilMarshaller
+	}
+
 	bp := &blocksPool{
 		storer:          storer,
 		marshaller:      marshaller,
@@ -84,7 +92,7 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 	}
 
 	if round == 0 {
-		bp.putOutportBlock(hash, outportBlock, currentRound)
+		return bp.putOutportBlock(hash, outportBlock, currentRound)
 	}
 
 	metaRound := bp.roundsMap[core.MetachainShardId]
@@ -136,7 +144,7 @@ func (bp *blocksPool) putOutportBlock(
 func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	data, err := bp.storer.Get(hash)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data from pool")
+		return nil, err
 	}
 
 	outportBlock := &outport.OutportBlock{}
