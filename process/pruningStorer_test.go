@@ -93,7 +93,7 @@ func TestNewPruningStorer(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -118,9 +118,9 @@ func TestNewPruningStorer(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -145,10 +145,10 @@ func TestPruningStorer_getPersisterPaths(t *testing.T) {
 
 	tmpPath := t.TempDir()
 
-	os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
-	os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
-	os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
-	os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
 
 	dbConfig := config.DBConfig{
 		FilePath:          tmpPath,
@@ -179,8 +179,8 @@ func TestPruningStorer_Get(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -212,8 +212,8 @@ func TestPruningStorer_Get(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -257,8 +257,8 @@ func TestPruningStorer_Get(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -299,8 +299,8 @@ func TestPruningStorer_Put(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -349,7 +349,7 @@ func TestPruningStorer_Prune(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,
@@ -392,10 +392,10 @@ func TestPruningStorer_Prune(t *testing.T) {
 
 		tmpPath := t.TempDir()
 
-		os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
-		os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "1"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "2"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+		_ = os.MkdirAll(filepath.Join(tmpPath, "3"), os.ModePerm)
 
 		dbConfig := config.DBConfig{
 			FilePath:          tmpPath,

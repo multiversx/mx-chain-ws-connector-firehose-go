@@ -11,11 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testStruct struct {
-	s    string
-	a, b int
-}
-
 func TestNewBlocksPool(t *testing.T) {
 	t.Parallel()
 
