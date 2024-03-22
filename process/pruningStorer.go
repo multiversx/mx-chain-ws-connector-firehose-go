@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-storage-go/leveldb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-storage-go/types"
@@ -23,7 +24,11 @@ type pruningStorer struct {
 	numPersistersToKeep int
 }
 
+// NewPruningStorer will create a new instance of pruning storer
 func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int) (*pruningStorer, error) {
+	if check.IfNil(cacher) {
+		return nil, ErrNilCacher
+	}
 	if cfg.FilePath == "" {
 		return nil, ErrInvalidFilePath
 	}
@@ -121,6 +126,7 @@ func reverseSlice(s []string) []string {
 	return s
 }
 
+// Get will get data from cacher or storer
 func (ps *pruningStorer) Get(key []byte) ([]byte, error) {
 	v, ok := ps.cacher.Get(key)
 	if ok {
@@ -146,6 +152,7 @@ func (ps *pruningStorer) Get(key []byte) ([]byte, error) {
 	return nil, fmt.Errorf("key %s not found", hex.EncodeToString(key))
 }
 
+// Put will try to put data to cacher and storer
 func (ps *pruningStorer) Put(key, data []byte) error {
 	ps.cacher.Put(key, data, len(data))
 

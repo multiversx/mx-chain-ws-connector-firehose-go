@@ -37,3 +37,6 @@ var ErrInvalidFilePath = errors.New("invalid file path provided")
 
 // ErrNilPruningStorer signals that a nil pruning storer was provide
 var ErrNilPruningStorer = errors.New("nil pruning storer")
+
+// ErrNilCacher signals that a nil cacher was provided
+var ErrNilCacher = errors.New("nil cacher")

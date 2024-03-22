@@ -36,6 +36,7 @@ func main() {
 		logLevel,
 		logSaveFile,
 		disableAnsiColor,
+		importDBMode,
 	}
 	app.Authors = []cli.Author{
 		{
@@ -73,7 +74,9 @@ func startConnector(ctx *cli.Context) error {
 		}
 	}
 
-	dataProcessor, err := factory.CreateDataProcessor(cfg)
+	importDBMode := ctx.GlobalBool(importDBMode.Name)
+
+	dataProcessor, err := factory.CreateDataProcessor(cfg, importDBMode)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
