@@ -92,6 +92,11 @@ func (ps *pruningStorer) createPersister(path string) (types.Persister, error) {
 func (ps *pruningStorer) getPersisterPaths() ([]string, error) {
 	basePath := ps.dbConf.FilePath
 
+	err := createDirIfNotExisting(basePath)
+	if err != nil {
+		return nil, err
+	}
+
 	files, err := ioutil.ReadDir(basePath)
 	if err != nil {
 		return nil, err
@@ -116,6 +121,28 @@ func (ps *pruningStorer) getPersisterPaths() ([]string, error) {
 	}
 
 	return persistersPaths, nil
+}
+
+func createDirIfNotExisting(path string) error {
+	err := os.Mkdir(path, os.ModePerm)
+	if err == nil {
+		return nil
+	}
+
+	if !os.IsExist(err) {
+		return err
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("path exists but is not a directory")
+	}
+
+	return nil
 }
 
 func reverseSlice(s []string) []string {
