@@ -6,6 +6,7 @@ type PruningStorerStub struct {
 	PutCalled   func(key []byte, data []byte) error
 	PruneCalled func(index uint64) error
 	DumpCalled  func() error
+	CloseCalled func() error
 }
 
 // Get -
@@ -39,6 +40,15 @@ func (p *PruningStorerStub) Prune(index uint64) error {
 func (p *PruningStorerStub) Dump() error {
 	if p.DumpCalled != nil {
 		return p.DumpCalled()
+	}
+
+	return nil
+}
+
+// Close -
+func (p *PruningStorerStub) Close() error {
+	if p.CloseCalled != nil {
+		return p.CloseCalled()
 	}
 
 	return nil
