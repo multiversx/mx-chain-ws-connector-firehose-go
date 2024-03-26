@@ -49,6 +49,11 @@ func (is *importDBStorer) Dump() error {
 	return nil
 }
 
+// Close will close cacher component
+func (is *importDBStorer) Close() error {
+	return is.cacher.Close()
+}
+
 // IsInterfaceNil returns nil if there is no value under the interface
 func (is *importDBStorer) IsInterfaceNil() bool {
 	return is == nil

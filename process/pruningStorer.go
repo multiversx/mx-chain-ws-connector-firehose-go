@@ -326,6 +326,34 @@ func (ps *pruningStorer) getTmpNumPersistersToKeep() int {
 	return numPersistersToKeep
 }
 
+// Close will dump cache data to persister and it will
+// close cacher and persister components
+func (ps *pruningStorer) Close() error {
+	err := ps.dumpDataToPersister()
+	if err != nil {
+		return err
+	}
+
+	err = ps.cacher.Close()
+	if err != nil {
+		return err
+	}
+
+	var persistersErrClose bool
+	for idx := 0; idx < len(ps.activePersisters); idx++ {
+		err = ps.activePersisters[idx].Close()
+		if err != nil {
+			persistersErrClose = true
+		}
+	}
+
+	if persistersErrClose {
+		return fmt.Errorf("failed to close active persisters")
+	}
+
+	return nil
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (ps *pruningStorer) IsInterfaceNil() bool {
 	return ps == nil
