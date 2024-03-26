@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -12,11 +10,11 @@ import (
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/connector"
 	"github.com/urfave/cli"
 )
 
-var log = logger.GetOrCreate("mx-chain-ws-connector-template-go")
+var log = logger.GetOrCreate("main")
 
 const (
 	configPath = "config/config.toml"
@@ -76,37 +74,27 @@ func startConnector(ctx *cli.Context) error {
 
 	importDBMode := ctx.GlobalBool(importDBMode.Name)
 
-	dataProcessor, err := factory.CreateDataProcessor(cfg, importDBMode)
+	connectorRunner, err := connector.NewConnectorRunner(cfg, importDBMode)
 	if err != nil {
-		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
+		return fmt.Errorf("cannot create connector runner, error: %w", err)
 	}
 
-	wsClient, err := factory.CreateWSConnector(cfg.WebSocket, dataProcessor)
+	connectorRunner.Start()
 	if err != nil {
-		return fmt.Errorf("cannot create ws firehose connector, error: %w", err)
+		return err
 	}
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
-
-	log.Info("starting ws client...")
-
-	<-interrupt
-	log.Info("closing app at user's signal")
-
-	err = wsClient.Close()
-	log.LogIfError(err)
 
 	if withLogFile {
 		err = logFile.Close()
 		log.LogIfError(err)
 	}
+
 	return nil
 }
 
-func loadConfig(filepath string) (config.Config, error) {
-	cfg := config.Config{}
-	err := core.LoadTomlFile(&cfg, filepath)
+func loadConfig(filepath string) (*config.Config, error) {
+	cfg := &config.Config{}
+	err := core.LoadTomlFile(cfg, filepath)
 
 	log.Info("loaded config", "path", configPath)
 

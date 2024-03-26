@@ -13,7 +13,7 @@ import (
 )
 
 // CreateDataProcessor will create a new instance of data processor
-func CreateDataProcessor(cfg config.Config, importDBMode bool) (websocket.PayloadHandler, error) {
+func CreateDataProcessor(cfg config.Config, storer process.PruningStorer) (websocket.PayloadHandler, error) {
 	protoMarshaller := &marshal.GogoProtoMarshalizer{}
 
 	blockContainer, err := createBlockContainer()
@@ -26,11 +26,6 @@ func CreateDataProcessor(cfg config.Config, importDBMode bool) (websocket.Payloa
 		blockContainer,
 		protoMarshaller,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	storer, err := createStorer(cfg, importDBMode)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +62,8 @@ func createBlockContainer() (process.BlockContainerHandler, error) {
 	return container, nil
 }
 
-func createStorer(cfg config.Config, importDBMode bool) (process.PruningStorer, error) {
+// CreateStorer will create a new pruning storer instace
+func CreateStorer(cfg config.Config, importDBMode bool) (process.PruningStorer, error) {
 	cacheConfig := storageUnit.CacheConfig{
 		Type:        storageUnit.CacheType(cfg.OutportBlocksStorage.Cache.Type),
 		SizeInBytes: cfg.OutportBlocksStorage.Cache.SizeInBytes,
