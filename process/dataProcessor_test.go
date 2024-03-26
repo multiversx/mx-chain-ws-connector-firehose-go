@@ -60,6 +60,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilPublisher, err)
@@ -73,6 +74,7 @@ func TestNewDataProcessor(t *testing.T) {
 			nil,
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilMarshaller, err)
@@ -86,6 +88,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			nil,
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilBlocksPool, err)
@@ -99,6 +102,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.BlocksPoolStub{},
 			nil,
+			createContainer(),
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilDataAggregator, err)
@@ -112,6 +116,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 		require.Nil(t, err)
 		require.False(t, dp.IsInterfaceNil())
@@ -126,6 +131,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 		&testscommon.MarshallerStub{},
 		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
+		createContainer(),
 	)
 
 	require.Nil(t, dp.ProcessPayload([]byte("payload"), "random topic", 1))
@@ -147,6 +153,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			protoMarshaller,
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 
 		err := dp.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
@@ -168,6 +175,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			protoMarshaller,
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 
 		err := dp.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
@@ -185,12 +193,13 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.PublisherStub{},
 			protoMarshaller,
 			&testscommon.BlocksPoolStub{
-				PutBlockCalled: func(hash []byte, outportBlock *outportcore.OutportBlock) error {
+				PutBlockCalled: func(hash []byte, outportBlock *outportcore.OutportBlock, round uint64) error {
 					putBlockWasCalled = true
 					return nil
 				},
 			},
 			&testscommon.DataAggregatorStub{},
+			createContainer(),
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -222,6 +231,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 					}, nil
 				},
 			},
+			createContainer(),
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -245,6 +255,7 @@ func TestDataProcessor_Close(t *testing.T) {
 		&testscommon.MarshallerStub{},
 		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
+		createContainer(),
 	)
 	require.Nil(t, err)
 

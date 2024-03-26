@@ -3,6 +3,7 @@ package process
 import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 )
@@ -13,6 +14,7 @@ type dataProcessor struct {
 	publisher         Publisher
 	blocksPool        BlocksPool
 	dataAggregator    DataAggregator
+	blockCreator      BlockContainerHandler
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -21,6 +23,7 @@ func NewDataProcessor(
 	marshaller marshal.Marshalizer,
 	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
+	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
 	if publisher == nil {
 		return nil, ErrNilPublisher
@@ -34,12 +37,16 @@ func NewDataProcessor(
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
+	if check.IfNil(blockCreator) {
+		return nil, ErrNilBlockCreator
+	}
 
 	dp := &dataProcessor{
 		marshaller:     marshaller,
 		publisher:      publisher,
 		blocksPool:     blocksPool,
 		dataAggregator: dataAggregator,
+		blockCreator:   blockCreator,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -90,18 +97,44 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
+	round, err := dp.getHeaderRound(hyperOutportBlock.MetaOutportBlock)
+	if err != nil {
+		return err
+	}
+
+	dp.blocksPool.UpdateMetaState(round)
+
 	return nil
 }
 
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
 	blockHash := outportBlock.BlockData.HeaderHash
 
-	err := dp.blocksPool.PutBlock(blockHash, outportBlock)
+	round, err := dp.getHeaderRound(outportBlock)
+	if err != nil {
+		return err
+	}
+
+	err = dp.blocksPool.PutBlock(blockHash, outportBlock, round)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (dp *dataProcessor) getHeaderRound(outportBlock *outport.OutportBlock) (uint64, error) {
+	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+	if err != nil {
+		return 0, err
+	}
+
+	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+	if err != nil {
+		return 0, err
+	}
+
+	return header.GetRound(), nil
 }
 
 // Close will close the internal writer

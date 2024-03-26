@@ -55,7 +55,18 @@ type DataAggregator interface {
 
 // BlocksPool defines the behaviour of a blocks pool handler component
 type BlocksPool interface {
-	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
+	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
+	UpdateMetaState(round uint64)
+	IsInterfaceNil() bool
+}
+
+// PruningStorer defines the behaviour of a pruning storer component
+type PruningStorer interface {
+	Get(key []byte) ([]byte, error)
+	Put(key, data []byte) error
+	Prune(index uint64) error
+	Dump() error
+	Close() error
 	IsInterfaceNil() bool
 }

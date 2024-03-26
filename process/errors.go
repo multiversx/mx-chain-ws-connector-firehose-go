@@ -25,3 +25,18 @@ var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 
 // ErrWrongTypeAssertion signals that a type assertion faled
 var ErrWrongTypeAssertion = errors.New("type assertion failed")
+
+// ErrNotSupportedDBType signals that a not supported db type has been provided
+var ErrNotSupportedDBType = errors.New("not supported db type")
+
+// ErrInvalidNumberOfPersisters signals that an invalid number of persisters has been provided
+var ErrInvalidNumberOfPersisters = errors.New("invalid number of persisters")
+
+// ErrInvalidFilePath signals that an invalid file path has been provided
+var ErrInvalidFilePath = errors.New("invalid file path provided")
+
+// ErrNilPruningStorer signals that a nil pruning storer was provide
+var ErrNilPruningStorer = errors.New("nil pruning storer")
+
+// ErrNilCacher signals that a nil cacher was provided
+var ErrNilCacher = errors.New("nil cacher")

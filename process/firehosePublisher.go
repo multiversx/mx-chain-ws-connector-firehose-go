@@ -13,7 +13,7 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
-var log = logger.GetOrCreate("firehose")
+var log = logger.GetOrCreate("process")
 
 const (
 	firehosePrefix = "FIRE"
