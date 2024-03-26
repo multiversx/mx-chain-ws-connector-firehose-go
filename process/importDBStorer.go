@@ -44,6 +44,11 @@ func (is *importDBStorer) Prune(_ uint64) error {
 	return nil
 }
 
+// Dump returns nil
+func (is *importDBStorer) Dump() error {
+	return nil
+}
+
 // IsInterfaceNil returns nil if there is no value under the interface
 func (is *importDBStorer) IsInterfaceNil() bool {
 	return is == nil

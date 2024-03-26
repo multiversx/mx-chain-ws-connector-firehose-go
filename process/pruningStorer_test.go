@@ -223,16 +223,7 @@ func TestPruningStorer_Get(t *testing.T) {
 			MaxOpenFiles:      10,
 		}
 
-		putCalled := false
-		cacher := &testscommon.CacherStub{
-			GetCalled: func(key []byte) (value interface{}, ok bool) {
-				return nil, false
-			},
-			PutCalled: func(key []byte, value interface{}, sizeInBytes int) (evicted bool) {
-				putCalled = true
-				return true
-			},
-		}
+		cacher := testscommon.NewCacherMock()
 
 		numPersistersToKeep := 2
 		ps, err := process.NewPruningStorer(dbConfig, cacher, numPersistersToKeep)
@@ -245,11 +236,13 @@ func TestPruningStorer_Get(t *testing.T) {
 		err = ps.Put(key, value)
 		require.Nil(t, err)
 
+		err = ps.Dump()
+		require.Nil(t, err)
+
 		ret, err := ps.Get(key)
 		require.Nil(t, err)
 
 		require.Equal(t, value, ret)
-		require.True(t, putCalled)
 	})
 
 	t.Run("should fail if not found in persisters", func(t *testing.T) {
@@ -333,6 +326,9 @@ func TestPruningStorer_Put(t *testing.T) {
 		require.Error(t, err)
 
 		err = ps.Put(key, value)
+		require.Nil(t, err)
+
+		err = ps.Dump()
 		require.Nil(t, err)
 
 		ret, err := persister4.Get(key)
