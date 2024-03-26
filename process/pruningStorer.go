@@ -160,6 +160,10 @@ func (ps *pruningStorer) Get(key []byte) ([]byte, error) {
 		return v.([]byte), nil
 	}
 
+	return ps.getFromPersister(key)
+}
+
+func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 	ps.persistersMut.RLock()
 	defer ps.persistersMut.RUnlock()
 
@@ -183,6 +187,10 @@ func (ps *pruningStorer) Get(key []byte) ([]byte, error) {
 func (ps *pruningStorer) Put(key, data []byte) error {
 	ps.cacher.Put(key, data, len(data))
 
+	return nil
+}
+
+func (ps *pruningStorer) putInPersister(key, data []byte) error {
 	ps.persistersMut.RLock()
 	defer ps.persistersMut.RUnlock()
 
@@ -193,6 +201,35 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	if err != nil {
 		ps.cacher.Remove(key)
 		return err
+	}
+
+	return nil
+}
+
+// Dump will dump cached data to persister
+func (ps *pruningStorer) Dump() error {
+	return ps.dumpDataToPersister()
+}
+
+func (ps *pruningStorer) dumpDataToPersister() error {
+	cacherKeys := ps.cacher.Keys()
+
+	for _, key := range cacherKeys {
+		v, ok := ps.cacher.Get(key)
+		if !ok {
+			log.Warn("failed to get key from cache", "key", hex.EncodeToString(key))
+		}
+
+		data, ok := v.([]byte)
+		if !ok {
+			log.Warn("failed to convert to byte array")
+			continue
+		}
+
+		err := ps.putInPersister(key, data)
+		if err != nil {
+			log.Error("failed to dump data to persister", "key", hex.EncodeToString(key))
+		}
 	}
 
 	return nil

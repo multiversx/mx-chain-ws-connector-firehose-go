@@ -5,6 +5,7 @@ type PruningStorerStub struct {
 	GetCalled   func(key []byte) ([]byte, error)
 	PutCalled   func(key []byte, data []byte) error
 	PruneCalled func(index uint64) error
+	DumpCalled  func() error
 }
 
 // Get -
@@ -29,6 +30,15 @@ func (p *PruningStorerStub) Put(key []byte, data []byte) error {
 func (p *PruningStorerStub) Prune(index uint64) error {
 	if p.PruneCalled != nil {
 		return p.PruneCalled(index)
+	}
+
+	return nil
+}
+
+// Dump -
+func (p *PruningStorerStub) Dump() error {
+	if p.DumpCalled != nil {
+		return p.DumpCalled()
 	}
 
 	return nil
