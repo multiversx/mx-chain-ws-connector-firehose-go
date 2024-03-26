@@ -6,6 +6,10 @@ import (
 )
 
 var (
+	configFile = cli.StringFlag{
+		Name:  "config",
+		Usage: "This flag specifies the config.toml to be used for connecting to the node.",
+	}
 	logLevel = cli.StringFlag{
 		Name: "log-level",
 		Usage: "This flag specifies the logger `level(s)`. It can contain multiple comma-separated value. For example" +
