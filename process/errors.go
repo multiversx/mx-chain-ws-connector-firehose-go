@@ -25,3 +25,6 @@ var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 
 // ErrWrongTypeAssertion signals that a type assertion faled
 var ErrWrongTypeAssertion = errors.New("type assertion failed")
+
+// ErrInvalidOutportBlock signals that an invalid outport block was provided
+var ErrInvalidOutportBlock = errors.New("invalid outport block provided")

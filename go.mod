@@ -5,9 +5,9 @@ go 1.20
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/multiversx/mx-chain-communication-go v1.0.12
-	github.com/multiversx/mx-chain-core-go v1.2.19-0.20240129082057-a76d0c995cf2
-	github.com/multiversx/mx-chain-logger-go v1.0.14-0.20240129144507-d00e967c890c
-	github.com/multiversx/mx-chain-storage-go v1.0.15-0.20240129144933-b1c0d642d7f8
+	github.com/multiversx/mx-chain-core-go v1.2.19
+	github.com/multiversx/mx-chain-logger-go v1.0.14
+	github.com/multiversx/mx-chain-storage-go v1.0.15
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
 )
@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiversx/concurrent-map v0.1.4 // indirect
-	github.com/multiversx/mx-chain-crypto-go v1.2.10-0.20231206065052-38843c1f1479 // indirect
+	github.com/multiversx/mx-chain-crypto-go v1.2.9 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
