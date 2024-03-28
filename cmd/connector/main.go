@@ -21,8 +21,6 @@ import (
 var log = logger.GetOrCreate("mx-chain-ws-connector-template-go")
 
 const (
-	defaultConfigPath = "./config/config.toml"
-
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
 	logLifeSpanSec = 432000 // 5 days
@@ -58,9 +56,6 @@ func main() {
 
 func startConnector(ctx *cli.Context) error {
 	configFilePath := ctx.GlobalString(configFile.Name)
-	if configFilePath == "" {
-		configFilePath = defaultConfigPath
-	}
 
 	absoluteConfigPath, err := filepath.Abs(configFilePath)
 	if err != nil {

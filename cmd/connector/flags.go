@@ -5,10 +5,15 @@ import (
 	"github.com/urfave/cli"
 )
 
+const (
+	defaultConfigPath = "./config/config.toml"
+)
+
 var (
 	configFile = cli.StringFlag{
 		Name:  "config",
 		Usage: "This flag specifies the config.toml to be used for connecting to the node.",
+		Value: defaultConfigPath,
 	}
 	logLevel = cli.StringFlag{
 		Name: "log-level",
