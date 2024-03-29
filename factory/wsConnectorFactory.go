@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-core-go/marshal/factory"
 	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -30,11 +31,41 @@ func CreateWSConnector(cfg config.WebSocketConfig) (process.WSConnector, error) 
 		return nil, err
 	}
 
-	dataProcessor, err := process.NewFirehoseDataProcessor(
+	protoMarshaller := &marshal.GogoProtoMarshalizer{}
+
+	firehosePublisher, err := process.NewFirehosePublisher(
 		os.Stdout, // DO NOT CHANGE
 		blockContainer,
-		&marshal.GogoProtoMarshalizer{}, // DO NOT CHANGE
+		protoMarshaller,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: move cache to config
+	cacheConfig := storageUnit.CacheConfig{
+		Type:        storageUnit.SizeLRUCache,
+		SizeInBytes: 209715200, // 200MB
+		Capacity:    100,
+	}
+
+	cacher, err := storageUnit.NewCache(cacheConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	blocksPool, err := process.NewBlocksPool(cacher)
+	if err != nil {
+		return nil, err
+	}
+
+	dataAggregator, err := process.NewDataAggregator(blocksPool)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: move to separate factory
+	dataProcessor, err := process.NewDataProcessor(firehosePublisher, protoMarshaller, blocksPool, dataAggregator)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,8 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
+	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 // WSConnector defines a ws connector that receives incoming data and can be closed
@@ -36,4 +38,25 @@ type BlockContainerHandler interface {
 type Writer interface {
 	io.Writer
 	Close() error
+}
+
+// Publisher defines the behaviour of an aggregated outport block publisher component
+type Publisher interface {
+	PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// DataAggregator defines the behaviour of a component that is able to aggregate outport
+// block data for shards
+type DataAggregator interface {
+	ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error)
+	IsInterfaceNil() bool
+}
+
+// BlocksPool defines the behaviour of a blocks pool handler component
+type BlocksPool interface {
+	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
+	GetBlock(hash []byte) (*outport.OutportBlock, error)
+	IsInterfaceNil() bool
 }
