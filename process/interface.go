@@ -44,6 +44,7 @@ type Writer interface {
 type Publisher interface {
 	PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error
 	Close() error
+	IsInterfaceNil() bool
 }
 
 // DataAggregator defines the behaviour of a component that is able to aggregate outport

@@ -145,7 +145,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 func TestDataProcessor_ProcessPayload(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil outport block, should return error", func(t *testing.T) {
+	t.Run("nil outport block data, should return error", func(t *testing.T) {
 		t.Parallel()
 
 		dp, _ := process.NewDataProcessor(

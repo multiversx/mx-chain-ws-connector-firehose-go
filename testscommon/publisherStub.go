@@ -25,3 +25,8 @@ func (p *PublisherStub) Close() error {
 
 	return nil
 }
+
+// IsInterfaceNil -
+func (p *PublisherStub) IsInterfaceNil() bool {
+	return p == nil
+}

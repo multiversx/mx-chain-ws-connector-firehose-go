@@ -3,6 +3,7 @@ package process
 import (
 	"encoding/hex"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
@@ -28,6 +29,10 @@ func NewDataAggregator(
 // ProcessHyperBlock will process meta outport block. It will try to fetch and aggregate
 // notarized shards data
 func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error) {
+	if outportBlock.ShardID != core.MetachainShardId {
+		return nil, ErrInvalidOutportBlock
+	}
+
 	hyperOutportBlock := &data.HyperOutportBlock{}
 	hyperOutportBlock.MetaOutportBlock = outportBlock
 

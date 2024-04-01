@@ -25,7 +25,7 @@ func NewDataProcessor(
 	dataAggregator DataAggregator,
 	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
-	if publisher == nil {
+	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
 	}
 	if check.IfNil(blocksPool) {
