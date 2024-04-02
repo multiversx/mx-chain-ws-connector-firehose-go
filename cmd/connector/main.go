@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,12 +16,13 @@ import (
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/server"
 )
 
 var log = logger.GetOrCreate("mx-chain-ws-connector-template-go")
 
 const (
-	configPath = "cmd/connector/config/config.toml"
+	configPath = "config/config.toml"
 
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
@@ -74,14 +76,17 @@ func startConnector(ctx *cli.Context) error {
 		}
 	}
 
-	//wsClient, err := factory.CreateWSConnector(cfg.WebSocketConfig)
-	//if err != nil {
-	//	return fmt.Errorf("cannot create ws firehose connector, error: %w", err)
-	//}
-
-	grpcServer, err := factory.CreateGRPCServer(cfg.GRPCConfig)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9090))
 	if err != nil {
-		return fmt.Errorf("cannot create grpc server, error: %w", err)
+		log.Error("failed to listen: %v", err)
+	}
+
+	s := server.New()
+	go s.Start(lis)
+
+	wsClient, err := factory.CreateWSConnector(cfg.WebSocketConfig)
+	if err != nil {
+		return fmt.Errorf("cannot create ws firehose connector, error: %w", err)
 	}
 
 	interrupt := make(chan os.Signal, 1)
@@ -92,9 +97,7 @@ func startConnector(ctx *cli.Context) error {
 	<-interrupt
 	log.Info("closing app at user's signal")
 
-	grpcServer.Stop()
-
-	//err = wsClient.Close()
+	err = wsClient.Close()
 	log.LogIfError(err)
 
 	if withLogFile {
