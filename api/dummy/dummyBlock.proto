@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package proto;
+
+//import "google/protobuf/empty.proto";
+
+option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/dummy";
+
+message Block {
+  string hash = 1;
+  uint32 nonce = 2;
+}
+
+message BlockHashRequest {
+  string hash = 1;
+}
+
+message BlockNonceRequest {
+  uint32 nonce = 1;
+}
+
+service BlockService {
+  rpc GetBlockByHash(BlockHashRequest) returns (Block) {}
+  rpc GetBlockByNonce(BlockNonceRequest) returns (Block) {}
+//  rpc GetBlocks(google.protobuf.Empty) returns (stream Block) {}
+}
+
