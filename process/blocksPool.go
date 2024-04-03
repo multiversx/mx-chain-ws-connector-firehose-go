@@ -65,7 +65,12 @@ func (bp *blocksPool) UpdateMetaState(round uint64) {
 
 	bp.roundsMap[core.MetachainShardId] = round
 
-	err := bp.prunePersister(round)
+	err := bp.storer.SetCheckpoint(round)
+	if err != nil {
+		log.Warn("failed to set checkpoint", "error", err.Error())
+	}
+
+	err = bp.prunePersister(round)
 	if err != nil {
 		log.Warn("failed to prune persister", "error", err.Error())
 	}
@@ -154,6 +159,16 @@ func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	}
 
 	return outportBlock, nil
+}
+
+// Close will trigger close on blocks pool component
+func (bp *blocksPool) Close() error {
+	err := bp.storer.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface

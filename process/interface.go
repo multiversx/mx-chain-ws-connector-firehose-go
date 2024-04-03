@@ -68,6 +68,7 @@ type PruningStorer interface {
 	Put(key, data []byte) error
 	Prune(index uint64) error
 	Dump() error
+	SetCheckpoint(round uint64) error
 	Close() error
 	IsInterfaceNil() bool
 }

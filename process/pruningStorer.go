@@ -1,6 +1,7 @@
 package process
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,8 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/types"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 )
+
+const metaCheckpointKey = "lastMetaRound"
 
 type pruningStorer struct {
 	activePersisters []types.Persister
@@ -190,6 +193,29 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	return nil
 }
 
+func (ps *pruningStorer) SetCheckpoint(round uint64) error {
+	metaRound := make([]byte, 8)
+	binary.LittleEndian.PutUint64(metaRound, round)
+
+	err := ps.putInPersister([]byte(metaCheckpointKey), metaRound)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ps *pruningStorer) GetCheckpoint() (uint64, error) {
+	data, err := ps.getFromPersister([]byte(metaCheckpointKey))
+	if err != nil {
+		return 0, err
+	}
+
+	lastMetaRound := binary.LittleEndian.Uint64(data)
+
+	return lastMetaRound, nil
+}
+
 func (ps *pruningStorer) putInPersister(key, data []byte) error {
 	ps.persistersMut.RLock()
 	defer ps.persistersMut.RUnlock()
@@ -218,6 +244,7 @@ func (ps *pruningStorer) dumpDataToPersister() error {
 		v, ok := ps.cacher.Get(key)
 		if !ok {
 			log.Warn("failed to get key from cache", "key", hex.EncodeToString(key))
+			continue
 		}
 
 		data, ok := v.([]byte)
