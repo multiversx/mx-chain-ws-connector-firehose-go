@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/multiversx/mx-chain-storage-go/types"
 	"google.golang.org/grpc"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/api/dummy"
@@ -12,7 +11,8 @@ import (
 
 // BlockService returns blocks based on nonce or hash from cache.
 type BlockService struct {
-	cacher types.Cacher
+	//TODO: unused for now, placeholder for upcoming PRs
+	//cacher types.Cacher
 	dummy.UnimplementedBlockServiceServer
 }
 
@@ -27,7 +27,6 @@ func (bs *BlockService) GetBlockByNonce(ctx context.Context, req *dummy.BlockNon
 }
 
 // Register service in the server.
-func (bs *BlockService) Register(server *grpc.Server) error {
+func (bs *BlockService) Register(server *grpc.Server) {
 	dummy.RegisterBlockServiceServer(server, bs)
-	return nil
 }
