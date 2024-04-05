@@ -10,6 +10,7 @@ require (
 	github.com/multiversx/mx-chain-storage-go v1.0.15
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -30,6 +31,5 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
