@@ -1,0 +1,433 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/data";
+
+message MetaOutportBlock {
+  uint32                       ShardID                = 1;
+  MetaBlockData                BlockData              = 2;
+  TransactionPool              TransactionPool        = 3;
+  HeaderGasConsumption         HeaderGasConsumption   = 4;
+  map <string, AlteredAccount> AlteredAccounts        = 5;
+  repeated string              NotarizedHeadersHashes = 6;
+  uint32                       NumberOfShards         = 7;
+  repeated uint64              SignersIndexes         = 8;
+  uint64                       HighestFinalBlockNonce = 9;
+  bytes                        HighestFinalBlockHash  = 10;
+}
+
+message ShardOutportBlock {
+  uint32                       ShardID                = 1;
+  BlockData                    BlockData              = 2;
+  TransactionPool              TransactionPool        = 3;
+  HeaderGasConsumption         HeaderGasConsumption   = 4;
+  map <string, AlteredAccount> AlteredAccounts        = 5;
+  repeated string              NotarizedHeadersHashes = 6;
+  uint32                       NumberOfShards         = 7;
+  repeated uint64              SignersIndexes         = 8;
+  uint64                       HighestFinalBlockNonce = 9;
+  bytes                        HighestFinalBlockHash  = 10;
+}
+
+// Header holds the metadata of a block. This is the part that is being hashed and run through consensus.
+// The header holds the hash of the body and also the link to the previous block header hash
+message Header  {
+  uint64                   Nonce = 1;
+  bytes                    PrevHash = 2;
+  bytes                    PrevRandSeed = 3;
+  bytes                    RandSeed = 4;
+  bytes                    PubKeysBitmap = 5;
+  uint32                   ShardID = 6;
+  uint64                   TimeStamp = 7;
+  uint64                   Round = 8;
+  uint32                   Epoch = 9;
+  Type                     BlockBodyType = 10;
+  bytes                    Signature = 11;
+  bytes                    LeaderSignature = 12;
+  repeated MiniBlockHeader MiniBlockHeaders = 13;
+  repeated PeerChange      PeerChanges = 14;
+  bytes                    RootHash = 15;
+  repeated bytes           MetaBlockHashes = 16;
+  uint32                   TxCount = 17;
+  bytes                    EpochStartMetaHash = 18;
+  bytes                    ReceiptsHash = 19;
+  bytes                    ChainID = 20;
+  bytes                    SoftwareVersion = 21;
+  bytes                    AccumulatedFees = 22;
+  bytes                    DeveloperFees = 23;
+  bytes                    Reserved = 24;
+}
+
+message MetaHeader {
+  uint64            Nonce                    = 1;
+  uint32            Epoch                    = 2;
+  uint64            Round                    = 3;
+  uint64            TimeStamp                = 4;
+  repeated ShardData       ShardInfo         = 5;
+  repeated PeerData        PeerInfo          = 6;
+  bytes             Signature                = 7;
+  bytes             LeaderSignature          = 8;
+  bytes             PubKeysBitmap            = 9;
+  bytes             PrevHash                 = 10;
+  bytes             PrevRandSeed             = 11 ;
+  bytes             RandSeed                 = 12 ;
+  bytes             RootHash                 = 13 ;
+  bytes             ValidatorStatsRootHash   = 14 ;
+  repeated MiniBlockHeader MiniBlockHeaders  = 16 ;
+  bytes             ReceiptsHash             = 17 ;
+  EpochStart        EpochStart               = 18 ;
+  bytes             ChainID                  = 19;
+  bytes             SoftwareVersion          = 20;
+  bytes             AccumulatedFees          = 21;
+  bytes             AccumulatedFeesInEpoch   = 22;
+  bytes             DeveloperFees            = 23;
+  bytes             DevFeesInEpoch            = 24;
+  uint32            TxCount                  = 25;
+  bytes             Reserved                 = 26;
+}
+
+message MiniBlockHeader  {
+  bytes  Hash = 1;
+  uint32 SenderShardID = 2;
+  uint32 ReceiverShardID = 3;
+  uint32 TxCount = 4;
+  Type   Type = 5;
+  bytes  Reserved = 6;
+}
+
+// PeerChange holds a change in one peer to shard assignation
+message PeerChange {
+  bytes  PubKey = 1;
+  uint32 ShardIdDest = 2;
+}
+
+message BlockData {
+  uint32             ShardID              = 1;
+  Header             Header               = 2;
+  string             HeaderType           = 3;
+  bytes              HeaderHash           = 4;
+  Body               Body                 = 5;
+  repeated MiniBlock IntraShardMiniBlocks = 6;
+  bytes              ScheduledRootHash = 7;
+  bytes              ScheduledAccumulatedFees = 8;
+  bytes              ScheduledDeveloperFees = 9;
+  uint64             ScheduledGasProvided = 10;
+  uint64             ScheduledGasPenalized = 11;
+  uint64             ScheduledGasRefunded = 12;
+}
+
+message MetaBlockData {
+  uint32             ShardID              = 1;
+  MetaHeader         Header               = 2;
+  string             HeaderType           = 3;
+  bytes              HeaderHash           = 4;
+  Body               Body                 = 5;
+  repeated MiniBlock IntraShardMiniBlocks = 6;
+  bytes              ScheduledRootHash = 7;
+  bytes              ScheduledAccumulatedFees = 8;
+  bytes              ScheduledDeveloperFees = 9;
+  uint64             ScheduledGasProvided = 10;
+  uint64             ScheduledGasPenalized = 11;
+  uint64             ScheduledGasRefunded = 12;
+}
+
+message ShardData {
+  uint32                   ShardID               = 1;
+  bytes                    HeaderHash            = 2;
+  repeated MiniBlockHeader ShardMiniBlockHeaders = 3;
+  bytes                    PrevRandSeed          = 4;
+  bytes                    PubKeysBitmap         = 5;
+  bytes                    Signature             = 6;
+  uint32                   TxCount               = 7;
+  uint64                   Round                 = 8;
+  bytes                    PrevHash              = 9;
+  uint64                   Nonce                 = 10;
+  uint32                   NumPendingMiniBlocks  = 11;
+  bytes                    AccumulatedFees       = 12;
+  bytes                    DeveloperFees         = 14;
+  uint64                   LastIncludedMetaNonce = 13;
+}
+
+// EpochStart holds the block information for end-of-epoch
+message EpochStart {
+  repeated EpochStartShardData LastFinalizedHeaders = 1 ;
+  Economics                    Economics            = 2 ;
+}
+
+message EpochStartShardData {
+  uint32                        ShardID                  = 1 ;
+  bytes                         HeaderHash               = 2;
+  bytes                         RootHash                 = 3;
+  bytes                         FirstPendingMetaBlock    = 4;
+  bytes                         LastFinishedMetaBlock    = 5;
+  repeated MiniBlockHeader      PendingMiniBlockHeaders  = 6;
+  uint64                        Round                    = 7;
+  uint64                        Nonce                    = 8;
+  uint32                        Epoch                    = 9;
+  bytes                         ScheduledRootHash        = 10;
+}
+
+message Economics {
+  bytes  TotalSupply                      = 1;
+  bytes  TotalToDistribute                = 2;
+  bytes  TotalNewlyMinted                 = 3;
+  bytes  RewardsPerBlock                  = 4;
+  bytes  RewardsForProtocolSustainability = 5;
+  bytes  NodePrice                        = 6;
+  uint64 PrevEpochStartRound              = 7;
+  bytes  PrevEpochStartHash               = 8;
+}
+
+// PeerAction type represents the possible events that a node can trigger for the metachain to notarize
+enum PeerAction {
+  InvalidAction      = 0;
+  PeerRegistration   = 1;
+  PeerUnstaking      = 2;
+  PeerDeregistration = 3;
+  PeerJailed         = 4;
+  PeerUnJailed       = 5;
+  PeerSlashed        = 6;
+  PeerReStake        = 7;
+}
+
+// PeerData holds information about actions taken by a peer:
+//  - a peer can register with an amount to become a validator
+//  - a peer can choose to deregister and get back the deposited value
+message PeerData {
+  bytes      Address     = 1;
+  bytes      PublicKey   = 2;
+  PeerAction Action      = 3;
+  uint64     TimeStamp   = 4;
+  bytes      ValueChange = 5;
+}
+
+message TransactionPool {
+  map<string, TxInfo>     Transactions                               = 1;
+  map<string, SCRInfo>    SmartContractResults                       = 2;
+  map<string, RewardInfo> Rewards                                    = 3;
+  map<string, Receipt>    Receipts                                   = 4;
+  map<string, TxInfo>     InvalidTxs                                 = 5;
+  repeated LogData        Logs                                       = 6;
+  repeated string         ScheduledExecutedSCRSHashesPrevBlock       = 7;
+  repeated string         ScheduledExecutedInvalidTxsHashesPrevBlock = 8;
+}
+
+message FeeInfo {
+  uint64 GasUsed        = 1;
+  bytes  Fee            = 2;
+  bytes  InitialPaidFee = 3;
+}
+
+message TxInfo {
+  Transaction Transaction    = 1;
+  FeeInfo     FeeInfo        = 2;
+  uint32      ExecutionOrder = 3;
+}
+
+message SCRInfo {
+  SmartContractResult SmartContractResult = 1;
+  FeeInfo             FeeInfo             = 2;
+  uint32              ExecutionOrder      = 3;
+}
+
+message LogData{
+  string TxHash = 1;
+  Log    Log    = 2;
+}
+
+message RewardInfo {
+  RewardTx Reward         = 1;
+  uint32   ExecutionOrder = 2;
+}
+
+message HeaderGasConsumption {
+  uint64 GasProvided    = 1;
+  uint64 GasRefunded    = 2;
+  uint64 GasPenalized   = 3;
+  uint64 MaxGasPerBlock = 4;
+}
+
+message ValidatorRatingInfo {
+  string  PublicKey = 1;
+  float   Rating    = 2;
+}
+
+message ValidatorsRating{
+  uint32                       ShardID               = 1;
+  uint32                       Epoch                 = 2;
+  repeated ValidatorRatingInfo ValidatorsRatingInfo  = 3;
+}
+
+message RoundInfo {
+  uint64          Round            = 1;
+  repeated uint64 SignersIndexes   = 2;
+  bool            BlockWasProposed = 3;
+  uint32          ShardId          = 4;
+  uint32          Epoch            = 5;
+  uint64          Timestamp        = 6;
+}
+
+message RoundsInfo {
+  uint32             ShardID    = 1;
+  repeated RoundInfo RoundsInfo = 2;
+}
+
+message PubKeys {
+  repeated bytes Keys = 1;
+}
+
+message ValidatorsPubKeys{
+  uint32               ShardID                = 1;
+  map<uint32, PubKeys> ShardValidatorsPubKeys = 2;
+  uint32               Epoch                  = 3;
+}
+
+message Accounts {
+  uint32 ShardID                              = 1;
+  uint64 BlockTimestamp                       = 2;
+  map<string, AlteredAccount> AlteredAccounts = 3;
+}
+
+message FinalizedBlock {
+  uint32 ShardID    = 1;
+  bytes  HeaderHash = 2;
+}
+
+message Shard {
+  uint32 ShardID = 1;
+}
+
+
+message Body {
+  repeated MiniBlock MiniBlocks = 1;
+}
+
+message MiniBlock {
+  repeated bytes TxHashes = 1;
+  uint32         ReceiverShardID = 2;
+  uint32         SenderShardID = 3;
+  Type           Type = 4;
+  bytes          Reserved = 5;
+}
+
+// Transaction holds all the data needed for a value transfer or SC call
+message Transaction {
+  uint64   Nonce             = 1;
+  bytes    Value             = 2;
+  bytes    RcvAddr           = 3;
+  bytes    RcvUserName       = 4;
+  bytes    SndAddr           = 5;
+  bytes    SndUserName       = 6;
+  uint64   GasPrice          = 7;
+  uint64   GasLimit          = 8;
+  bytes    Data              = 9;
+  bytes    ChainID           = 10;
+  uint32   Version           = 11;
+  bytes    Signature         = 12;
+  uint32   Options           = 13;
+  bytes    GuardianAddr      = 14;
+  bytes    GuardianSignature = 15;
+}
+
+message SmartContractResult  {
+  uint64   Nonce          = 1;
+  bytes    Value          = 2;
+  bytes    RcvAddr        = 3;
+  bytes    SndAddr        = 4;
+  bytes    RelayerAddr    = 5;
+  bytes    RelayedValue   = 6;
+  bytes    Code           = 7;
+  bytes    Data           = 8;
+  bytes    PrevTxHash     = 9;
+  bytes    OriginalTxHash = 10;
+  uint64   GasLimit       = 11;
+  uint64   GasPrice       = 12;
+  int64    CallType       = 13;
+  bytes    CodeMetadata   = 14;
+  bytes    ReturnMessage  = 15;
+  bytes    OriginalSender = 16;
+}
+
+message Log {
+  bytes Address         = 1;
+  repeated Event Events = 2;
+}
+
+message Event {
+  bytes Address                   = 1;
+  bytes Identifier                = 2;
+  repeated bytes Topics           = 3;
+  bytes Data                      = 4;
+  repeated bytes AdditionalData   = 5;
+}
+
+message RewardTx {
+  uint64   Round   = 1;
+  bytes    Value   = 3;
+  bytes    RcvAddr = 4;
+  uint32   Epoch   = 2;
+}
+
+enum Type {
+  TxBlock = 0;
+  StateBlock = 30;
+  PeerBlock = 60;
+  SmartContractResultBlock = 90;
+  InvalidBlock = 120;
+  ReceiptBlock = 150;
+  RewardsBlock = 255;
+}
+
+message AlteredAccount {
+  string                    Address        = 1;
+  uint64                    Nonce          = 2;
+  string                    Balance        = 3;
+  repeated AccountTokenData Tokens         = 4;
+  AdditionalAccountData     AdditionalData = 5;
+}
+
+message AccountTokenData {
+  uint64                     Nonce          = 1;
+  string                     Identifier     = 2;
+  string                     Balance        = 3;
+  string                     Properties     = 4;
+  TokenMetaData              MetaData       = 5;
+  AdditionalAccountTokenData AdditionalData = 6;
+}
+
+message TokenMetaData {
+  uint64         Nonce      = 1;
+  string         Name       = 2;
+  string         Creator    = 3;
+  uint32         Royalties  = 4;
+  bytes          Hash       = 5;
+  repeated bytes URIs       = 6;
+  bytes          Attributes = 7;
+}
+
+message AdditionalAccountTokenData {
+  bool IsNFTCreate = 1;
+}
+
+message AdditionalAccountData {
+  bool   IsSender         = 1;
+  bool   BalanceChanged   = 2;
+  string CurrentOwner     = 3;
+  string UserName         = 4;
+  string DeveloperRewards = 5;
+  bytes  CodeHash         = 6;
+  bytes  RootHash         = 7;
+  bytes  CodeMetadata     = 8;
+}
+
+message Receipt {
+  bytes    Value     = 1;
+  bytes    SndAddr   = 2;
+  bytes    Data      = 3;
+  bytes    TxHash    = 4;
+}
+
+message BigInt {
+  bytes bytes = 1;
+}
