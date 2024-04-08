@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	coreData "github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/stretchr/testify/require"
@@ -15,8 +14,6 @@ import (
 )
 
 const outportBlockJSONPath = "../testscommon/testdata/outportBlock.json"
-
-var caster coreData.BigIntCaster
 
 func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	jsonBytes, err := os.ReadFile(outportBlockJSONPath)
@@ -69,8 +66,8 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	require.Equal(t, header.ChainID, standardOb.BlockData.Header.ChainID)
 	require.Equal(t, header.SoftwareVersion, standardOb.BlockData.Header.SoftwareVersion)
 	require.Equal(t, header.Reserved, standardOb.BlockData.Header.Reserved)
-	require.Equal(t, castBigInt(t, header.AccumulatedFees), standardOb.BlockData.Header.AccumulatedFees)
-	require.Equal(t, castBigInt(t, header.DeveloperFees), standardOb.BlockData.Header.DeveloperFees)
+	require.Equal(t, mustCastBigInt(t, header.AccumulatedFees), standardOb.BlockData.Header.AccumulatedFees)
+	require.Equal(t, mustCastBigInt(t, header.DeveloperFees), standardOb.BlockData.Header.DeveloperFees)
 
 	// Block data - Header - Mini block headers.
 	for i, miniBlockHeader := range header.MiniBlockHeaders {
@@ -101,7 +98,7 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	for k, v := range ob.TransactionPool.Transactions {
 		// Transaction pool - Transactions. - TxInfo.
 		require.Equal(t, v.Transaction.Nonce, standardOb.TransactionPool.Transactions[k].Transaction.Nonce)
-		require.Equal(t, castBigInt(t, v.Transaction.Value), standardOb.TransactionPool.Transactions[k].Transaction.Value)
+		require.Equal(t, mustCastBigInt(t, v.Transaction.Value), standardOb.TransactionPool.Transactions[k].Transaction.Value)
 		require.Equal(t, v.Transaction.RcvAddr, standardOb.TransactionPool.Transactions[k].Transaction.RcvAddr)
 		require.Equal(t, v.Transaction.RcvUserName, standardOb.TransactionPool.Transactions[k].Transaction.RcvUserName)
 		require.Equal(t, v.Transaction.SndAddr, standardOb.TransactionPool.Transactions[k].Transaction.SndAddr)
@@ -117,8 +114,8 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 
 		// Transaction pool - Transactions - Tx Info - Fee info.
 		require.Equal(t, v.FeeInfo.GasUsed, standardOb.TransactionPool.Transactions[k].FeeInfo.GasUsed)
-		require.Equal(t, castBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.Transactions[k].FeeInfo.Fee)
-		require.Equal(t, castBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.Transactions[k].FeeInfo.InitialPaidFee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.Transactions[k].FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.Transactions[k].FeeInfo.InitialPaidFee)
 
 		require.Equal(t, v.ExecutionOrder, standardOb.TransactionPool.Transactions[k].ExecutionOrder)
 	}
@@ -127,11 +124,11 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	for k, v := range ob.TransactionPool.SmartContractResults {
 		// Transaction pool - Smart Contract results - SmartContractResult.
 		require.Equal(t, v.SmartContractResult.Nonce, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.Nonce)
-		require.Equal(t, castBigInt(t, v.SmartContractResult.Value), standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.Value)
+		require.Equal(t, mustCastBigInt(t, v.SmartContractResult.Value), standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.Value)
 		require.Equal(t, v.SmartContractResult.RcvAddr, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.RcvAddr)
 		require.Equal(t, v.SmartContractResult.SndAddr, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.SndAddr)
 		require.Equal(t, v.SmartContractResult.RelayerAddr, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.RelayerAddr)
-		require.Equal(t, castBigInt(t, v.SmartContractResult.RelayedValue), standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.RelayedValue)
+		require.Equal(t, mustCastBigInt(t, v.SmartContractResult.RelayedValue), standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.RelayedValue)
 		require.Equal(t, v.SmartContractResult.Code, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.Code)
 		require.Equal(t, v.SmartContractResult.Data, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.Data)
 		require.Equal(t, v.SmartContractResult.PrevTxHash, standardOb.TransactionPool.SmartContractResults[k].SmartContractResult.PrevTxHash)
@@ -145,8 +142,8 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 
 		// Transaction pool - Smart Contract results - Fee info.
 		require.Equal(t, v.FeeInfo.GasUsed, standardOb.TransactionPool.SmartContractResults[k].FeeInfo.GasUsed)
-		require.Equal(t, castBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.SmartContractResults[k].FeeInfo.Fee)
-		require.Equal(t, castBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.SmartContractResults[k].FeeInfo.InitialPaidFee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.SmartContractResults[k].FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.SmartContractResults[k].FeeInfo.InitialPaidFee)
 
 		// Transaction pool - Smart Contract results - Execution Order.
 		require.Equal(t, v.ExecutionOrder, standardOb.TransactionPool.SmartContractResults[k].ExecutionOrder)
@@ -156,7 +153,7 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	for k, v := range ob.TransactionPool.Rewards {
 		// Transaction Pool - Rewards - Reward info
 		require.Equal(t, v.Reward.Round, standardOb.TransactionPool.Rewards[k].Reward.Round)
-		require.Equal(t, castBigInt(t, v.Reward.Value), standardOb.TransactionPool.Rewards[k].Reward.Value)
+		require.Equal(t, mustCastBigInt(t, v.Reward.Value), standardOb.TransactionPool.Rewards[k].Reward.Value)
 		require.Equal(t, v.Reward.RcvAddr, standardOb.TransactionPool.Rewards[k].Reward.RcvAddr)
 		require.Equal(t, v.Reward.Epoch, standardOb.TransactionPool.Rewards[k].Reward.Epoch)
 
@@ -167,7 +164,7 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	// Transaction Pool - Receipts
 	for k, v := range ob.TransactionPool.Receipts {
 		// Transaction Pool - Receipts - Receipt info
-		require.Equal(t, castBigInt(t, v.Value), standardOb.TransactionPool.Receipts[k].Value)
+		require.Equal(t, mustCastBigInt(t, v.Value), standardOb.TransactionPool.Receipts[k].Value)
 		require.Equal(t, v.SndAddr, standardOb.TransactionPool.Receipts[k].SndAddr)
 		require.Equal(t, v.Data, standardOb.TransactionPool.Receipts[k].Data)
 		require.Equal(t, v.TxHash, standardOb.TransactionPool.Receipts[k].TxHash)
@@ -177,7 +174,7 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	for k, v := range ob.TransactionPool.InvalidTxs {
 		// Transaction Pool - Invalid Txs - Tx Info
 		require.Equal(t, v.Transaction.Nonce, standardOb.TransactionPool.InvalidTxs[k].Transaction.Nonce)
-		require.Equal(t, castBigInt(t, v.Transaction.Value), standardOb.TransactionPool.InvalidTxs[k].Transaction.Value)
+		require.Equal(t, mustCastBigInt(t, v.Transaction.Value), standardOb.TransactionPool.InvalidTxs[k].Transaction.Value)
 		require.Equal(t, v.Transaction.RcvAddr, standardOb.TransactionPool.InvalidTxs[k].Transaction.RcvAddr)
 		require.Equal(t, v.Transaction.RcvUserName, standardOb.TransactionPool.InvalidTxs[k].Transaction.RcvUserName)
 		require.Equal(t, v.Transaction.SndAddr, standardOb.TransactionPool.InvalidTxs[k].Transaction.SndAddr)
@@ -194,8 +191,8 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 
 		// Transaction pool - Invalid Txs - Fee info.
 		require.Equal(t, v.FeeInfo.GasUsed, standardOb.TransactionPool.InvalidTxs[k].FeeInfo.GasUsed)
-		require.Equal(t, castBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.InvalidTxs[k].FeeInfo.Fee)
-		require.Equal(t, castBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.InvalidTxs[k].FeeInfo.InitialPaidFee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), standardOb.TransactionPool.InvalidTxs[k].FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), standardOb.TransactionPool.InvalidTxs[k].FeeInfo.InitialPaidFee)
 
 		require.Equal(t, v.ExecutionOrder, standardOb.TransactionPool.InvalidTxs[k].ExecutionOrder)
 	}
@@ -274,7 +271,7 @@ func TestOutportBlockAdapter_MarshalTo(t *testing.T) {
 	}
 }
 
-func castBigInt(t *testing.T, i *big.Int) []byte {
+func mustCastBigInt(t *testing.T, i *big.Int) []byte {
 	t.Helper()
 
 	buf := make([]byte, caster.Size(i))

@@ -7,7 +7,7 @@
     MarshallerType = "gogo protobuf"
 
     # This flag describes the mode to start the WebSocket connector. Can be "client" or "server"
-    Mode = "server"
+    Mode = "client"
 
     # Retry duration (receive/send data/acknowledge) in seconds
     RetryDurationInSec = 5

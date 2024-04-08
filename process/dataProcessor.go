@@ -1,6 +1,10 @@
 package process
 
 import (
+	"encoding/json"
+	"os"
+
+	"github.com/google/uuid"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/block"
@@ -78,6 +82,15 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 	}
 
 	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
+
+	jsonBytes, err := json.Marshal(&outportBlock)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile("./blocks/"+uuid.New().String(), jsonBytes, 0666)
+	if err != nil {
+		return err
+	}
 
 	if outportBlock.ShardID == core.MetachainShardId {
 		return dp.handleMetaOutportBlock(outportBlock)
