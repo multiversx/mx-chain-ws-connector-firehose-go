@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package pbmultiversx;
+
+import "github.com/multiversx/mx-chain-core-go/data/outport/outportBlock.proto";
+
+message BlockHeader {
+  uint64             height = 1;
+  string             hash = 2;
+  uint64    previous_num = 3;
+  string    previous_hash = 4;
+  uint64             final_num = 5;
+  string             final_hash = 6;
+  uint64             timestamp = 7;
+}
+
+message Block {
+  BlockHeader header = 1;
+  proto.OutportBlock MultiversxBlock = 2;
+}
