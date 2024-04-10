@@ -9,7 +9,15 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
 
-type headerType = string
+type (
+	headerType = string
+
+	// HeaderCaster is the interface used for the caster to convert from outport.OutportBlock to
+	// data.ShardOutportBlock or data.MetaOutportBlock
+	HeaderCaster interface {
+		Cast() (proto.Message, error)
+	}
+)
 
 const (
 	header    headerType = "Header"
@@ -29,7 +37,7 @@ func CastOutportBlock(outportBlock *outport.OutportBlock) (proto.Message, error)
 }
 
 // GetOutportCaster will retrieve the implementation used to cast the outportBlock based on the headerType.
-func GetOutportCaster(outportBlock *outport.OutportBlock) (process.HeaderCaster, error) {
+func GetOutportCaster(outportBlock *outport.OutportBlock) (HeaderCaster, error) {
 	switch outportBlock.BlockData.HeaderType {
 	case header:
 		caster, err := process.NewHeaderV1Caster(outportBlock)
