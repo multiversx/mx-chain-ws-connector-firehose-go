@@ -102,6 +102,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		parentNum = 0
 	}
 
+	// TODO: update to use aggregated data structure
 	tmpBlock := &pbmultiversx.Block{}
 
 	blockHeader := &pbmultiversx.BlockHeader{

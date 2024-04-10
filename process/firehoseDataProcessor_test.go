@@ -15,6 +15,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
+	"github.com/multiversx/mx-chain-ws-connector-template-go/pbmultiversx"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
@@ -234,6 +235,7 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 
 			HighestFinalBlockNonce: 0,
 		}
+
 		outportBlockBytes, err := protoMarshaller.Marshal(outportBlock)
 		require.Nil(t, err)
 
@@ -250,7 +252,27 @@ func TestFirehoseIndexer_SaveBlock(t *testing.T) {
 					num := header.GetNonce()
 					parentNum := num - 1
 					libNum := parentNum
-					encodedMvxBlock := base64.StdEncoding.EncodeToString(outportBlockBytes)
+
+					// TODO: update test to use aggregated data structure
+					tmpBlock := &pbmultiversx.Block{}
+
+					blockHeader := &pbmultiversx.BlockHeader{
+						Height:       num,
+						Hash:         hex.EncodeToString(outportBlock.BlockData.HeaderHash),
+						PreviousNum:  parentNum,
+						PreviousHash: hex.EncodeToString(header.GetPrevHash()),
+						FinalNum:     outportBlock.HighestFinalBlockNonce,
+						FinalHash:    hex.EncodeToString(outportBlock.HighestFinalBlockHash),
+						Timestamp:    header.GetTimeStamp(),
+					}
+
+					tmpBlock.MultiversxBlock = outportBlock
+					tmpBlock.Header = blockHeader
+
+					tmpBlockMarshalled, err := protoMarshaller.Marshal(tmpBlock)
+					require.Nil(t, err)
+
+					encodedMvxBlock := base64.StdEncoding.EncodeToString(tmpBlockMarshalled)
 
 					require.Equal(t, []byte(fmt.Sprintf("%s %s %d %s %d %s %d %d %s\n",
 						firehosePrefix,
