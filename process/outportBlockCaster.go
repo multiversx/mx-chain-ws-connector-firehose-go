@@ -71,6 +71,9 @@ func (h *headerV2Caster) Cast() (proto.Message, error) {
 
 	header := block.HeaderV2{}
 	err = protoMarshaller.Unmarshal(&header, h.outportBlock.BlockData.HeaderBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal: %w", err)
+	}
 
 	miniBlockHeaders := make([]*data.MiniBlockHeader, 0)
 	for _, miniBlockHeader := range header.Header.MiniBlockHeaders {
