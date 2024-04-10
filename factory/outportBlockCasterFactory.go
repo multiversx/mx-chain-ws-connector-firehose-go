@@ -57,15 +57,3 @@ func GetOutportCaster(outportBlock *outport.OutportBlock) (process.HeaderCaster,
 		return nil, fmt.Errorf("unknown header type: %s", outportBlock.BlockData.HeaderType)
 	}
 }
-
-func GetOutportCasterFunc(outportBlock *outport.OutportBlock) func(block *outport.OutportBlock) (proto.Message, error) {
-	switch outportBlock.BlockData.HeaderType {
-
-	case header:
-		return func(block *outport.OutportBlock) (proto.Message, error) {
-			return process.CastHeaderV1(block)
-		}
-	}
-
-	return nil
-}
