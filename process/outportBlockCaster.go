@@ -28,12 +28,6 @@ type (
 	metaBlockCaster struct {
 		outportBlock *outport.OutportBlock
 	}
-
-	// HeaderCaster is the interface used for the caster to convert from outport.OutportBlock to
-	// data.ShardOutportBlock or data.MetaOutportBlock
-	HeaderCaster interface {
-		Cast() (proto.Message, error)
-	}
 )
 
 // NewHeaderV1Caster will return an instance of a caster used to cast outport.OutportBlocks with a headerV1.
