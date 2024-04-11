@@ -15,16 +15,16 @@ import (
 )
 
 type outportBlockConverter struct {
-	protoMarshaller *marshal.GogoProtoMarshalizer
-	bigIntCaster    coreData.BigIntCaster
+	gogoProtoMarshalizer *marshal.GogoProtoMarshalizer
+	bigIntCaster         coreData.BigIntCaster
 }
 
 // NewOutportBlockConverter will return a component than can convert outport.OutportBlock to either data.ShardOutportBlock.
 // or data.MetaOutportBlock
 func NewOutportBlockConverter() *outportBlockConverter {
 	return &outportBlockConverter{
-		protoMarshaller: &marshal.GogoProtoMarshalizer{},
-		bigIntCaster:    coreData.BigIntCaster{},
+		gogoProtoMarshalizer: &marshal.GogoProtoMarshalizer{},
+		bigIntCaster:         coreData.BigIntCaster{},
 	}
 }
 
@@ -38,7 +38,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 	}
 
 	// marshal with gogo, since the outportBlock is gogo protobuf (coming from the node).
-	bytes, err := o.protoMarshaller.Marshal(outportBlock)
+	bytes, err := o.gogoProtoMarshalizer.Marshal(outportBlock)
 	if err != nil {
 		return nil, fmt.Errorf("marshal shard outport block error: %s", err)
 	}
@@ -57,7 +57,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 
 	// ShardHeaderV2 does not marshal 1 to 1. A few fields need to be injected.
 	header := block.HeaderV2{}
-	err = o.protoMarshaller.Unmarshal(&header, outportBlock.BlockData.HeaderBytes)
+	err = o.gogoProtoMarshalizer.Unmarshal(&header, outportBlock.BlockData.HeaderBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal: %w", err)
 	}
@@ -150,7 +150,7 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 	}
 
 	// marshal with gogo, since the outportBlock is gogo protobuf (coming from the node).
-	bytes, err := o.protoMarshaller.Marshal(outportBlock)
+	bytes, err := o.gogoProtoMarshalizer.Marshal(outportBlock)
 	if err != nil {
 		return nil, fmt.Errorf("marshal metaBlockCaster error: %w", err)
 	}
