@@ -43,6 +43,8 @@ func recovedUnmarshal(obj interface{}, buf []byte) (err error) {
 }
 
 func TestProtoMarshalizer_Marshal(t *testing.T) {
+	t.Parallel()
+
 	outportBlock := data.ShardOutportBlock{}
 	encNode, err := recovedMarshal(&outportBlock)
 	assert.Nil(t, err)
@@ -50,6 +52,8 @@ func TestProtoMarshalizer_Marshal(t *testing.T) {
 }
 
 func TestProtoMarshalizer_MarshalWrongObj(t *testing.T) {
+	t.Parallel()
+
 	obj := "multiversx"
 	encNode, err := recovedMarshal(obj)
 	assert.Nil(t, encNode)
@@ -57,6 +61,8 @@ func TestProtoMarshalizer_MarshalWrongObj(t *testing.T) {
 }
 
 func TestProtoMarshalizer_Unmarshal(t *testing.T) {
+	t.Parallel()
+
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
@@ -69,6 +75,8 @@ func TestProtoMarshalizer_Unmarshal(t *testing.T) {
 }
 
 func TestProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
+	t.Parallel()
+
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
