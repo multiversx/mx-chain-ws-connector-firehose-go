@@ -10,7 +10,7 @@ import (
 )
 
 func recovedMarshal(obj interface{}) (buf []byte, err error) {
-	protoMarshaller := ProtoMarshaller{}
+	protoMarshaller := ProtoMarshalizer{}
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -27,7 +27,7 @@ func recovedMarshal(obj interface{}) (buf []byte, err error) {
 }
 
 func recovedUnmarshal(obj interface{}, buf []byte) (err error) {
-	protoMarshaller := ProtoMarshaller{}
+	protoMarshaller := ProtoMarshalizer{}
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -57,7 +57,7 @@ func TestGogoProtoMarshalizer_MarshalWrongObj(t *testing.T) {
 }
 
 func TestGogoProtoMarshalizer_Unmarshal(t *testing.T) {
-	protoMarshaller := ProtoMarshaller{}
+	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(outportBlock)
@@ -69,7 +69,7 @@ func TestGogoProtoMarshalizer_Unmarshal(t *testing.T) {
 }
 
 func TestGogoProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
-	protoMarshaller := ProtoMarshaller{}
+	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(outportBlock)

@@ -6,9 +6,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type ProtoMarshaller struct{}
+type ProtoMarshalizer struct{}
 
-func (p *ProtoMarshaller) Marshal(obj interface{}) ([]byte, error) {
+func (p *ProtoMarshalizer) Marshal(obj interface{}) ([]byte, error) {
 	message, ok := obj.(proto.Message)
 	if !ok {
 		return nil, fmt.Errorf("cannot marshal %T into a proto.Message", obj)
@@ -16,7 +16,7 @@ func (p *ProtoMarshaller) Marshal(obj interface{}) ([]byte, error) {
 	return proto.Marshal(message)
 }
 
-func (p *ProtoMarshaller) Unmarshal(obj interface{}, buff []byte) error {
+func (p *ProtoMarshalizer) Unmarshal(obj interface{}, buff []byte) error {
 	message, ok := obj.(proto.Message)
 	if !ok {
 		return fmt.Errorf("cannot marshal %T into a proto.Message", obj)
@@ -24,6 +24,6 @@ func (p *ProtoMarshaller) Unmarshal(obj interface{}, buff []byte) error {
 	return proto.Unmarshal(buff, message)
 }
 
-func (p *ProtoMarshaller) IsInterfaceNil() bool {
+func (p *ProtoMarshalizer) IsInterfaceNil() bool {
 	return p == nil
 }
