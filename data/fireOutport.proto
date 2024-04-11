@@ -4,6 +4,11 @@ package proto;
 
 option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/data";
 
+message HyperBlock {
+
+}
+
+
 message MetaOutportBlock {
   uint32                       ShardID                = 1;
   MetaBlockData                BlockData              = 2;
