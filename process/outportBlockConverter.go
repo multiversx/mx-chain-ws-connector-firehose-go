@@ -9,13 +9,13 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 type outportBlockConverter struct {
-	gogoProtoMarshalizer *marshal.GogoProtoMarshalizer
+	gogoProtoMarshalizer marshal.Marshalizer
+	protoMarshalizer     marshal.Marshalizer
 	bigIntCaster         coreData.BigIntCaster
 }
 
@@ -24,6 +24,7 @@ type outportBlockConverter struct {
 func NewOutportBlockConverter() *outportBlockConverter {
 	return &outportBlockConverter{
 		gogoProtoMarshalizer: &marshal.GogoProtoMarshalizer{},
+		protoMarshalizer:     &ProtoMarshalizer{},
 		bigIntCaster:         coreData.BigIntCaster{},
 	}
 }
@@ -45,7 +46,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 
 	shardOutportBlock := &data.ShardOutportBlock{}
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
-	err = proto.Unmarshal(bytes, shardOutportBlock)
+	err = o.protoMarshalizer.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal shard outport block error: %s", err)
 	}
@@ -157,7 +158,7 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
 	metaOutportBlock := &data.MetaOutportBlock{}
-	err = proto.Unmarshal(bytes, metaOutportBlock)
+	err = o.protoMarshalizer.Unmarshal(metaOutportBlock, bytes)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal metaBlockCaster error: %w", err)
 	}
