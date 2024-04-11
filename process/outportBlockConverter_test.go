@@ -20,11 +20,10 @@ const (
 	outportBlockMetaBlockJSONPath = "../testscommon/testdata/outportBlockMetaBlock.json"
 )
 
-var protoMarshaller = &marshal.GogoProtoMarshalizer{}
-
 func TestHeaderConverter(t *testing.T) {
 	t.Parallel()
 
+	var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV1JSONPath)
 	require.NoError(t, err, "failed to read test data")
 
@@ -51,6 +50,7 @@ func TestHeaderConverter(t *testing.T) {
 func TestHeaderV2Converter(t *testing.T) {
 	t.Parallel()
 
+	var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV2JSONPath)
 	require.NoError(t, err, "failed to read test data")
 
@@ -77,6 +77,7 @@ func TestHeaderV2Converter(t *testing.T) {
 func TestMetaBlockConverter(t *testing.T) {
 	t.Parallel()
 
+	var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 	jsonBytes, err := os.ReadFile(outportBlockMetaBlockJSONPath)
 	require.NoError(t, err, "failed to read test data")
 
