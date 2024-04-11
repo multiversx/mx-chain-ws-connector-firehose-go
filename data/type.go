@@ -1,5 +1,6 @@
 package data
 
+// FieldsGetter used to retrieve common fields from data.ShardOutportBlock and data.MetaOutportBlock
 type FieldsGetter interface {
 	GetShardID() uint32
 	GetTransactionPool() *TransactionPool
@@ -12,6 +13,7 @@ type FieldsGetter interface {
 	GetHighestFinalBlockHash() []byte
 }
 
+// BlockDataGetter used to retrieve common fields from data.BlockData and data.MetaBlockData
 type BlockDataGetter interface {
 	GetShardID() uint32
 	GetHeaderType() string

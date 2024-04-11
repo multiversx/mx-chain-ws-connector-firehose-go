@@ -42,21 +42,21 @@ func recovedUnmarshal(obj interface{}, buf []byte) (err error) {
 	return
 }
 
-func TestGogoProtoMarshalizer_Marshal(t *testing.T) {
+func TestProtoMarshalizer_Marshal(t *testing.T) {
 	outportBlock := data.ShardOutportBlock{}
 	encNode, err := recovedMarshal(&outportBlock)
 	assert.Nil(t, err)
 	assert.NotNil(t, encNode)
 }
 
-func TestGogoProtoMarshalizer_MarshalWrongObj(t *testing.T) {
+func TestProtoMarshalizer_MarshalWrongObj(t *testing.T) {
 	obj := "multiversx"
 	encNode, err := recovedMarshal(obj)
 	assert.Nil(t, encNode)
 	assert.NotNil(t, err)
 }
 
-func TestGogoProtoMarshalizer_Unmarshal(t *testing.T) {
+func TestProtoMarshalizer_Unmarshal(t *testing.T) {
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
@@ -68,7 +68,7 @@ func TestGogoProtoMarshalizer_Unmarshal(t *testing.T) {
 	assert.Equal(t, outportBlock.ProtoReflect(), newNode.ProtoReflect())
 }
 
-func TestGogoProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
+func TestProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
