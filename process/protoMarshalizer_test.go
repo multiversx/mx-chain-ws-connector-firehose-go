@@ -66,7 +66,7 @@ func TestProtoMarshalizer_Unmarshal(t *testing.T) {
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
-	encNode, _ := protoMarshaller.Marshal(outportBlock)
+	encNode, _ := protoMarshaller.Marshal(&outportBlock)
 	newNode := &data.ShardOutportBlock{}
 
 	err := recovedUnmarshal(newNode, encNode)
@@ -80,7 +80,7 @@ func TestProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
 	protoMarshaller := ProtoMarshalizer{}
 	outportBlock := data.ShardOutportBlock{}
 
-	encNode, _ := protoMarshaller.Marshal(outportBlock)
+	encNode, _ := protoMarshaller.Marshal(&outportBlock)
 	err := recovedUnmarshal([]byte{}, encNode)
 	assert.NotNil(t, err)
 }
