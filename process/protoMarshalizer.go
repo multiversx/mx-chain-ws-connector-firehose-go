@@ -6,8 +6,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// ProtoMarshalizer marshals/unmarshals proto.Message(s)
 type ProtoMarshalizer struct{}
 
+// Marshal any object into a slice of bytes.
 func (p *ProtoMarshalizer) Marshal(obj interface{}) ([]byte, error) {
 	message, ok := obj.(proto.Message)
 	if !ok {
@@ -16,6 +18,7 @@ func (p *ProtoMarshalizer) Marshal(obj interface{}) ([]byte, error) {
 	return proto.Marshal(message)
 }
 
+// Unmarshal a slice of bytes into a proto message.
 func (p *ProtoMarshalizer) Unmarshal(obj interface{}, buff []byte) error {
 	message, ok := obj.(proto.Message)
 	if !ok {
