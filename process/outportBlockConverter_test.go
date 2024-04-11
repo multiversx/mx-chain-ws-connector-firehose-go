@@ -22,7 +22,7 @@ const (
 
 var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 
-func TestHeaderConverter(t *testing.T) {
+func TestHeaderCaster(t *testing.T) {
 	t.Parallel()
 
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV1JSONPath)
@@ -48,7 +48,7 @@ func TestHeaderConverter(t *testing.T) {
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
-func TestHeaderV2Converter(t *testing.T) {
+func TestHeaderV2Caster(t *testing.T) {
 	t.Parallel()
 
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV2JSONPath)
@@ -74,7 +74,7 @@ func TestHeaderV2Converter(t *testing.T) {
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
-func TestMetaBlockConverter(t *testing.T) {
+func TestMetaBlockCaster(t *testing.T) {
 	t.Parallel()
 
 	jsonBytes, err := os.ReadFile(outportBlockMetaBlockJSONPath)
@@ -85,7 +85,7 @@ func TestMetaBlockConverter(t *testing.T) {
 	require.NoError(t, err, "failed to unmarshal test block")
 
 	converter := NewOutportBlockConverter()
-	metaOutportBlock, err := converter.HandleMetaOutportBlock(&ob)
+	metaBlock, err := converter.HandleMetaOutportBlock(&ob)
 	if err != nil {
 		return
 	}
@@ -95,9 +95,9 @@ func TestMetaBlockConverter(t *testing.T) {
 	err = protoMarshaller.Unmarshal(&header, ob.BlockData.HeaderBytes)
 	require.NoError(t, err, "failed to unmarshall outport block header bytes")
 
-	checkHeaderMeta(t, &header, metaOutportBlock)
-	checkFields(t, &ob, metaOutportBlock)
-	checkBlockData(t, ob.BlockData, metaOutportBlock.BlockData)
+	checkHeaderMeta(t, &header, metaBlock)
+	checkFields(t, &ob, metaBlock)
+	checkBlockData(t, ob.BlockData, metaBlock.BlockData)
 }
 
 func checkHeaderV1(t *testing.T, header *block.Header, fireOutportBlock *data.ShardOutportBlock) {
