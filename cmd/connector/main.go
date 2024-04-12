@@ -20,7 +20,7 @@ import (
 var log = logger.GetOrCreate("mx-chain-ws-connector-template-go")
 
 const (
-	configPath = "cmd/connector/config/config.toml"
+	configPath = "config/config.toml"
 
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
