@@ -167,6 +167,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 func TestBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
+	shardID := uint32(1)
+
 	t.Run("first put, should put directly", func(t *testing.T) {
 		t.Parallel()
 
@@ -187,7 +189,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			100,
 		)
 
-		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, 2)
+		err := bp.PutBlock([]byte("hash1"), []byte("value"), 2, shardID)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -195,10 +197,10 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		bp.UpdateMetaState(2)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, 2+maxDelta+1)
+		err = bp.PutBlock([]byte("hash2"), []byte("value"), 2+maxDelta+1, shardID)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, 2+maxDelta+2)
+		err = bp.PutBlock([]byte("hash3"), []byte("value"), 2+maxDelta+2, shardID)
 		require.Error(t, err)
 	})
 }

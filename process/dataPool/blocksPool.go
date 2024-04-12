@@ -91,34 +91,46 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, currentRound uint64) error {
+func (bp *blocksPool) PutBlock(hash []byte, value []byte, index uint64, shardID uint32) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
-	shardID := outportBlock.ShardID
-
-	round, ok := bp.indexesMap[shardID]
+	currentIndex, ok := bp.indexesMap[shardID]
 	if !ok {
 		return fmt.Errorf("did not find shard id %d in blocksMap", shardID)
 	}
 
-	if round == initIndex {
-		return bp.putOutportBlock(hash, outportBlock, currentRound)
+	if currentIndex == initIndex {
+		err := bp.storer.Put(hash, value)
+		if err != nil {
+			return err
+		}
+
+		bp.indexesMap[shardID] = index
+
+		return nil
 	}
 
-	metaRound := bp.indexesMap[core.MetachainShardId]
+	metaIndex := bp.indexesMap[core.MetachainShardId]
 
-	if !bp.shouldPutOutportBlock(round, metaRound) {
-		log.Error("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
-		return fmt.Errorf("failed to put outport block")
+	if !bp.shouldPutBlockData(currentIndex, metaIndex) {
+		log.Error("failed to put block data", "hash", hash, "round", currentIndex, "metaRound", metaIndex)
+		return fmt.Errorf("failed to put block data")
 	}
 
-	return bp.putOutportBlock(hash, outportBlock, currentRound)
+	err := bp.storer.Put(hash, value)
+	if err != nil {
+		return err
+	}
+
+	bp.indexesMap[shardID] = index
+
+	return nil
 }
 
 // should be run under mutex
-func (bp *blocksPool) shouldPutOutportBlock(round, metaRound uint64) bool {
-	diff := float64(int64(round) - int64(metaRound))
+func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
+	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 
 	if math.Abs(delta) > float64(bp.maxDelta) {
@@ -126,29 +138,6 @@ func (bp *blocksPool) shouldPutOutportBlock(round, metaRound uint64) bool {
 	}
 
 	return true
-}
-
-// should be run under mutex
-func (bp *blocksPool) putOutportBlock(
-	hash []byte,
-	outportBlock *outport.OutportBlock,
-	currentRound uint64,
-) error {
-	shardID := outportBlock.ShardID
-
-	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
-	if err != nil {
-		return err
-	}
-
-	err = bp.storer.Put(hash, outportBlockBytes)
-	if err != nil {
-		return err
-	}
-
-	bp.indexesMap[shardID] = currentRound
-
-	return nil
 }
 
 // GetBlock will return outport block data from the pool
