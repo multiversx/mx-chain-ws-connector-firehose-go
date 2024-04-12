@@ -6,6 +6,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
@@ -59,4 +60,8 @@ type BlocksPool interface {
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
 	IsInterfaceNil() bool
+}
+
+type Server interface {
+	Start() error
 }

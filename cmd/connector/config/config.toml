@@ -18,3 +18,8 @@
     # This flag specifies if we should drop messages if there is no connection to the host
     drop_messages_if_no_connection = false
     version = 1
+
+[grpc_server]
+    url = "localhost:8000"
+
+
