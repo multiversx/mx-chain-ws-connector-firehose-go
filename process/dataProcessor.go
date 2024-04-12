@@ -22,7 +22,6 @@ func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
 	outportBlocksPool OutportBlocksPool,
-	hyperOutportBlocksPool HyperOutportBlocksPool,
 	dataAggregator DataAggregator,
 	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
@@ -30,9 +29,6 @@ func NewDataProcessor(
 		return nil, ErrNilPublisher
 	}
 	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilBlocksPool
-	}
-	if check.IfNil(hyperOutportBlocksPool) {
 		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {

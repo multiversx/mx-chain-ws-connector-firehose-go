@@ -15,7 +15,7 @@ type hyperOutportBlocksPool struct {
 func NewHyperOutportBlocksPool(
 	dataPool process.DataPool,
 	marshaller marshal.Marshalizer,
-) (*outportBlocksPool, error) {
+) (*hyperOutportBlocksPool, error) {
 	if check.IfNil(dataPool) {
 		return nil, ErrNilDataPool
 	}
@@ -23,7 +23,7 @@ func NewHyperOutportBlocksPool(
 		return nil, process.ErrNilMarshaller
 	}
 
-	return &outportBlocksPool{
+	return &hyperOutportBlocksPool{
 		dataPool:   dataPool,
 		marshaller: marshaller,
 	}, nil

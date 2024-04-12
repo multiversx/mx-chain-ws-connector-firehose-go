@@ -7,7 +7,6 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -141,19 +140,8 @@ func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 }
 
 // GetBlock will return outport block data from the pool
-func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
-	data, err := bp.storer.Get(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	outportBlock := &outport.OutportBlock{}
-	err = bp.marshaller.Unmarshal(outportBlock, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return outportBlock, nil
+func (bp *blocksPool) GetBlock(hash []byte) ([]byte, error) {
+	return bp.storer.Get(hash)
 }
 
 // Close will trigger close on blocks pool component

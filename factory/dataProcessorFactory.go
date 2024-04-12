@@ -1,8 +1,6 @@
 package factory
 
 import (
-	"os"
-
 	"github.com/multiversx/mx-chain-communication-go/websocket"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
@@ -10,6 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 )
 
 // CreateDataProcessor will create a new instance of data processor
@@ -21,26 +20,30 @@ func CreateDataProcessor(cfg config.Config, storer process.PruningStorer) (webso
 		return nil, err
 	}
 
-	firehosePublisher, err := process.NewFirehosePublisher(
-		os.Stdout,
-		blockContainer,
-		protoMarshaller,
-	)
+	blocksPool, err := dataPool.NewBlocksPool(storer, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
 	if err != nil {
 		return nil, err
 	}
 
-	blocksPool, err := process.NewBlocksPool(storer, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
+	outportBlocksPool, err := dataPool.NewOutportBlocksPool(blocksPool, protoMarshaller)
 	if err != nil {
 		return nil, err
 	}
 
-	dataAggregator, err := process.NewDataAggregator(blocksPool)
+	dataAggregator, err := process.NewDataAggregator(outportBlocksPool)
 	if err != nil {
 		return nil, err
 	}
 
-	return process.NewDataProcessor(firehosePublisher, protoMarshaller, blocksPool, dataAggregator, blockContainer)
+	// TODO: move variable to config
+	isGrpcServerActivated := false
+
+	publisher, err := CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, blocksPool)
+	if err != nil {
+		return nil, err
+	}
+
+	return process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
 }
 
 func createBlockContainer() (process.BlockContainerHandler, error) {
