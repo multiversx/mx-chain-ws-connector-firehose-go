@@ -79,7 +79,7 @@ func startConnector(ctx *cli.Context) error {
 		return fmt.Errorf("cannot create connector runner, error: %w", err)
 	}
 
-	connectorRunner.Start()
+	err = connectorRunner.Start()
 	if err != nil {
 		return err
 	}

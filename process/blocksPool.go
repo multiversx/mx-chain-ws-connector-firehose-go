@@ -11,6 +11,8 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 )
 
+const initRound = 0
+
 type blocksPool struct {
 	storer          PruningStorer
 	marshaller      marshal.Marshalizer
@@ -52,9 +54,9 @@ func NewBlocksPool(
 func (bp *blocksPool) initRoundsMap() {
 	roundsMap := make(map[uint32]uint64)
 	for shardID := uint32(0); shardID < bp.numOfShards; shardID++ {
-		roundsMap[shardID] = 0
+		roundsMap[shardID] = initRound
 	}
-	roundsMap[core.MetachainShardId] = 0
+	roundsMap[core.MetachainShardId] = initRound
 
 	bp.roundsMap = roundsMap
 }
@@ -96,7 +98,7 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 		return fmt.Errorf("did not find shard id %d in blocksMap", shardID)
 	}
 
-	if round == 0 {
+	if round == initRound {
 		return bp.putOutportBlock(hash, outportBlock, currentRound)
 	}
 

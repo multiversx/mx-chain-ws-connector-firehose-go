@@ -49,6 +49,16 @@ func (is *importDBStorer) Dump() error {
 	return nil
 }
 
+// SetCheckpoint returns nil
+func (is *importDBStorer) SetCheckpoint(round uint64) error {
+	return nil
+}
+
+// GetCheckpoint returns nil
+func (is *importDBStorer) GetCheckpoint() (uint64, error) {
+	return 0, nil
+}
+
 // Close will close cacher component
 func (is *importDBStorer) Close() error {
 	return is.cacher.Close()

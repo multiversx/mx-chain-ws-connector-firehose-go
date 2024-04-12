@@ -2,11 +2,13 @@ package testscommon
 
 // PruningStorerStub -
 type PruningStorerStub struct {
-	GetCalled   func(key []byte) ([]byte, error)
-	PutCalled   func(key []byte, data []byte) error
-	PruneCalled func(index uint64) error
-	DumpCalled  func() error
-	CloseCalled func() error
+	GetCalled           func(key []byte) ([]byte, error)
+	PutCalled           func(key []byte, data []byte) error
+	PruneCalled         func(index uint64) error
+	DumpCalled          func() error
+	CloseCalled         func() error
+	SetCheckpointCalled func(round uint64) error
+	GetCheckpointCalled func() (uint64, error)
 }
 
 // Get -
@@ -43,6 +45,24 @@ func (p *PruningStorerStub) Dump() error {
 	}
 
 	return nil
+}
+
+// SetCheckpoint -
+func (p *PruningStorerStub) SetCheckpoint(round uint64) error {
+	if p.SetCheckpointCalled != nil {
+		return p.SetCheckpointCalled(round)
+	}
+
+	return nil
+}
+
+// GetCheckpoint -
+func (p *PruningStorerStub) GetCheckpoint() (uint64, error) {
+	if p.GetCheckpointCalled != nil {
+		return p.GetCheckpointCalled()
+	}
+
+	return 0, nil
 }
 
 // Close -
