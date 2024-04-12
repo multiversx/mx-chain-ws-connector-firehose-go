@@ -54,10 +54,26 @@ type DataAggregator interface {
 	IsInterfaceNil() bool
 }
 
-// BlocksPool defines the behaviour of a blocks pool handler component
-type BlocksPool interface {
+// DataPool defines the behaviour of a data pool handler component
+type DataPool interface {
+	PutBlock(hash []byte, data []byte, index uint64, shardID uint32) error
+	GetBlock(hash []byte) ([]byte, error)
+	UpdateMetaState(index uint64)
+	IsInterfaceNil() bool
+}
+
+// OutportBlocksPool defines the behaviour of an outport blocks pool handler component
+type OutportBlocksPool interface {
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
+	UpdateMetaState(round uint64)
+	IsInterfaceNil() bool
+}
+
+// HyperOutportBlocksPool defines the behaviour of a hyper blocks pool handler component
+type HyperOutportBlocksPool interface {
+	PutBlock(hash []byte, outportBlock *data.HyperOutportBlock, round uint64) error
+	GetBlock(hash []byte) (*data.HyperOutportBlock, error)
 	UpdateMetaState(round uint64)
 	IsInterfaceNil() bool
 }

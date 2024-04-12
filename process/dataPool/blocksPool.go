@@ -1,4 +1,4 @@
-package process
+package dataPool
 
 import (
 	"fmt"
@@ -9,33 +9,37 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	logger "github.com/multiversx/mx-chain-logger-go"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
 
-const initRound = 0
+var log = logger.GetOrCreate("dataPool")
+
+const initIndex = 0
 
 type blocksPool struct {
-	storer          PruningStorer
+	storer          process.PruningStorer
 	marshaller      marshal.Marshalizer
 	maxDelta        uint64
 	numOfShards     uint32
 	cleanupInterval uint64
 
-	roundsMap map[uint32]uint64
-	mutMap    sync.RWMutex
+	indexesMap map[uint32]uint64
+	mutMap     sync.RWMutex
 }
 
 func NewBlocksPool(
-	storer PruningStorer,
+	storer process.PruningStorer,
 	marshaller marshal.Marshalizer,
 	numOfShards uint32,
 	maxDelta uint64,
 	cleanupInterval uint64,
 ) (*blocksPool, error) {
 	if check.IfNil(storer) {
-		return nil, ErrNilPruningStorer
+		return nil, process.ErrNilPruningStorer
 	}
 	if check.IfNil(marshaller) {
-		return nil, ErrNilMarshaller
+		return nil, process.ErrNilMarshaller
 	}
 
 	bp := &blocksPool{
@@ -46,44 +50,44 @@ func NewBlocksPool(
 		cleanupInterval: cleanupInterval,
 	}
 
-	bp.initRoundsMap()
+	bp.initIndexesMap()
 
 	return bp, nil
 }
 
-func (bp *blocksPool) initRoundsMap() {
-	roundsMap := make(map[uint32]uint64)
+func (bp *blocksPool) initIndexesMap() {
+	indexesMap := make(map[uint32]uint64)
 	for shardID := uint32(0); shardID < bp.numOfShards; shardID++ {
-		roundsMap[shardID] = initRound
+		indexesMap[shardID] = initIndex
 	}
-	roundsMap[core.MetachainShardId] = initRound
+	indexesMap[core.MetachainShardId] = initIndex
 
-	bp.roundsMap = roundsMap
+	bp.indexesMap = indexesMap
 }
 
-func (bp *blocksPool) UpdateMetaState(round uint64) {
+func (bp *blocksPool) UpdateMetaState(index uint64) {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
-	bp.roundsMap[core.MetachainShardId] = round
+	bp.indexesMap[core.MetachainShardId] = index
 
-	err := bp.storer.SetCheckpoint(round)
+	err := bp.storer.SetCheckpoint(index)
 	if err != nil {
 		log.Warn("failed to set checkpoint", "error", err.Error())
 	}
 
-	err = bp.prunePersister(round)
+	err = bp.pruneStorer(index)
 	if err != nil {
-		log.Warn("failed to prune persister", "error", err.Error())
+		log.Warn("failed to prune storer", "error", err.Error())
 	}
 }
 
-func (bp *blocksPool) prunePersister(round uint64) error {
-	if round%bp.cleanupInterval != 0 {
+func (bp *blocksPool) pruneStorer(index uint64) error {
+	if index%bp.cleanupInterval != 0 {
 		return nil
 	}
 
-	return bp.storer.Prune(round)
+	return bp.storer.Prune(index)
 }
 
 // PutBlock will put the provided outport block data to the pool
@@ -93,16 +97,16 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 
 	shardID := outportBlock.ShardID
 
-	round, ok := bp.roundsMap[shardID]
+	round, ok := bp.indexesMap[shardID]
 	if !ok {
 		return fmt.Errorf("did not find shard id %d in blocksMap", shardID)
 	}
 
-	if round == initRound {
+	if round == initIndex {
 		return bp.putOutportBlock(hash, outportBlock, currentRound)
 	}
 
-	metaRound := bp.roundsMap[core.MetachainShardId]
+	metaRound := bp.indexesMap[core.MetachainShardId]
 
 	if !bp.shouldPutOutportBlock(round, metaRound) {
 		log.Error("failed to put outport block", "hash", hash, "round", round, "metaRound", metaRound)
@@ -142,7 +146,7 @@ func (bp *blocksPool) putOutportBlock(
 		return err
 	}
 
-	bp.roundsMap[shardID] = currentRound
+	bp.indexesMap[shardID] = currentRound
 
 	return nil
 }

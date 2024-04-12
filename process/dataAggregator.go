@@ -10,12 +10,12 @@ import (
 )
 
 type dataAggregator struct {
-	blocksPool BlocksPool
+	blocksPool OutportBlocksPool
 }
 
 // NewDataAggregator will create a new data aggregator instance
 func NewDataAggregator(
-	blocksPool BlocksPool,
+	blocksPool OutportBlocksPool,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool

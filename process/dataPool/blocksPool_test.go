@@ -1,15 +1,19 @@
-package process_test
+package dataPool_test
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 
 func TestNewBlocksPool(t *testing.T) {
 	t.Parallel()
@@ -17,7 +21,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("nil pruning storer", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
+		bp, err := dataPool.NewBlocksPool(
 			nil,
 			&testscommon.MarshallerMock{},
 			3,
@@ -31,7 +35,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("nil marshaller", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
+		bp, err := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			nil,
 			3,
@@ -45,7 +49,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
+		bp, err := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			&testscommon.MarshallerMock{},
 			3,
@@ -64,7 +68,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		bp, _ := process.NewBlocksPool(
+		bp, _ := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				GetCalled: func(key []byte) ([]byte, error) {
 					return nil, expectedErr
@@ -91,7 +95,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		}
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		bp, _ := process.NewBlocksPool(
+		bp, _ := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				GetCalled: func(key []byte) ([]byte, error) {
 					return outportBlockBytes, nil
@@ -117,7 +121,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 
 		cleanupInterval := uint64(100)
 
-		bp, _ := process.NewBlocksPool(
+		bp, _ := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PruneCalled: func(index uint64) error {
 					assert.Fail(t, "should have not been called")
@@ -140,7 +144,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		cleanupInterval := uint64(100)
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
+		bp, _ := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PruneCalled: func(index uint64) error {
 					wasCalled = true
@@ -169,7 +173,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		maxDelta := uint64(10)
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
+		bp, _ := dataPool.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PutCalled: func(key, data []byte) error {
 					wasCalled = true
