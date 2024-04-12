@@ -12,7 +12,7 @@ type dataProcessor struct {
 	marshaller        marshal.Marshalizer
 	operationHandlers map[string]func(marshalledData []byte) error
 	publisher         Publisher
-	blocksPool        OutportBlocksPool
+	outportBlocksPool OutportBlocksPool
 	dataAggregator    DataAggregator
 	blockCreator      BlockContainerHandler
 }
@@ -21,14 +21,18 @@ type dataProcessor struct {
 func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
-	blocksPool OutportBlocksPool,
+	outportBlocksPool OutportBlocksPool,
+	hyperOutportBlocksPool HyperOutportBlocksPool,
 	dataAggregator DataAggregator,
 	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
 	}
-	if check.IfNil(blocksPool) {
+	if check.IfNil(outportBlocksPool) {
+		return nil, ErrNilBlocksPool
+	}
+	if check.IfNil(hyperOutportBlocksPool) {
 		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {
@@ -42,11 +46,11 @@ func NewDataProcessor(
 	}
 
 	dp := &dataProcessor{
-		marshaller:     marshaller,
-		publisher:      publisher,
-		blocksPool:     blocksPool,
-		dataAggregator: dataAggregator,
-		blockCreator:   blockCreator,
+		marshaller:        marshaller,
+		publisher:         publisher,
+		outportBlocksPool: outportBlocksPool,
+		dataAggregator:    dataAggregator,
+		blockCreator:      blockCreator,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -102,7 +106,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	dp.blocksPool.UpdateMetaState(round)
+	dp.outportBlocksPool.UpdateMetaState(round)
 
 	return nil
 }
@@ -115,7 +119,7 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 		return err
 	}
 
-	err = dp.blocksPool.PutBlock(blockHash, outportBlock, round)
+	err = dp.outportBlocksPool.PutBlock(blockHash, outportBlock, round)
 	if err != nil {
 		return err
 	}
