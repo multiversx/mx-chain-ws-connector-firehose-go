@@ -5,6 +5,7 @@ type Config struct {
 	WebSocket            WebSocketConfig
 	DataPool             DataPoolConfig
 	OutportBlocksStorage StorageConfig
+	GRPCConfig      GRPCConfig      `toml:"grpc_server"`
 }
 
 // WebSocketConfig holds web sockets config
@@ -49,4 +50,9 @@ type DBConfig struct {
 	BatchDelaySeconds int
 	MaxBatchSize      int
 	MaxOpenFiles      int
+}
+
+// GRPCConfig holds gRPC server config
+type GRPCConfig struct {
+	URL string `toml:"url"`
 }
