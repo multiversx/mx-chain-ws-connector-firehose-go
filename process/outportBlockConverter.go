@@ -5,18 +5,18 @@ import (
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
-	coreData "github.com/multiversx/mx-chain-core-go/data"
+	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
 )
 
 type outportBlockConverter struct {
 	gogoProtoMarshalizer marshal.Marshalizer
 	protoMarshalizer     marshal.Marshalizer
-	bigIntCaster         coreData.BigIntCaster
+	bigIntCaster         data.BigIntCaster
 }
 
 // NewOutportBlockConverter will return a component than can convert outport.OutportBlock to either data.ShardOutportBlock.
@@ -25,12 +25,12 @@ func NewOutportBlockConverter() *outportBlockConverter {
 	return &outportBlockConverter{
 		gogoProtoMarshalizer: &marshal.GogoProtoMarshalizer{},
 		protoMarshalizer:     &ProtoMarshalizer{},
-		bigIntCaster:         coreData.BigIntCaster{},
+		bigIntCaster:         data.BigIntCaster{},
 	}
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.
-func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error) {
+func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*api.ShardOutportBlock, error) {
 	headerType := outportBlock.BlockData.HeaderType
 
 	// check if the header type is supported by this function.
@@ -44,7 +44,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("marshal shard outport block error: %s", err)
 	}
 
-	shardOutportBlock := &data.ShardOutportBlock{}
+	shardOutportBlock := &api.ShardOutportBlock{}
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
 	err = o.protoMarshalizer.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
@@ -63,22 +63,22 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	miniBlockHeaders := make([]*data.MiniBlockHeader, 0)
+	miniBlockHeaders := make([]*api.MiniBlockHeader, 0)
 	for _, miniBlockHeader := range header.Header.MiniBlockHeaders {
-		mb := &data.MiniBlockHeader{
+		mb := &api.MiniBlockHeader{
 			Hash:            miniBlockHeader.Hash,
 			SenderShardID:   miniBlockHeader.SenderShardID,
 			ReceiverShardID: miniBlockHeader.ReceiverShardID,
 			TxCount:         miniBlockHeader.TxCount,
-			Type:            data.Type(miniBlockHeader.Type),
+			Type:            api.Type(miniBlockHeader.Type),
 			Reserved:        miniBlockHeader.Reserved,
 		}
 		miniBlockHeaders = append(miniBlockHeaders, mb)
 	}
 
-	peerChanges := make([]*data.PeerChange, 0)
+	peerChanges := make([]*api.PeerChange, 0)
 	for _, peerChange := range header.Header.PeerChanges {
-		pc := &data.PeerChange{
+		pc := &api.PeerChange{
 			PubKey:      peerChange.PubKey,
 			ShardIdDest: peerChange.ShardIdDest,
 		}
@@ -95,7 +95,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("failed to cast developer fees: %w", err)
 	}
 
-	shardOutportBlock.BlockData.Header = &data.Header{
+	shardOutportBlock.BlockData.Header = &api.Header{
 		Nonce:              header.Header.Nonce,
 		PrevHash:           header.Header.PrevHash,
 		PrevRandSeed:       header.Header.PrevRandSeed,
@@ -105,7 +105,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		TimeStamp:          header.Header.TimeStamp,
 		Round:              header.Header.Round,
 		Epoch:              header.Header.Epoch,
-		BlockBodyType:      data.Type(header.Header.BlockBodyType),
+		BlockBodyType:      api.Type(header.Header.BlockBodyType),
 		Signature:          header.Header.Signature,
 		LeaderSignature:    header.Header.LeaderSignature,
 		MiniBlockHeaders:   miniBlockHeaders,
@@ -142,7 +142,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 }
 
 // HandleMetaOutportBlock will convert an outport.OutportBlock to data.MetaOutportBlock.
-func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error) {
+func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*api.MetaOutportBlock, error) {
 	headerType := outportBlock.BlockData.HeaderType
 
 	// check if the header type is supported by this function.
@@ -157,7 +157,7 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 	}
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
-	metaOutportBlock := &data.MetaOutportBlock{}
+	metaOutportBlock := &api.MetaOutportBlock{}
 	err = o.protoMarshalizer.Unmarshal(metaOutportBlock, bytes)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal metaBlockCaster error: %w", err)

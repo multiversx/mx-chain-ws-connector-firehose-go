@@ -7,6 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 
+	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
@@ -90,6 +91,12 @@ type PruningStorer interface {
 	IsInterfaceNil() bool
 }
 
+type OutportBlockConverter interface {
+	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*api.MetaOutportBlock, error)
+	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*api.ShardOutportBlock, error)
+}
+
+// Server defines the behaviour of the grpc server
 type Server interface {
 	Start() error
 }

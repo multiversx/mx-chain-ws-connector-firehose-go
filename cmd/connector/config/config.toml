@@ -29,7 +29,7 @@
     Version = 1
 
 [DataPool]
-    NumberOfShards = 3
+    NumberOfShards = 4
 
     # Should be smaller then PruningWindow
     MaxDelta = 10
@@ -51,7 +51,7 @@
         MaxBatchSize = 100
         MaxOpenFiles = 10
 
-[grpc_server]
+[GRPC]
     url = "localhost:8000"
 
 

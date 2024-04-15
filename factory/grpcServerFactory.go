@@ -4,30 +4,33 @@ import (
 	"fmt"
 	"net"
 
-	logger "github.com/multiversx/mx-chain-logger-go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
+	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/service/hyperOutportBlock"
 )
-
-var serverLog = logger.GetOrCreate("service")
 
 type grpcServer struct {
 	server *grpc.Server
 	config config.GRPCConfig
 }
 
+// NewServer instantiates the underlying grpc server handling rpc requests.
 func NewServer(config config.GRPCConfig, pool process.HyperOutportBlocksPool) *grpcServer {
 	s := grpc.NewServer()
 
-	hyperService := hyperOutportBlock.Service{BlocksPool: pool}
-	hyperService.Register(s)
+	converter := process.NewOutportBlockConverter()
+	hyperService := &hyperOutportBlock.Service{BlocksPool: pool, Converter: converter}
+	api.RegisterHyperOutportBlockServiceServer(s, hyperService)
+	reflection.Register(s)
 
 	return &grpcServer{s, config}
 }
 
+// Start will start the grpc server on the configured URL.
 func (s *grpcServer) Start() error {
 	lis, err := net.Listen("tcp", s.config.URL)
 	if err != nil {
@@ -41,6 +44,7 @@ func (s *grpcServer) Start() error {
 	return nil
 }
 
+// Stop will gracefully stop the grpc server.
 func (s *grpcServer) Stop() {
 	s.server.GracefulStop()
 }

@@ -5,7 +5,7 @@ type Config struct {
 	WebSocket            WebSocketConfig
 	DataPool             DataPoolConfig
 	OutportBlocksStorage StorageConfig
-	GRPCConfig      GRPCConfig      `toml:"grpc_server"`
+	GRPC                 GRPCConfig
 }
 
 // WebSocketConfig holds web sockets config
@@ -54,5 +54,5 @@ type DBConfig struct {
 
 // GRPCConfig holds gRPC service config
 type GRPCConfig struct {
-	URL string `toml:"url"`
+	URL string
 }
