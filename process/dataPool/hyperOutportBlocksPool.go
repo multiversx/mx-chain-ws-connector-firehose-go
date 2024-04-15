@@ -3,7 +3,8 @@ package dataPool
 import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
 

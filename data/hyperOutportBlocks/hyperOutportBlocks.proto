@@ -5,8 +5,8 @@ package proto;
 option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks";
 
 message HyperOutportBlock {
-  MetaOutportBlock                        OutportBlock            = 1;
-  repeated NotarizedHeaderOutportData NotarizedHeadersOutportData = 2;
+  MetaOutportBlock                        MetaOutportBlock            = 1;
+  repeated NotarizedHeaderOutportData NotarizedHeadersOutportData     = 2;
 }
 
 message NotarizedHeaderOutportData {

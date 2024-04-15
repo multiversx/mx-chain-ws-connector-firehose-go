@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 func main() {
@@ -19,9 +19,9 @@ func main() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 	defer conn.Close()
-	client := api.NewHyperOutportBlockServiceClient(conn)
+	client := data.NewHyperOutportBlockServiceClient(conn)
 
-	h, err := client.GetHyperOutportBlockByHash(context.TODO(), &api.BlockHashRequest{Hash: "290527fcdd2d3f565f609a82f870be14d40f5aff3de73e87d72be2520c667c98"})
+	h, err := client.GetHyperOutportBlockByHash(context.TODO(), &data.BlockHashRequest{Hash: "94a3a0e610350452da40bed3e1dc83b82b135e59835b02f20c46a4ba131ffb50"})
 	if err != nil {
 		panic(err)
 	}

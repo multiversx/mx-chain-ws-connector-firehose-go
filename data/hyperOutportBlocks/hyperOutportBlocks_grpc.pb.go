@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: api/hyperOutportBlocks/hyperOutportBlocks.proto
+// source: data/hyperOutportBlocks/hyperOutportBlocks.proto
 
 package hyperOutportBlocks
 
@@ -138,5 +138,5 @@ var HyperOutportBlockService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/hyperOutportBlocks/hyperOutportBlocks.proto",
+	Metadata: "data/hyperOutportBlocks/hyperOutportBlocks.proto",
 }

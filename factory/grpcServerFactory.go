@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/service/hyperOutportBlock"
 )
@@ -24,7 +24,7 @@ func NewServer(config config.GRPCConfig, pool process.HyperOutportBlocksPool) *g
 
 	converter := process.NewOutportBlockConverter()
 	hyperService := &hyperOutportBlock.Service{BlocksPool: pool, Converter: converter}
-	api.RegisterHyperOutportBlockServiceServer(s, hyperService)
+	data.RegisterHyperOutportBlockServiceServer(s, hyperService)
 	reflection.Register(s)
 
 	return &grpcServer{s, config}

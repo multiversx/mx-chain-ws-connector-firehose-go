@@ -7,8 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 
-	api "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 // WSConnector defines a ws connector that receives incoming data and can be closed
@@ -92,8 +91,8 @@ type PruningStorer interface {
 }
 
 type OutportBlockConverter interface {
-	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*api.MetaOutportBlock, error)
-	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*api.ShardOutportBlock, error)
+	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error)
+	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error)
 }
 
 // Server defines the behaviour of the grpc server

@@ -18,7 +18,7 @@ import (
 var log = logger.GetOrCreate("main")
 
 const (
-	configPath = "config/config.toml"
+	configPath = "/home/cristu/go/src/github.com/multiversx/mx-chain-ws-connector-firehose-go/cmd/connector/config/config.toml"
 
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
