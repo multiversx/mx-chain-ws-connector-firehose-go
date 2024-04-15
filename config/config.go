@@ -52,7 +52,7 @@ type DBConfig struct {
 	MaxOpenFiles      int
 }
 
-// GRPCConfig holds gRPC server config
+// GRPCConfig holds gRPC service config
 type GRPCConfig struct {
 	URL string `toml:"url"`
 }

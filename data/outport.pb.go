@@ -4,19 +4,20 @@
 package data
 
 import (
-	context "context"
-	fmt "fmt"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
-	outport "github.com/multiversx/mx-chain-core-go/data/outport"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-	io "io"
-	math "math"
+	"context"
+	"fmt"
+	"io"
+	"math"
 	math_bits "math/bits"
-	reflect "reflect"
-	strings "strings"
+	"reflect"
+	"strings"
+
+	_ "github.com/gogo/protobuf/gogoproto"
+	"github.com/gogo/protobuf/proto"
+	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -365,7 +366,7 @@ func (c *hyperOutportBlockServiceClient) GetHyperOutportBlock(ctx context.Contex
 	return out, nil
 }
 
-// HyperOutportBlockServiceServer is the server API for HyperOutportBlockService service.
+// HyperOutportBlockServiceServer is the service API for HyperOutportBlockService service.
 type HyperOutportBlockServiceServer interface {
 	GetHyperOutportBlock(context.Context, *HyperOutportBlockRequest) (*HyperOutportBlock, error)
 }
