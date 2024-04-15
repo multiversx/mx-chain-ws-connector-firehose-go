@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/server"
 )
 
 var log = logger.GetOrCreate("mx-chain-ws-connector-template-go")
@@ -76,13 +74,12 @@ func startConnector(ctx *cli.Context) error {
 		}
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9090))
-	if err != nil {
-		log.Error("failed to listen: %v", err)
-	}
-
-	s := server.New()
-	go s.Start(lis)
+	s := factory.NewServer(cfg.GRPCConfig)
+	go func() {
+		if err := s.Start(); err != nil {
+			log.Error("failed to start server", "error", err)
+		}
+	}()
 
 	wsClient, err := factory.CreateWSConnector(cfg.WebSocketConfig)
 	if err != nil {
