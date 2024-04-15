@@ -1,52 +1,15 @@
 package factory
 
 import (
-	"github.com/multiversx/mx-chain-communication-go/websocket"
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 )
 
-// CreateDataProcessor will create a new instance of data processor
-func CreateDataProcessor(cfg config.Config, storer process.PruningStorer) (websocket.PayloadHandler, error) {
-	protoMarshaller := &marshal.GogoProtoMarshalizer{}
-
-	blockContainer, err := createBlockContainer()
-	if err != nil {
-		return nil, err
-	}
-
-	blocksPool, err := dataPool.NewBlocksPool(storer, protoMarshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
-	if err != nil {
-		return nil, err
-	}
-
-	outportBlocksPool, err := dataPool.NewOutportBlocksPool(blocksPool, protoMarshaller)
-	if err != nil {
-		return nil, err
-	}
-
-	dataAggregator, err := process.NewDataAggregator(outportBlocksPool)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: move variable to config
-	isGrpcServerActivated := false
-
-	publisher, err := CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, blocksPool)
-	if err != nil {
-		return nil, err
-	}
-
-	return process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
-}
-
-func createBlockContainer() (process.BlockContainerHandler, error) {
+// CreateBlockContainer will create a new block container component
+func CreateBlockContainer() (process.BlockContainerHandler, error) {
 	container := block.NewEmptyBlockCreatorsContainer()
 
 	err := container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
