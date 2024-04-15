@@ -7,6 +7,7 @@ type BlocksPoolStub struct {
 	PutBlockCalled        func(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlockCalled        func(hash []byte) (*outport.OutportBlock, error)
 	UpdateMetaStateCalled func(round uint64)
+	CloseCalled           func() error
 }
 
 // PutBlock -
@@ -32,6 +33,15 @@ func (b *BlocksPoolStub) UpdateMetaState(round uint64) {
 	if b.UpdateMetaStateCalled != nil {
 		b.UpdateMetaStateCalled(round)
 	}
+}
+
+// Close -
+func (b *BlocksPoolStub) Close() error {
+	if b.CloseCalled != nil {
+		return b.CloseCalled()
+	}
+
+	return nil
 }
 
 // IsInterfaceNil -

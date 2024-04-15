@@ -39,31 +39,23 @@ func NewConnectorRunner(cfg *config.Config, importDBMode bool) (*connectorRunner
 
 // Start will trigger connector service
 func (cr *connectorRunner) Start() error {
+	// TODO: move variable to config
+	isGrpcServerActivated := false
+
 	protoMarshaller := &marshal.GogoProtoMarshalizer{}
-
-	outportBlocksStorer, err := factory.CreateStorer(*cr.config, cr.importDBMode)
-	if err != nil {
-		return err
-	}
-
-	// TODO: separate config for hyper outport blocks storer
-	hyperOutportBlocksStorer, err := factory.CreateStorer(*cr.config, cr.importDBMode)
-	if err != nil {
-		return err
-	}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
 		return err
 	}
 
-	outportBlockDataPool, err := dataPool.NewBlocksPool(outportBlocksStorer, protoMarshaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.importDBMode, protoMarshaller)
 	if err != nil {
 		return err
 	}
 
 	// TODO: add separate config section for hyper blocks grpc data pool
-	hyperOutportBlockDataPool, err := dataPool.NewBlocksPool(hyperOutportBlocksStorer, protoMarshaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	hyperOutportBlockDataPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.importDBMode, protoMarshaller)
 	if err != nil {
 		return err
 	}
@@ -77,9 +69,6 @@ func (cr *connectorRunner) Start() error {
 	if err != nil {
 		return err
 	}
-
-	// TODO: move variable to config
-	isGrpcServerActivated := false
 
 	publisher, err := factory.CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockDataPool)
 	if err != nil {

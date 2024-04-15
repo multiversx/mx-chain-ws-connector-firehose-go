@@ -3,9 +3,12 @@ package factory
 import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool/disabled"
 )
 
 // CreateBlockContainer will create a new block container component
@@ -46,4 +49,37 @@ func CreateStorer(cfg config.Config, importDBMode bool) (process.PruningStorer, 
 	}
 
 	return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep)
+}
+
+// CreateBlocksPool will create a new blocks pool component
+func CreateBlocksPool(
+	cfg config.Config,
+	importDBMode bool,
+	marshaller marshal.Marshalizer,
+) (process.DataPool, error) {
+	blocksStorer, err := CreateStorer(cfg, importDBMode)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataPool.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
+}
+
+// CreateHyperBlocksPool will create a new hyper blocks pool component
+func CreateHyperBlocksPool(
+	grpcServerMode bool,
+	cfg config.Config,
+	importDBMode bool,
+	marshaller marshal.Marshalizer,
+) (process.HyperOutportBlocksPool, error) {
+	if !grpcServerMode {
+		return disabled.NewDisabledHyperOutportBlocksPool(), nil
+	}
+
+	hyperOutportBlockDataPool, err := CreateBlocksPool(cfg, importDBMode, marshaller)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataPool.NewHyperOutportBlocksPool(hyperOutportBlockDataPool, marshaller)
 }
