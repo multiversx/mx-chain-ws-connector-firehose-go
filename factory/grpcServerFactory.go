@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/service/hyperOutportBlock"
 )
 
@@ -18,10 +19,10 @@ type grpcServer struct {
 	config config.GRPCConfig
 }
 
-func NewServer(config config.GRPCConfig) *grpcServer {
+func NewServer(config config.GRPCConfig, pool process.HyperOutportBlocksPool) *grpcServer {
 	s := grpc.NewServer()
 
-	hyperService := hyperOutportBlock.Service{}
+	hyperService := hyperOutportBlock.Service{BlocksPool: pool}
 	hyperService.Register(s)
 
 	return &grpcServer{s, config}
@@ -42,18 +43,4 @@ func (s *grpcServer) Start() error {
 
 func (s *grpcServer) Stop() {
 	s.server.GracefulStop()
-}
-
-// CreateGRPCServer will create a gRPC service able to process incoming request.
-func CreateGRPCServer(cfg config.GRPCConfig) (*grpcServer, error) {
-	server := NewServer(cfg)
-
-	go func() {
-		if err := server.Start(); err != nil {
-			serverLog.Error("failed to start service", "error", err)
-			return
-		}
-	}()
-
-	return server, nil
 }

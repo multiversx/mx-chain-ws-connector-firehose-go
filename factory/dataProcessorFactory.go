@@ -6,6 +6,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
@@ -36,9 +37,9 @@ func CreateDataProcessor(cfg config.Config, storer process.PruningStorer) (webso
 	}
 
 	// TODO: move variable to config
-	isGrpcServerActivated := false
+	isGrpcServerActivated := true
 
-	publisher, err := CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, blocksPool)
+	publisher, err := CreatePublisher(cfg, isGrpcServerActivated, blockContainer, protoMarshaller, blocksPool)
 	if err != nil {
 		return nil, err
 	}

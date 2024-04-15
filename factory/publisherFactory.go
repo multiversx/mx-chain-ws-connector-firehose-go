@@ -4,12 +4,14 @@ import (
 	"os"
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
+
+	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 )
 
 // CreatePublisher will create publisher component
-func CreatePublisher(
+func CreatePublisher(cfg config.Config,
 	isGrpcServer bool,
 	blockCreator process.BlockContainerHandler,
 	marshaller marshal.Marshalizer,
@@ -27,6 +29,14 @@ func CreatePublisher(
 	if err != nil {
 		return nil, err
 	}
+
+	server := NewServer(cfg.GRPCConfig, hyperOutportBlocksPool)
+
+	go func() {
+		if serverErr := server.Start(); serverErr != nil {
+			log.Error("Failed to start server", "error", serverErr)
+		}
+	}()
 
 	return process.NewGrpcPublisher(hyperOutportBlocksPool, blockCreator, marshaller)
 }
