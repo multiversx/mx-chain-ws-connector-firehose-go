@@ -26,7 +26,8 @@ func CreatePublisher(cfg config.Config,
 		)
 	}
 
-	hyperOutportBlocksPool, err := dataPool.NewHyperOutportBlocksPool(blocksPool, marshaller)
+	protoMarshalizer := &process.ProtoMarshalizer{}
+	hyperOutportBlocksPool, err := dataPool.NewHyperOutportBlocksPool(blocksPool, protoMarshalizer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create hyper blocks pool: %w", err)
 	}

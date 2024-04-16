@@ -97,10 +97,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	round, err := dp.getHeaderRound(hyperOutportBlock.MetaOutportBlock)
-	if err != nil {
-		return err
-	}
+	round := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Round
 
 	dp.outportBlocksPool.UpdateMetaState(round)
 
