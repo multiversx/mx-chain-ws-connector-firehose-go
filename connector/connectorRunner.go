@@ -9,6 +9,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -70,7 +71,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockPool)
+	publisher, err := factory.CreatePublisher(*cr.config, isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockPool)
 	if err != nil {
 		return err
 	}

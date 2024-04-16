@@ -1,7 +1,6 @@
 package factory
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
@@ -25,12 +24,7 @@ func CreatePublisher(cfg config.Config,
 		)
 	}
 
-	hyperOutportBlocksPool, err := dataPool.NewHyperOutportBlocksPool(blocksPool, marshaller)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create hyper blocks pool: %w", err)
-	}
-
-	server := NewServer(cfg.GRPC, hyperOutportBlocksPool)
+	server := NewServer(cfg.GRPC, blocksPool)
 
 	go func() {
 		if serverErr := server.Start(); serverErr != nil {
@@ -38,5 +32,5 @@ func CreatePublisher(cfg config.Config,
 		}
 	}()
 
-	return process.NewGrpcPublisher(hyperOutportBlocksPool, blockCreator, marshaller)
+	return process.NewGrpcPublisher(blocksPool, blockCreator, marshaller)
 }

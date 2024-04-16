@@ -5,7 +5,8 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 type grpcPublisher struct {
@@ -31,10 +32,7 @@ func NewGrpcPublisher(
 func (gp *grpcPublisher) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
 	blockHash := hyperOutportBlock.MetaOutportBlock.BlockData.HeaderHash
 
-	round, err := gp.getHeaderRound(hyperOutportBlock.MetaOutportBlock)
-	if err != nil {
-		return err
-	}
+	round := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Round
 
 	return gp.hyperBlocksPool.PutBlock(blockHash, hyperOutportBlock, round)
 }

@@ -5,12 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 var log = logger.GetOrCreate("process")
@@ -64,15 +63,7 @@ func NewFirehosePublisher(
 func (fp *firehosePublisher) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
 	outportBlock := hyperOutportBlock.MetaOutportBlock
 
-	blockCreator, err := fp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
-	if err != nil {
-		return err
-	}
-
-	header, err := block.GetHeaderFromBytes(fp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
-	if err != nil {
-		return err
-	}
+	header := hyperOutportBlock.MetaOutportBlock.BlockData.Header
 
 	blockNum := header.GetNonce()
 	parentNum := blockNum - 1
