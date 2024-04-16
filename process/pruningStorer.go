@@ -282,15 +282,13 @@ func (ps *pruningStorer) dumpDataToPersister() error {
 
 	cacherKeys := ps.cacher.Keys()
 
-	log.Info("dumpDataToPersister in progress...")
-
 	for _, key := range cacherKeys {
 		log.Debug("dumpDataToPersister", "key", key)
 
 		v, ok := ps.cacher.Get(key)
 		if !ok {
 			log.Warn("failed to get key from cache", "key", hex.EncodeToString(key))
-			continue
+			return fmt.Errorf("failed to get key from cache")
 		}
 
 		data, ok := v.([]byte)
@@ -301,7 +299,7 @@ func (ps *pruningStorer) dumpDataToPersister() error {
 
 		err := ps.putInPersister(key, data)
 		if err != nil {
-			log.Error("failed to dump data to persister", "key", hex.EncodeToString(key))
+			log.Error("failed to put data into persister", "key", hex.EncodeToString(key))
 		}
 	}
 
@@ -340,6 +338,7 @@ func (ps *pruningStorer) cleanupOldPersisters() error {
 	persistersPathsToRemove := persistersPaths[numPersistersToKeep:]
 
 	for _, path := range persistersPathsToRemove {
+		log.Info("pruningStorer: removing old persister", "path", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			log.Warn("failed to remove db dir", "path", path)
@@ -404,7 +403,7 @@ func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 	if len(ps.activePersisters) >= ps.numPersistersToKeep {
 		inactivePersister := ps.activePersisters[len(ps.activePersisters)-1]
 
-		log.Info("pruningStorer: closing persister")
+		log.Info("pruningStorer: closing persister", "path", inactivePersister.path)
 		err = inactivePersister.persister.Close()
 		if err != nil {
 			return err
@@ -433,9 +432,6 @@ func (ps *pruningStorer) getTmpNumPersistersToKeep() int {
 // Close will dump cache data to persister and it will
 // close cacher and persister components
 func (ps *pruningStorer) Close() error {
-	ps.persistersMut.Lock()
-	defer ps.persistersMut.Unlock()
-
 	err := ps.dumpDataToPersister()
 	if err != nil {
 		return err
@@ -445,6 +441,9 @@ func (ps *pruningStorer) Close() error {
 	if err != nil {
 		return err
 	}
+
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
 
 	var persistersErrClose bool
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
@@ -456,6 +455,28 @@ func (ps *pruningStorer) Close() error {
 
 	if persistersErrClose {
 		return fmt.Errorf("failed to close active persisters")
+	}
+
+	return nil
+}
+
+// Destroy will remove active persisters
+func (ps *pruningStorer) Destroy() error {
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
+
+	ps.cacher.Clear()
+
+	var persistersErrDestroy bool
+	for idx := 0; idx < len(ps.activePersisters); idx++ {
+		err := ps.activePersisters[idx].persister.Destroy()
+		if err != nil {
+			persistersErrDestroy = true
+		}
+	}
+
+	if persistersErrDestroy {
+		return fmt.Errorf("failed to destroy persisters")
 	}
 
 	return nil

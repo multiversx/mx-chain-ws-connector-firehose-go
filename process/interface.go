@@ -89,5 +89,6 @@ type PruningStorer interface {
 	Dump() error
 	SetCheckpoint(round uint64) error
 	Close() error
+	Destroy() error
 	IsInterfaceNil() bool
 }

@@ -94,24 +94,19 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = dataProcessor.Close()
-	if err != nil {
-		return err
-	}
-
-	err = wsClient.Close()
-	if err != nil {
-		return err
-	}
-
 	err = outportBlocksPool.Close()
 	if err != nil {
-		return err
+		log.Error(err.Error())
 	}
 
 	err = hyperOutportBlockPool.Close()
 	if err != nil {
-		return err
+		log.Error(err.Error())
+	}
+
+	err = wsClient.Close()
+	if err != nil {
+		log.Error(err.Error())
 	}
 
 	return err
