@@ -74,6 +74,11 @@ func (p *PruningStorerStub) Close() error {
 	return nil
 }
 
+// Destroy -
+func (p *PruningStorerStub) Destroy() error {
+	return nil
+}
+
 // IsInterfaceNil -
 func (p *PruningStorerStub) IsInterfaceNil() bool {
 	return p == nil
