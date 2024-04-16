@@ -33,10 +33,11 @@ type pruningStorer struct {
 
 	dbConf              config.DBConfig
 	numPersistersToKeep int
+	isFullDBSync        bool
 }
 
 // NewPruningStorer will create a new instance of pruning storer
-func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int) (*pruningStorer, error) {
+func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int, isFullDBSync bool) (*pruningStorer, error) {
 	if check.IfNil(cacher) {
 		return nil, ErrNilCacher
 	}
@@ -51,6 +52,7 @@ func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToK
 		dbConf:              cfg,
 		cacher:              cacher,
 		numPersistersToKeep: numPersistersToKeep,
+		isFullDBSync:        isFullDBSync,
 	}
 
 	err := ps.initPersisters()
@@ -221,7 +223,11 @@ func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 func (ps *pruningStorer) Put(key, data []byte) error {
 	ps.cacher.Put(key, data, len(data))
 
-	return nil
+	if !ps.isFullDBSync {
+		return nil
+	}
+
+	return ps.putInPersister(key, data)
 }
 
 func (ps *pruningStorer) SetCheckpoint(round uint64) error {
@@ -269,6 +275,11 @@ func (ps *pruningStorer) Dump() error {
 }
 
 func (ps *pruningStorer) dumpDataToPersister() error {
+	if ps.isFullDBSync {
+		// no need to dump data to persister
+		return nil
+	}
+
 	cacherKeys := ps.cacher.Keys()
 
 	log.Info("dumpDataToPersister in progress...")

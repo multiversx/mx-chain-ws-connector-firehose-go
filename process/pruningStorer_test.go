@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var isFullDBSync = true
+
 func TestNewPruningStorer(t *testing.T) {
 	t.Parallel()
 
@@ -27,7 +29,7 @@ func TestNewPruningStorer(t *testing.T) {
 			MaxOpenFiles:      10,
 		}
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 0)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 0, isFullDBSync)
 		require.Nil(t, ps)
 		require.Equal(t, process.ErrInvalidNumberOfPersisters, err)
 	})
@@ -43,7 +45,7 @@ func TestNewPruningStorer(t *testing.T) {
 			MaxOpenFiles:      10,
 		}
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2, isFullDBSync)
 		require.Nil(t, ps)
 		require.Equal(t, process.ErrInvalidFilePath, err)
 	})
@@ -59,7 +61,7 @@ func TestNewPruningStorer(t *testing.T) {
 			MaxOpenFiles:      10,
 		}
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2, isFullDBSync)
 		require.Nil(t, ps)
 		require.Equal(t, process.ErrNotSupportedDBType, err)
 	})
@@ -77,7 +79,7 @@ func TestNewPruningStorer(t *testing.T) {
 			MaxOpenFiles:      10,
 		}
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), 2, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -105,7 +107,7 @@ func TestNewPruningStorer(t *testing.T) {
 
 		numPersistersToKeep := 2
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -132,7 +134,7 @@ func TestNewPruningStorer(t *testing.T) {
 
 		numPersistersToKeep := 2
 
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -159,7 +161,7 @@ func TestPruningStorer_getPersisterPaths(t *testing.T) {
 	}
 
 	numPersistersToKeep := 2
-	ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+	ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 	require.Nil(t, err)
 	require.NotNil(t, ps)
 
@@ -191,7 +193,7 @@ func TestPruningStorer_Get(t *testing.T) {
 		}
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -226,7 +228,7 @@ func TestPruningStorer_Get(t *testing.T) {
 		cacher := testscommon.NewCacherMock()
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, cacher, numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, cacher, numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -272,7 +274,7 @@ func TestPruningStorer_Get(t *testing.T) {
 		}
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, cacher, numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, cacher, numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -304,7 +306,7 @@ func TestPruningStorer_Put(t *testing.T) {
 		}
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -356,7 +358,7 @@ func TestPruningStorer_Prune(t *testing.T) {
 		}
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
@@ -402,7 +404,7 @@ func TestPruningStorer_Prune(t *testing.T) {
 		}
 
 		numPersistersToKeep := 2
-		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep)
+		ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, isFullDBSync)
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 

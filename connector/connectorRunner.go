@@ -21,19 +21,19 @@ var log = logger.GetOrCreate("connectorRunner")
 var ErrNilConfig = errors.New("nil configs provided")
 
 type connectorRunner struct {
-	config       *config.Config
-	importDBMode bool
+	config *config.Config
+	dbMode string
 }
 
 // NewConnectorRunner will create a new connector runner instance
-func NewConnectorRunner(cfg *config.Config, importDBMode bool) (*connectorRunner, error) {
+func NewConnectorRunner(cfg *config.Config, dbMode string) (*connectorRunner, error) {
 	if cfg == nil {
 		return nil, ErrNilConfig
 	}
 
 	return &connectorRunner{
-		config:       cfg,
-		importDBMode: importDBMode,
+		config: cfg,
+		dbMode: dbMode,
 	}, nil
 }
 
@@ -49,13 +49,13 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.importDBMode, protoMarshaller)
+	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.dbMode, protoMarshaller)
 	if err != nil {
 		return err
 	}
 
 	// TODO: add separate config section for hyper blocks grpc data pool
-	hyperOutportBlockPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.importDBMode, protoMarshaller)
+	hyperOutportBlockPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.dbMode, protoMarshaller)
 	if err != nil {
 		return err
 	}

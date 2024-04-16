@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"errors"
+
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/marshal"
@@ -9,6 +11,15 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool/disabled"
+)
+
+// ErrNotSupportedDBMode signals that an invalid db mode was provided
+var ErrNotSupportedDBMode = errors.New("not supported db mode")
+
+const (
+	FullPersisterDBMode      = "full-persister"
+	ImportDBMode             = "import-db"
+	OptimizedPersisterDBMode = "optimized-persister"
 )
 
 // CreateBlockContainer will create a new block container component
@@ -32,7 +43,7 @@ func CreateBlockContainer() (process.BlockContainerHandler, error) {
 }
 
 // CreateStorer will create a new pruning storer instace
-func CreateStorer(cfg config.Config, importDBMode bool) (process.PruningStorer, error) {
+func CreateStorer(cfg config.Config, dbMode string) (process.PruningStorer, error) {
 	cacheConfig := storageUnit.CacheConfig{
 		Type:        storageUnit.CacheType(cfg.OutportBlocksStorage.Cache.Type),
 		SizeInBytes: cfg.OutportBlocksStorage.Cache.SizeInBytes,
@@ -44,20 +55,25 @@ func CreateStorer(cfg config.Config, importDBMode bool) (process.PruningStorer, 
 		return nil, err
 	}
 
-	if importDBMode {
+	switch dbMode {
+	case FullPersisterDBMode:
+		return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep, true)
+	case OptimizedPersisterDBMode:
+		return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep, false)
+	case ImportDBMode:
 		return process.NewImportDBStorer(cacher)
+	default:
+		return nil, ErrNotSupportedDBMode
 	}
-
-	return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep)
 }
 
 // CreateBlocksPool will create a new blocks pool component
 func CreateBlocksPool(
 	cfg config.Config,
-	importDBMode bool,
+	dbMode string,
 	marshaller marshal.Marshalizer,
 ) (process.DataPool, error) {
-	blocksStorer, err := CreateStorer(cfg, importDBMode)
+	blocksStorer, err := CreateStorer(cfg, dbMode)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +85,14 @@ func CreateBlocksPool(
 func CreateHyperBlocksPool(
 	grpcServerMode bool,
 	cfg config.Config,
-	importDBMode bool,
+	dbMode string,
 	marshaller marshal.Marshalizer,
 ) (process.HyperOutportBlocksPool, error) {
 	if !grpcServerMode {
 		return disabled.NewDisabledHyperOutportBlocksPool(), nil
 	}
 
-	hyperOutportBlockDataPool, err := CreateBlocksPool(cfg, importDBMode, marshaller)
+	hyperOutportBlockDataPool, err := CreateBlocksPool(cfg, dbMode, marshaller)
 	if err != nil {
 		return nil, err
 	}
