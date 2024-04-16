@@ -13,6 +13,7 @@ type hyperOutportBlocksPool struct {
 	dataPool   process.DataPool
 }
 
+// NewHyperOutportBlocksPool will create a new hyper outport blocks pool component
 func NewHyperOutportBlocksPool(
 	dataPool process.DataPool,
 	marshaller marshal.Marshalizer,
@@ -30,6 +31,7 @@ func NewHyperOutportBlocksPool(
 	}, nil
 }
 
+// UpdateMetaState will trigger data pool update state
 func (bp *hyperOutportBlocksPool) UpdateMetaState(round uint64) {
 	bp.dataPool.UpdateMetaState(round)
 }
@@ -66,8 +68,9 @@ func (bp *hyperOutportBlocksPool) GetBlock(hash []byte) (*data.HyperOutportBlock
 	return outportBlock, nil
 }
 
+// Close will trigger close on data pool component
 func (bp *hyperOutportBlocksPool) Close() error {
-	return nil
+	return bp.dataPool.Close()
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface

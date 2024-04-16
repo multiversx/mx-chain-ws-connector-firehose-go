@@ -109,7 +109,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 
 		ret, err := bp.GetBlock([]byte("hash1"))
 		require.Nil(t, err)
-		require.Equal(t, outportBlock, ret)
+		require.Equal(t, outportBlockBytes, ret)
 	})
 }
 

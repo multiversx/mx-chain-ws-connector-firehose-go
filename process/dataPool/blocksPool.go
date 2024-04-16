@@ -113,8 +113,7 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, index uint64, shardID 
 	metaIndex := bp.indexesMap[core.MetachainShardId]
 
 	if !bp.shouldPutBlockData(currentIndex, metaIndex) {
-		log.Error("failed to put block data", "hash", hash, "round", currentIndex, "metaRound", metaIndex)
-		return fmt.Errorf("failed to put block data")
+		return ErrFailedToPutBlockDataToPool
 	}
 
 	err := bp.storer.Put(hash, value)
@@ -132,7 +131,7 @@ func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 
-	if math.Abs(delta) > float64(bp.maxDelta) {
+	if math.Abs(delta) >= float64(bp.maxDelta) {
 		return false
 	}
 

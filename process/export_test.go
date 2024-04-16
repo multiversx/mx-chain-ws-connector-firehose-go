@@ -8,11 +8,19 @@ const (
 )
 
 // GetActivePersisters -
-func (ps *pruningStorer) GetActivePersisters() []types.Persister {
+func (ps *pruningStorer) GetActivePersisters() []*persisterData {
 	ps.persistersMut.RLock()
 	defer ps.persistersMut.RUnlock()
 
 	return ps.activePersisters
+}
+
+// GetActivePersister -
+func (ps *pruningStorer) GetActivePersister(index int) types.Persister {
+	ps.persistersMut.RLock()
+	defer ps.persistersMut.RUnlock()
+
+	return ps.activePersisters[index].persister
 }
 
 // GetPersisterPaths -

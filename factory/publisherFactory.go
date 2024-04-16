@@ -8,7 +8,6 @@ import (
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 )
 
 // CreatePublisher will create publisher component
@@ -16,7 +15,7 @@ func CreatePublisher(cfg config.Config,
 	isGrpcServer bool,
 	blockCreator process.BlockContainerHandler,
 	marshaller marshal.Marshalizer,
-	blocksPool process.DataPool,
+	blocksPool process.HyperOutportBlocksPool,
 ) (process.Publisher, error) {
 	if !isGrpcServer {
 		return process.NewFirehosePublisher(

@@ -30,6 +30,7 @@ func NewOutportBlocksPool(
 	}, nil
 }
 
+// UpdateMetaState will trigger data pool update state
 func (bp *outportBlocksPool) UpdateMetaState(round uint64) {
 	bp.dataPool.UpdateMetaState(round)
 }
@@ -60,9 +61,9 @@ func (bp *outportBlocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error
 	return outportBlock, nil
 }
 
-// Close will trigger close on blocks pool component
+// Close will trigger close on data pool component
 func (bp *outportBlocksPool) Close() error {
-	return nil
+	return bp.dataPool.Close()
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface

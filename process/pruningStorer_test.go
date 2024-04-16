@@ -317,11 +317,11 @@ func TestPruningStorer_Put(t *testing.T) {
 		key := []byte("key4")
 		value := []byte("value4")
 
-		persister4 := ps.GetActivePersisters()[0]
+		persister4 := ps.GetActivePersister(0)
 		_, err = persister4.Get(key)
 		require.Error(t, err)
 
-		persister3 := ps.GetActivePersisters()[1]
+		persister3 := ps.GetActivePersister(1)
 		_, err = persister3.Get(key)
 		require.Error(t, err)
 
@@ -365,19 +365,19 @@ func TestPruningStorer_Prune(t *testing.T) {
 
 		require.Equal(t, "4", filepath.Base(persistersPaths[0]))
 
-		persister4 := ps.GetActivePersisters()[0]
+		persister4 := ps.GetActivePersister(0)
 		_ = persister4.Put([]byte("key4"), []byte("value4"))
 
 		err = ps.Prune(5)
 		require.Nil(t, err)
 
 		// new persister will not have the data but the last one will have it
-		persister5 := ps.GetActivePersisters()[0]
+		persister5 := ps.GetActivePersister(0)
 		key4Val, err := persister5.Get([]byte("key4"))
 		require.Nil(t, key4Val)
 		require.Error(t, err)
 
-		persister4 = ps.GetActivePersisters()[1]
+		persister4 = ps.GetActivePersister(1)
 		key4Val, err = persister4.Get([]byte("key4"))
 		require.Nil(t, err)
 		require.Equal(t, []byte("value4"), key4Val)
@@ -415,10 +415,10 @@ func TestPruningStorer_Prune(t *testing.T) {
 
 		require.Equal(t, 4, len(persistersPaths))
 
-		persister4 := ps.GetActivePersisters()[0]
+		persister4 := ps.GetActivePersister(0)
 		_ = persister4.Put([]byte("key4"), []byte("value4"))
 
-		persister3 := ps.GetActivePersisters()[1]
+		persister3 := ps.GetActivePersister(1)
 		_ = persister3.Put([]byte("key3"), []byte("value3"))
 
 		err = ps.Prune(5)
@@ -430,12 +430,12 @@ func TestPruningStorer_Prune(t *testing.T) {
 		require.Equal(t, numPersistersToKeep, len(persistersPaths))
 
 		// new persister will not have the data but the last one will have it
-		persister5 := ps.GetActivePersisters()[0]
+		persister5 := ps.GetActivePersister(0)
 		key4Val, err := persister5.Get([]byte("key4"))
 		require.Nil(t, key4Val)
 		require.Error(t, err)
 
-		persister4 = ps.GetActivePersisters()[1]
+		persister4 = ps.GetActivePersister(1)
 		key4Val, err = persister4.Get([]byte("key4"))
 		require.Nil(t, err)
 		require.Equal(t, []byte("value4"), key4Val)
