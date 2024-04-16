@@ -26,7 +26,7 @@ func getDefaultConfig() config.Config {
 			Cache: config.CacheConfig{
 				Name:        "OutportBlocksStorage",
 				Type:        "SizeLRU",
-				Capacity:    100,
+				Capacity:    25,
 				SizeInBytes: 20971520, // 20MB
 			},
 			DB: config.DBConfig{
@@ -50,7 +50,9 @@ func TestBlocksPool(t *testing.T) {
 	cfg := getDefaultConfig()
 
 	blocksStorer, err := factory.CreateStorer(cfg, dbMode)
-	defer blocksStorer.Destroy()
+	defer func() {
+		_ = blocksStorer.Destroy()
+	}()
 	require.Nil(t, err)
 
 	blocksPool, err := dataPool.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
