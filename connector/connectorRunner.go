@@ -37,8 +37,8 @@ func NewConnectorRunner(cfg *config.Config, importDBMode bool) (*connectorRunner
 	}, nil
 }
 
-// Start will trigger connector service
-func (cr *connectorRunner) Start() error {
+// Run will trigger connector service
+func (cr *connectorRunner) Run() error {
 	// TODO: move variable to config
 	isGrpcServerActivated := false
 
@@ -55,7 +55,7 @@ func (cr *connectorRunner) Start() error {
 	}
 
 	// TODO: add separate config section for hyper blocks grpc data pool
-	hyperOutportBlockDataPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.importDBMode, protoMarshaller)
+	hyperOutportBlockPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.importDBMode, protoMarshaller)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (cr *connectorRunner) Start() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockDataPool)
+	publisher, err := factory.CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockPool)
 	if err != nil {
 		return err
 	}
@@ -94,17 +94,22 @@ func (cr *connectorRunner) Start() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = outportBlockDataPool.Close()
-	if err != nil {
-		return err
-	}
-
-	err = hyperOutportBlockDataPool.Close()
+	err = dataProcessor.Close()
 	if err != nil {
 		return err
 	}
 
 	err = wsClient.Close()
+	if err != nil {
+		return err
+	}
+
+	err = outportBlocksPool.Close()
+	if err != nil {
+		return err
+	}
+
+	err = hyperOutportBlockPool.Close()
 	if err != nil {
 		return err
 	}

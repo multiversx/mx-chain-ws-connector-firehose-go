@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -18,8 +19,15 @@ import (
 
 const metaCheckpointKey = "lastMetaRound"
 
+type persisterData struct {
+	persister types.Persister
+	path      string
+	index     uint64
+	isOpen    bool
+}
+
 type pruningStorer struct {
-	activePersisters []types.Persister
+	activePersisters []*persisterData
 	persistersMut    sync.RWMutex
 	cacher           types.Cacher
 
@@ -59,7 +67,7 @@ func (ps *pruningStorer) initPersisters() error {
 		return err
 	}
 
-	persistersSlice := make([]types.Persister, 0)
+	persistersSlice := make([]*persisterData, 0)
 
 	numPersistersToInit := ps.numPersistersToKeep
 	if len(persisterPaths) < numPersistersToInit {
@@ -72,12 +80,35 @@ func (ps *pruningStorer) initPersisters() error {
 			return err
 		}
 
-		persistersSlice = append(persistersSlice, persister)
+		index, err := getIndexFromPath(persisterPaths[i])
+		if err != nil {
+			return err
+		}
+
+		pd := &persisterData{
+			persister: persister,
+			path:      persisterPaths[i],
+			index:     index,
+			isOpen:    true,
+		}
+
+		persistersSlice = append(persistersSlice, pd)
 	}
 
 	ps.activePersisters = persistersSlice
 
 	return nil
+}
+
+func getIndexFromPath(path string) (uint64, error) {
+	dirName := filepath.Base(path)
+
+	index, err := strconv.ParseUint(dirName, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return index, nil
 }
 
 func (ps *pruningStorer) createPersister(path string) (types.Persister, error) {
@@ -171,7 +202,7 @@ func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 	defer ps.persistersMut.RUnlock()
 
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
-		val, err := ps.activePersisters[idx].Get(key)
+		val, err := ps.activePersisters[idx].persister.Get(key)
 		if err != nil {
 			log.Error(err.Error())
 			continue
@@ -223,7 +254,7 @@ func (ps *pruningStorer) putInPersister(key, data []byte) error {
 	// always put to last active persister
 	persisterToUse := ps.activePersisters[0]
 
-	err := persisterToUse.Put(key, data)
+	err := persisterToUse.persister.Put(key, data)
 	if err != nil {
 		ps.cacher.Remove(key)
 		return err
@@ -240,7 +271,11 @@ func (ps *pruningStorer) Dump() error {
 func (ps *pruningStorer) dumpDataToPersister() error {
 	cacherKeys := ps.cacher.Keys()
 
+	log.Info("dumpDataToPersister in progress...")
+
 	for _, key := range cacherKeys {
+		log.Debug("dumpDataToPersister", "key", key)
+
 		v, ok := ps.cacher.Get(key)
 		if !ok {
 			log.Warn("failed to get key from cache", "key", hex.EncodeToString(key))
@@ -287,7 +322,7 @@ func (ps *pruningStorer) cleanupOldPersisters() error {
 	}
 
 	if len(persistersPaths) <= numPersistersToKeep {
-		// should not remove old persisters
+		log.Debug("pruningStorer: should not remove old persisters")
 		return nil
 	}
 
@@ -304,31 +339,62 @@ func (ps *pruningStorer) cleanupOldPersisters() error {
 	return nil
 }
 
+func (ps *pruningStorer) createNewPersisterData(index uint64) (*persisterData, error) {
+	basePath := ps.dbConf.FilePath
+	newPath := filepath.Join(basePath, fmt.Sprintf("%d", index))
+
+	for _, pd := range ps.activePersisters {
+		if pd.path == newPath {
+			return pd, nil
+		}
+	}
+
+	log.Info("new path", "path", newPath)
+
+	newPersister, err := ps.createPersister(newPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pd := &persisterData{
+		persister: newPersister,
+		path:      newPath,
+		index:     index,
+		isOpen:    true,
+	}
+
+	return pd, nil
+}
+
 func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 	ps.persistersMut.Lock()
 	defer ps.persistersMut.Unlock()
 
-	basePath := ps.dbConf.FilePath
-	newPath := filepath.Join(basePath, fmt.Sprintf("%d", index))
+	lastPersister := ps.activePersisters[0]
+	if index <= lastPersister.index {
+		log.Warn("new index not greater then older persisters", "newIndex", index, "lastActiveIndex", lastPersister.index)
+		return nil
+	}
 
-	newPersister, err := ps.createPersister(newPath)
+	pd, err := ps.createNewPersisterData(index)
 	if err != nil {
 		return err
 	}
 
-	// numTmpPersistersToKeep := ps.getTmpNumPersistersToKeep()
 	numTmpPersistersToKeep := ps.getTmpNumPersistersToKeep()
 
-	newActivePersisters := make([]types.Persister, 0)
+	newActivePersisters := make([]*persisterData, 0)
 	for i := 0; i < numTmpPersistersToKeep; i++ {
 		newActivePersisters = append(newActivePersisters, ps.activePersisters[i])
 	}
 
-	newActivePersisters = append([]types.Persister{newPersister}, newActivePersisters...)
+	newActivePersisters = append([]*persisterData{pd}, newActivePersisters...)
 
 	if len(ps.activePersisters) >= ps.numPersistersToKeep {
 		inactivePersister := ps.activePersisters[len(ps.activePersisters)-1]
-		err = inactivePersister.Close()
+
+		log.Info("pruningStorer: closing persister")
+		err = inactivePersister.persister.Close()
 		if err != nil {
 			return err
 		}
@@ -356,6 +422,9 @@ func (ps *pruningStorer) getTmpNumPersistersToKeep() int {
 // Close will dump cache data to persister and it will
 // close cacher and persister components
 func (ps *pruningStorer) Close() error {
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
+
 	err := ps.dumpDataToPersister()
 	if err != nil {
 		return err
@@ -368,7 +437,7 @@ func (ps *pruningStorer) Close() error {
 
 	var persistersErrClose bool
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
-		err = ps.activePersisters[idx].Close()
+		err = ps.activePersisters[idx].persister.Close()
 		if err != nil {
 			persistersErrClose = true
 		}
