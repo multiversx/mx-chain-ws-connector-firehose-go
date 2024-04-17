@@ -30,6 +30,14 @@ func NewOutportBlocksPool(
 	}, nil
 }
 
+func (bp *outportBlocksPool) Put(key []byte, value []byte) error {
+	return bp.dataPool.Put(key, value)
+}
+
+func (bp *outportBlocksPool) Get(key []byte) ([]byte, error) {
+	return bp.dataPool.Get(key)
+}
+
 // UpdateMetaState will trigger data pool update state
 func (bp *outportBlocksPool) UpdateMetaState(round uint64) {
 	bp.dataPool.UpdateMetaState(round)
@@ -47,7 +55,7 @@ func (bp *outportBlocksPool) PutBlock(hash []byte, outportBlock *outport.Outport
 
 // GetBlock will return outport block data from the pool
 func (bp *outportBlocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
-	marshalledData, err := bp.dataPool.GetBlock(hash)
+	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
 		return nil, err
 	}

@@ -1,8 +1,11 @@
 package process
 
 import (
+	"encoding/binary"
+
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
@@ -79,11 +82,16 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 
 	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
 
+	err = dp.pushToBlocksPool(outportBlock)
+	if err != nil {
+		return err
+	}
+
 	if outportBlock.ShardID == core.MetachainShardId {
 		return dp.handleMetaOutportBlock(outportBlock)
 	}
 
-	return dp.handleShardOutportBlock(outportBlock)
+	return nil
 }
 
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
@@ -97,25 +105,37 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	round, err := dp.getHeaderRound(hyperOutportBlock.MetaOutportBlock)
+	header, err := dp.getHeader(hyperOutportBlock.MetaOutportBlock)
 	if err != nil {
 		return err
 	}
 
-	dp.outportBlocksPool.UpdateMetaState(round)
+	err = dp.putMetaNonce(header.GetNonce(), outportBlock.BlockData.GetHeaderHash())
+	if err != nil {
+		return err
+	}
+
+	dp.outportBlocksPool.UpdateMetaState(header.GetRound())
 
 	return nil
 }
 
-func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
+func (dp *dataProcessor) putMetaNonce(nonce uint64, hash []byte) error {
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, nonce)
+
+	return dp.outportBlocksPool.Put(nonceBytes, hash)
+}
+
+func (dp *dataProcessor) pushToBlocksPool(outportBlock *outport.OutportBlock) error {
 	blockHash := outportBlock.BlockData.HeaderHash
 
-	round, err := dp.getHeaderRound(outportBlock)
+	header, err := dp.getHeader(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	err = dp.outportBlocksPool.PutBlock(blockHash, outportBlock, round)
+	err = dp.outportBlocksPool.PutBlock(blockHash, outportBlock, header.GetRound())
 	if err != nil {
 		return err
 	}
@@ -123,18 +143,18 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	return nil
 }
 
-func (dp *dataProcessor) getHeaderRound(outportBlock *outport.OutportBlock) (uint64, error) {
+func (dp *dataProcessor) getHeader(outportBlock *outport.OutportBlock) (data.HeaderHandler, error) {
 	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return header.GetRound(), nil
+	return header, nil
 }
 
 // Close will close the internal writer

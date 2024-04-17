@@ -53,7 +53,7 @@ func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock *data.Hyper
 
 // GetBlock will return the hyper outport block data from the pool
 func (bp *hyperOutportBlocksPool) GetBlock(hash []byte) (*data.HyperOutportBlock, error) {
-	marshalledData, err := bp.dataPool.GetBlock(hash)
+	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
 		return nil, err
 	}

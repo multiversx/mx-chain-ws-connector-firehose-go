@@ -64,6 +64,14 @@ func (bp *blocksPool) initIndexesMap() {
 	bp.indexesMap = indexesMap
 }
 
+func (bp *blocksPool) Put(key []byte, value []byte) error {
+	return bp.storer.Put(key, value)
+}
+
+func (bp *blocksPool) Get(key []byte) ([]byte, error) {
+	return bp.storer.Get(key)
+}
+
 func (bp *blocksPool) UpdateMetaState(index uint64) {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
