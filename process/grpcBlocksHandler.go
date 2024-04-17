@@ -9,14 +9,14 @@ import (
 )
 
 type grpcBlocksHandler struct {
-	outportBlocksPool OutportBlocksPool
+	outportBlocksPool DataPool
 	dataAggregator    DataAggregator
 }
 
 // NewGrpcBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
 // which will then be consumed by the grpc server
 func NewGrpcBlocksHandler(
-	outportBlocksPool OutportBlocksPool,
+	outportBlocksPool DataPool,
 	blockCreator BlockContainerHandler,
 	marshaller marshal.Marshalizer,
 	dataAggregator DataAggregator,

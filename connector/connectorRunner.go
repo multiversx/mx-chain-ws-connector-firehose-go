@@ -12,7 +12,6 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 )
 
 var log = logger.GetOrCreate("connectorRunner")
@@ -39,9 +38,6 @@ func NewConnectorRunner(cfg *config.Config, dbMode string) (*connectorRunner, er
 
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
-	// TODO: move variable to config
-	isGrpcServerActivated := false
-
 	protoMarshaller := &marshal.GogoProtoMarshalizer{}
 
 	blockContainer, err := factory.CreateBlockContainer()
@@ -49,18 +45,12 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.dbMode, protoMarshaller)
+	blocksStorer, err := factory.CreateStorer(*cr.config, cr.dbMode)
 	if err != nil {
 		return err
 	}
 
-	// TODO: add separate config section for hyper blocks grpc data pool
-	hyperOutportBlockPool, err := factory.CreateHyperBlocksPool(isGrpcServerActivated, *cr.config, cr.dbMode, protoMarshaller)
-	if err != nil {
-		return err
-	}
-
-	outportBlocksPool, err := dataPool.NewOutportBlocksPool(outportBlockDataPool, protoMarshaller)
+	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, protoMarshaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
 	if err != nil {
 		return err
 	}
@@ -70,7 +60,11 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockPool)
+	publisher, err := process.NewFirehosePublisher(
+		os.Stdout,
+		blockContainer,
+		protoMarshaller,
+	)
 	if err != nil {
 		return err
 	}
@@ -95,11 +89,6 @@ func (cr *connectorRunner) Run() error {
 	log.Info("application closing, calling Close on all subcomponents...")
 
 	err = outportBlocksPool.Close()
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	err = hyperOutportBlockPool.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}

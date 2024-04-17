@@ -5,12 +5,9 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool/disabled"
 )
 
 // ErrNotSupportedDBMode signals that an invalid db mode was provided
@@ -65,37 +62,4 @@ func CreateStorer(cfg config.Config, dbMode string) (process.PruningStorer, erro
 	default:
 		return nil, ErrNotSupportedDBMode
 	}
-}
-
-// CreateBlocksPool will create a new blocks pool component
-func CreateBlocksPool(
-	cfg config.Config,
-	dbMode string,
-	marshaller marshal.Marshalizer,
-) (process.DataPool, error) {
-	blocksStorer, err := CreateStorer(cfg, dbMode)
-	if err != nil {
-		return nil, err
-	}
-
-	return dataPool.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
-}
-
-// CreateHyperBlocksPool will create a new hyper blocks pool component
-func CreateHyperBlocksPool(
-	grpcServerMode bool,
-	cfg config.Config,
-	dbMode string,
-	marshaller marshal.Marshalizer,
-) (process.HyperOutportBlocksPool, error) {
-	if !grpcServerMode {
-		return disabled.NewDisabledHyperOutportBlocksPool(), nil
-	}
-
-	hyperOutportBlockDataPool, err := CreateBlocksPool(cfg, dbMode, marshaller)
-	if err != nil {
-		return nil, err
-	}
-
-	return dataPool.NewHyperOutportBlocksPool(hyperOutportBlockDataPool, marshaller)
 }

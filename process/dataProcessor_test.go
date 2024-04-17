@@ -58,7 +58,7 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			nil,
 			&testscommon.MarshallerStub{},
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
 		)
@@ -72,7 +72,7 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			nil,
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
 		)
@@ -100,7 +100,7 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			nil,
 			createContainer(),
 		)
@@ -114,7 +114,7 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
 		)
@@ -129,7 +129,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 	dp, _ := process.NewDataProcessor(
 		&testscommon.PublisherStub{},
 		&testscommon.MarshallerStub{},
-		&testscommon.OutportBlocksPoolStub{},
+		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
 		createContainer(),
 	)
@@ -151,7 +151,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			protoMarshaller,
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
 		)
@@ -173,7 +173,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			protoMarshaller,
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
 		)
@@ -192,7 +192,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			protoMarshaller,
-			&testscommon.OutportBlocksPoolStub{
+			&testscommon.BlocksPoolStub{
 				PutBlockCalled: func(hash []byte, outportBlock *outportcore.OutportBlock, round uint64) error {
 					putBlockWasCalled = true
 					return nil
@@ -223,7 +223,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			&testscommon.OutportBlocksPoolStub{},
+			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{
 				ProcessHyperBlockCalled: func(outportBlock *outportcore.OutportBlock) (*data.HyperOutportBlock, error) {
 					return &data.HyperOutportBlock{
@@ -253,7 +253,7 @@ func TestDataProcessor_Close(t *testing.T) {
 			},
 		},
 		&testscommon.MarshallerStub{},
-		&testscommon.OutportBlocksPoolStub{},
+		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
 		createContainer(),
 	)

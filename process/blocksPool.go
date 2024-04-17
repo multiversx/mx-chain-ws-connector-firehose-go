@@ -1,4 +1,4 @@
-package dataPool
+package process
 
 import (
 	"fmt"
@@ -7,17 +7,14 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	logger "github.com/multiversx/mx-chain-logger-go"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
-
-var log = logger.GetOrCreate("dataPool")
 
 const initIndex = 0
 
 type blocksPool struct {
-	storer          process.PruningStorer
+	storer          PruningStorer
 	marshaller      marshal.Marshalizer
 	maxDelta        uint64
 	numOfShards     uint32
@@ -27,18 +24,19 @@ type blocksPool struct {
 	mutMap     sync.RWMutex
 }
 
+// NewBlocksPool will create a new blocks pool instance
 func NewBlocksPool(
-	storer process.PruningStorer,
+	storer PruningStorer,
 	marshaller marshal.Marshalizer,
 	numOfShards uint32,
 	maxDelta uint64,
 	cleanupInterval uint64,
 ) (*blocksPool, error) {
 	if check.IfNil(storer) {
-		return nil, process.ErrNilPruningStorer
+		return nil, ErrNilPruningStorer
 	}
 	if check.IfNil(marshaller) {
-		return nil, process.ErrNilMarshaller
+		return nil, ErrNilMarshaller
 	}
 
 	bp := &blocksPool{
@@ -64,10 +62,12 @@ func (bp *blocksPool) initIndexesMap() {
 	bp.indexesMap = indexesMap
 }
 
+// Put will put value into storer
 func (bp *blocksPool) Put(key []byte, value []byte) error {
 	return bp.storer.Put(key, value)
 }
 
+// Get will get value from storer
 func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	return bp.storer.Get(key)
 }
@@ -98,9 +98,16 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, value []byte, index uint64, shardID uint32) error {
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, index uint64) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
+
+	shardID := outportBlock.ShardID
+
+	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
+	if err != nil {
+		return err
+	}
 
 	currentIndex, ok := bp.indexesMap[shardID]
 	if !ok {
@@ -108,7 +115,7 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, index uint64, shardID 
 	}
 
 	if currentIndex == initIndex {
-		err := bp.storer.Put(hash, value)
+		err := bp.storer.Put(hash, outportBlockBytes)
 		if err != nil {
 			return err
 		}
@@ -124,7 +131,7 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, index uint64, shardID 
 		return ErrFailedToPutBlockDataToPool
 	}
 
-	err := bp.storer.Put(hash, value)
+	err = bp.storer.Put(hash, outportBlockBytes)
 	if err != nil {
 		return err
 	}
@@ -147,8 +154,19 @@ func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 }
 
 // GetBlock will return outport block data from the pool
-func (bp *blocksPool) GetBlock(hash []byte) ([]byte, error) {
-	return bp.storer.Get(hash)
+func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
+	marshalledData, err := bp.storer.Get(hash)
+	if err != nil {
+		return nil, err
+	}
+
+	outportBlock := &outport.OutportBlock{}
+	err = bp.marshaller.Unmarshal(outportBlock, marshalledData)
+	if err != nil {
+		return nil, err
+	}
+
+	return outportBlock, nil
 }
 
 // Close will trigger close on blocks pool component

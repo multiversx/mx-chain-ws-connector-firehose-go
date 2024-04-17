@@ -15,7 +15,7 @@ type dataProcessor struct {
 	marshaller        marshal.Marshalizer
 	operationHandlers map[string]func(marshalledData []byte) error
 	publisher         Publisher
-	outportBlocksPool OutportBlocksPool
+	outportBlocksPool DataPool
 	dataAggregator    DataAggregator
 	blockCreator      BlockContainerHandler
 }
@@ -24,7 +24,7 @@ type dataProcessor struct {
 func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
-	outportBlocksPool OutportBlocksPool,
+	outportBlocksPool DataPool,
 	dataAggregator DataAggregator,
 	blockCreator BlockContainerHandler,
 ) (DataProcessor, error) {
