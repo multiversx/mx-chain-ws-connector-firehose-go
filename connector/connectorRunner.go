@@ -41,16 +41,17 @@ func NewConnectorRunner(cfg *config.Config, importDBMode bool) (*connectorRunner
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
 	// TODO: move variable to config
-	isGrpcServerActivated := false
+	isGrpcServerActivated := true
 
-	protoMarshaller := &marshal.GogoProtoMarshalizer{}
+	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
+	protoMarshaller := &process.ProtoMarshalizer{}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
 		return err
 	}
 
-	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.importDBMode, protoMarshaller)
+	outportBlockDataPool, err := factory.CreateBlocksPool(*cr.config, cr.importDBMode, gogoProtoMarshaller)
 	if err != nil {
 		return err
 	}
@@ -61,7 +62,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := dataPool.NewOutportBlocksPool(outportBlockDataPool, protoMarshaller)
+	outportBlocksPool, err := dataPool.NewOutportBlocksPool(outportBlockDataPool, gogoProtoMarshaller)
 	if err != nil {
 		return err
 	}
@@ -71,12 +72,12 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(*cr.config, isGrpcServerActivated, blockContainer, protoMarshaller, hyperOutportBlockPool)
+	publisher, err := factory.CreatePublisher(*cr.config, isGrpcServerActivated, blockContainer, gogoProtoMarshaller, hyperOutportBlockPool)
 	if err != nil {
 		return err
 	}
 
-	dataProcessor, err := process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
+	dataProcessor, err := process.NewDataProcessor(publisher, gogoProtoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
