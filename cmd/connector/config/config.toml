@@ -29,7 +29,7 @@
     Version = 1
 
 [DataPool]
-    NumberOfShards = 4
+    NumberOfShards = 3
 
     # Should be smaller then PruningWindow
     MaxDelta = 10

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Possible values: "service"/"client"
+# Possible values: "server"/"client"
 OBSERVER_MODE="server"
 
 CURRENT_DIR=$(pwd)
