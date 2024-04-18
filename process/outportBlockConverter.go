@@ -24,7 +24,7 @@ type outportBlockConverter struct {
 func NewOutportBlockConverter() *outportBlockConverter {
 	return &outportBlockConverter{
 		gogoProtoMarshalizer: &marshal.GogoProtoMarshalizer{},
-		protoMarshalizer:     &ProtoMarshalizer{},
+		protoMarshalizer:     &ProtoMarshaller{},
 		bigIntCaster:         coreData.BigIntCaster{},
 	}
 }

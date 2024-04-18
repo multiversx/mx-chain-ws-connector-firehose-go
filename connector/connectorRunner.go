@@ -40,7 +40,7 @@ func NewConnectorRunner(cfg *config.Config, dbMode string) (*connectorRunner, er
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
 	gogoProtoMarhsaller := &marshal.GogoProtoMarshalizer{}
-	protoMarshaller := &process.ProtoMarshalizer{}
+	protoMarshaller := &process.ProtoMarshaller{}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
