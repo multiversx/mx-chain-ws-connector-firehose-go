@@ -24,7 +24,7 @@ type outportBlockConverter struct {
 func NewOutportBlockConverter() *outportBlockConverter {
 	return &outportBlockConverter{
 		gogoProtoMarshalizer: &marshal.GogoProtoMarshalizer{},
-		protoMarshalizer:     &ProtoMarshalizer{},
+		protoMarshalizer:     &ProtoMarshaller{},
 		bigIntCaster:         coreData.BigIntCaster{},
 	}
 }
@@ -45,7 +45,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 	}
 
 	shardOutportBlock := &data.ShardOutportBlock{}
-	// unmarshall into google protobuf. This is the proto that will be used in firehose.
+	// unmarshall into google protobuf. This is the proto that will be later consumed.
 	err = o.protoMarshalizer.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal shard outport block error: %s", err)

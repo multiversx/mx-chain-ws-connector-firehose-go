@@ -1,6 +1,7 @@
 package process
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -9,8 +10,8 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
-func recovedMarshal(obj interface{}) (buf []byte, err error) {
-	protoMarshaller := ProtoMarshalizer{}
+func recoveredMarshal(obj interface{}) (buf []byte, err error) {
+	protoMarshaller := ProtoMarshaller{}
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -26,8 +27,8 @@ func recovedMarshal(obj interface{}) (buf []byte, err error) {
 	return
 }
 
-func recovedUnmarshal(obj interface{}, buf []byte) (err error) {
-	protoMarshaller := ProtoMarshalizer{}
+func recoveredUnmarshal(obj interface{}, buf []byte) (err error) {
+	protoMarshaller := ProtoMarshaller{}
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -42,45 +43,45 @@ func recovedUnmarshal(obj interface{}, buf []byte) (err error) {
 	return
 }
 
-func TestProtoMarshalizer_Marshal(t *testing.T) {
+func TestProtoMarshaller_Marshal(t *testing.T) {
 	t.Parallel()
 
 	outportBlock := data.ShardOutportBlock{}
-	encNode, err := recovedMarshal(&outportBlock)
+	encNode, err := recoveredMarshal(&outportBlock)
 	assert.Nil(t, err)
 	assert.NotNil(t, encNode)
 }
 
-func TestProtoMarshalizer_MarshalWrongObj(t *testing.T) {
+func TestProtoMarshaller_MarshalWrongObj(t *testing.T) {
 	t.Parallel()
 
 	obj := "multiversx"
-	encNode, err := recovedMarshal(obj)
+	encNode, err := recoveredMarshal(obj)
 	assert.Nil(t, encNode)
-	assert.NotNil(t, err)
+	assert.Equal(t, errors.New("cannot marshal string into a proto.Message"), err)
 }
 
-func TestProtoMarshalizer_Unmarshal(t *testing.T) {
+func TestProtoMarshaller_Unmarshal(t *testing.T) {
 	t.Parallel()
 
-	protoMarshaller := ProtoMarshalizer{}
+	protoMarshaller := ProtoMarshaller{}
 	outportBlock := data.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(&outportBlock)
 	newNode := &data.ShardOutportBlock{}
 
-	err := recovedUnmarshal(newNode, encNode)
+	err := recoveredUnmarshal(newNode, encNode)
 	assert.Nil(t, err)
 	assert.Equal(t, outportBlock.ProtoReflect(), newNode.ProtoReflect())
 }
 
-func TestProtoMarshalizer_UnmarshalWrongObj(t *testing.T) {
+func TestProtoMarshaller_UnmarshalWrongObj(t *testing.T) {
 	t.Parallel()
 
-	protoMarshaller := ProtoMarshalizer{}
+	protoMarshaller := ProtoMarshaller{}
 	outportBlock := data.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(&outportBlock)
-	err := recovedUnmarshal([]byte{}, encNode)
+	err := recoveredUnmarshal([]byte{}, encNode)
 	assert.NotNil(t, err)
 }
