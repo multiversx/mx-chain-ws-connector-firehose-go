@@ -11,10 +11,12 @@ import (
 
 // Service returns blocks based on nonce or hash from cache.
 type Service struct {
-	//TODO: unused for now, placeholder for upcoming PRs
-	BlocksPool process.HyperOutportBlocksPool
-	Converter  process.OutportBlockConverter
+	blocksHandler process.GrpcBlocksHandler
 	data.UnimplementedHyperOutportBlockServiceServer
+}
+
+func NewService(blocksHandler process.GrpcBlocksHandler) *Service {
+	return &Service{blocksHandler: blocksHandler}
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.
@@ -23,18 +25,22 @@ func (bs *Service) GetHyperOutportBlockByHash(ctx context.Context, req *data.Blo
 	if err != nil {
 		return nil, err
 	}
-	hyperOutportBlock, err := bs.BlocksPool.GetBlock(decodeString)
+	hyperOutportBlock, err := bs.blocksHandler.FetchHyperBlockByHash(decodeString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve hyperOutportBlock: %v", err)
 	}
 
 	return hyperOutportBlock, nil
-
 }
 
 // GetBlockByNonce retrieve a block from the nonce.
 func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.BlockNonceRequest) (*data.HyperOutportBlock, error) {
-	return &data.HyperOutportBlock{}, nil
+	hyperOutportBlock, err := bs.blocksHandler.FetchHyperBlockByNonce(req.Nonce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve hyperOutportBlock: %v", err)
+	}
+
+	return hyperOutportBlock, nil
 }
 
 //// Register service in the service.

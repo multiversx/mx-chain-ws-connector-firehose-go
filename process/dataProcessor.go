@@ -105,10 +105,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	header, err := dp.getHeader(hyperOutportBlock.MetaOutportBlock)
-	if err != nil {
-		return err
-	}
+	header := hyperOutportBlock.MetaOutportBlock.BlockData.Header
 
 	err = dp.putMetaNonce(header.GetNonce(), outportBlock.BlockData.GetHeaderHash())
 	if err != nil {

@@ -87,3 +87,8 @@ type OutportBlockConverter interface {
 type Server interface {
 	Start() error
 }
+
+type GrpcBlocksHandler interface {
+	FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error)
+	FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error)
+}

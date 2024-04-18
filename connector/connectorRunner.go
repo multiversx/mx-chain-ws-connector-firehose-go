@@ -9,6 +9,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -38,7 +39,8 @@ func NewConnectorRunner(cfg *config.Config, dbMode string) (*connectorRunner, er
 
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
-	protoMarshaller := &marshal.GogoProtoMarshalizer{}
+	gogoProtoMarhsaller := &marshal.GogoProtoMarshalizer{}
+	protoMarshaller := &process.ProtoMarshalizer{}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -50,7 +52,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, protoMarshaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, gogoProtoMarhsaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	dataProcessor, err := process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
+	dataProcessor, err := process.NewDataProcessor(publisher, gogoProtoMarhsaller, outportBlocksPool, dataAggregator, blockContainer)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
@@ -83,6 +85,21 @@ func (cr *connectorRunner) Run() error {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Info("starting ws client...")
+
+	if cr.config.GRPC.Enable {
+		blocksHandler, err := process.NewGrpcBlocksHandler(outportBlocksPool, dataAggregator)
+		if err != nil {
+			return fmt.Errorf("cannot create blocks handler, error: %w", err)
+		}
+
+		log.Info("starting gRPC server...")
+		server := factory.NewServer(cr.config.GRPC, blocksHandler)
+		go func() {
+			if err := server.Start(); err != nil {
+				log.Error("error starting grpc server", "error", err)
+			}
+		}()
+	}
 
 	<-interrupt
 

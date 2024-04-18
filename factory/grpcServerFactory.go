@@ -19,12 +19,11 @@ type grpcServer struct {
 }
 
 // NewServer instantiates the underlying grpc server handling rpc requests.
-func NewServer(config config.GRPCConfig, pool process.HyperOutportBlocksPool) *grpcServer {
+func NewServer(config config.GRPCConfig, blocksHandler process.GrpcBlocksHandler) *grpcServer {
 	s := grpc.NewServer()
 
-	converter := process.NewOutportBlockConverter()
-	hyperService := &hyperOutportBlock.Service{BlocksPool: pool, Converter: converter}
-	data.RegisterHyperOutportBlockServiceServer(s, hyperService)
+	service := hyperOutportBlock.NewService(blocksHandler)
+	data.RegisterHyperOutportBlockServiceServer(s, service)
 	reflection.Register(s)
 
 	return &grpcServer{s, config}

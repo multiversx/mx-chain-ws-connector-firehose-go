@@ -54,5 +54,6 @@ type DBConfig struct {
 
 // GRPCConfig holds gRPC service config
 type GRPCConfig struct {
-	URL string
+	URL    string
+	Enable bool
 }

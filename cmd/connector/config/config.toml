@@ -52,6 +52,7 @@
         MaxOpenFiles = 10
 
 [GRPC]
-    url = "localhost:8000"
+    Enabled = true
+    URL = "localhost:8000"
 
 

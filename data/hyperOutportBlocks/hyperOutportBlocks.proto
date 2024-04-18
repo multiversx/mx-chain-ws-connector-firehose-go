@@ -19,7 +19,7 @@ message BlockHashRequest {
 }
 
 message BlockNonceRequest {
-  uint32 nonce = 1;
+  uint64 nonce = 1;
 }
 
 service HyperOutportBlockService {
