@@ -33,10 +33,11 @@ type pruningStorer struct {
 
 	dbConf              config.DBConfig
 	numPersistersToKeep int
+	isFullDBSync        bool
 }
 
 // NewPruningStorer will create a new instance of pruning storer
-func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int) (*pruningStorer, error) {
+func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToKeep int, isFullDBSync bool) (*pruningStorer, error) {
 	if check.IfNil(cacher) {
 		return nil, ErrNilCacher
 	}
@@ -51,6 +52,7 @@ func NewPruningStorer(cfg config.DBConfig, cacher types.Cacher, numPersistersToK
 		dbConf:              cfg,
 		cacher:              cacher,
 		numPersistersToKeep: numPersistersToKeep,
+		isFullDBSync:        isFullDBSync,
 	}
 
 	err := ps.initPersisters()
@@ -221,7 +223,11 @@ func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 func (ps *pruningStorer) Put(key, data []byte) error {
 	ps.cacher.Put(key, data, len(data))
 
-	return nil
+	if !ps.isFullDBSync {
+		return nil
+	}
+
+	return ps.putInPersister(key, data)
 }
 
 func (ps *pruningStorer) SetCheckpoint(round uint64) error {
@@ -269,9 +275,12 @@ func (ps *pruningStorer) Dump() error {
 }
 
 func (ps *pruningStorer) dumpDataToPersister() error {
-	cacherKeys := ps.cacher.Keys()
+	if ps.isFullDBSync {
+		// no need to dump data to persister
+		return nil
+	}
 
-	log.Info("dumpDataToPersister in progress...")
+	cacherKeys := ps.cacher.Keys()
 
 	for _, key := range cacherKeys {
 		log.Debug("dumpDataToPersister", "key", key)
@@ -279,7 +288,7 @@ func (ps *pruningStorer) dumpDataToPersister() error {
 		v, ok := ps.cacher.Get(key)
 		if !ok {
 			log.Warn("failed to get key from cache", "key", hex.EncodeToString(key))
-			continue
+			return fmt.Errorf("failed to get key from cache")
 		}
 
 		data, ok := v.([]byte)
@@ -290,7 +299,7 @@ func (ps *pruningStorer) dumpDataToPersister() error {
 
 		err := ps.putInPersister(key, data)
 		if err != nil {
-			log.Error("failed to dump data to persister", "key", hex.EncodeToString(key))
+			log.Error("failed to put data into persister", "key", hex.EncodeToString(key))
 		}
 	}
 
@@ -329,6 +338,7 @@ func (ps *pruningStorer) cleanupOldPersisters() error {
 	persistersPathsToRemove := persistersPaths[numPersistersToKeep:]
 
 	for _, path := range persistersPathsToRemove {
+		log.Info("pruningStorer: removing old persister", "path", path)
 		err := os.RemoveAll(path)
 		if err != nil {
 			log.Warn("failed to remove db dir", "path", path)
@@ -393,7 +403,7 @@ func (ps *pruningStorer) updateActivePersisters(index uint64) error {
 	if len(ps.activePersisters) >= ps.numPersistersToKeep {
 		inactivePersister := ps.activePersisters[len(ps.activePersisters)-1]
 
-		log.Info("pruningStorer: closing persister")
+		log.Info("pruningStorer: closing persister", "path", inactivePersister.path)
 		err = inactivePersister.persister.Close()
 		if err != nil {
 			return err
@@ -422,9 +432,6 @@ func (ps *pruningStorer) getTmpNumPersistersToKeep() int {
 // Close will dump cache data to persister and it will
 // close cacher and persister components
 func (ps *pruningStorer) Close() error {
-	ps.persistersMut.Lock()
-	defer ps.persistersMut.Unlock()
-
 	err := ps.dumpDataToPersister()
 	if err != nil {
 		return err
@@ -434,6 +441,9 @@ func (ps *pruningStorer) Close() error {
 	if err != nil {
 		return err
 	}
+
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
 
 	var persistersErrClose bool
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
@@ -445,6 +455,28 @@ func (ps *pruningStorer) Close() error {
 
 	if persistersErrClose {
 		return fmt.Errorf("failed to close active persisters")
+	}
+
+	return nil
+}
+
+// Destroy will remove active persisters
+func (ps *pruningStorer) Destroy() error {
+	ps.persistersMut.Lock()
+	defer ps.persistersMut.Unlock()
+
+	ps.cacher.Clear()
+
+	var persistersErrDestroy bool
+	for idx := 0; idx < len(ps.activePersisters); idx++ {
+		err := ps.activePersisters[idx].persister.Destroy()
+		if err != nil {
+			persistersErrDestroy = true
+		}
+	}
+
+	if persistersErrDestroy {
+		return fmt.Errorf("failed to destroy persisters")
 	}
 
 	return nil

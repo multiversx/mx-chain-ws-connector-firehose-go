@@ -43,3 +43,6 @@ var ErrNilCacher = errors.New("nil cacher")
 
 // ErrInvalidOutportBlock signals that an invalid outport block was provided
 var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
+
+// ErrFailedToPutBlockDataToPool signals that it cannot put block data into pool
+var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")

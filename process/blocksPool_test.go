@@ -1,19 +1,15 @@
-package dataPool_test
+package process_test
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 
 func TestNewBlocksPool(t *testing.T) {
 	t.Parallel()
@@ -21,7 +17,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("nil pruning storer", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := dataPool.NewBlocksPool(
+		bp, err := process.NewBlocksPool(
 			nil,
 			&testscommon.MarshallerMock{},
 			3,
@@ -35,7 +31,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("nil marshaller", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := dataPool.NewBlocksPool(
+		bp, err := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			nil,
 			3,
@@ -49,7 +45,7 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := dataPool.NewBlocksPool(
+		bp, err := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			&testscommon.MarshallerMock{},
 			3,
@@ -68,7 +64,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		bp, _ := dataPool.NewBlocksPool(
+		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				GetCalled: func(key []byte) ([]byte, error) {
 					return nil, expectedErr
@@ -95,7 +91,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		}
 		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
 
-		bp, _ := dataPool.NewBlocksPool(
+		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				GetCalled: func(key []byte) ([]byte, error) {
 					return outportBlockBytes, nil
@@ -109,7 +105,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 
 		ret, err := bp.GetBlock([]byte("hash1"))
 		require.Nil(t, err)
-		require.Equal(t, outportBlockBytes, ret)
+		require.Equal(t, outportBlock, ret)
 	})
 }
 
@@ -121,7 +117,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 
 		cleanupInterval := uint64(100)
 
-		bp, _ := dataPool.NewBlocksPool(
+		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PruneCalled: func(index uint64) error {
 					assert.Fail(t, "should have not been called")
@@ -144,7 +140,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		cleanupInterval := uint64(100)
 
 		wasCalled := false
-		bp, _ := dataPool.NewBlocksPool(
+		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PruneCalled: func(index uint64) error {
 					wasCalled = true
@@ -167,15 +163,13 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 func TestBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
-	shardID := uint32(1)
-
 	t.Run("first put, should put directly", func(t *testing.T) {
 		t.Parallel()
 
 		maxDelta := uint64(10)
 
 		wasCalled := false
-		bp, _ := dataPool.NewBlocksPool(
+		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
 				PutCalled: func(key, data []byte) error {
 					wasCalled = true
@@ -189,7 +183,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			100,
 		)
 
-		err := bp.PutBlock([]byte("hash1"), []byte("value"), 2, shardID)
+		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, 2)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -197,10 +191,10 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		bp.UpdateMetaState(2)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash2"), []byte("value"), 2+maxDelta+1, shardID)
+		err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, 2+maxDelta+1)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash3"), []byte("value"), 2+maxDelta+2, shardID)
+		err = bp.PutBlock([]byte("hash3"), &outport.OutportBlock{}, 2+maxDelta+2)
 		require.Error(t, err)
 	})
 }

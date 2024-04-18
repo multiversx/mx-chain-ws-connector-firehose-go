@@ -35,7 +35,7 @@ func main() {
 		logLevel,
 		logSaveFile,
 		disableAnsiColor,
-		importDBMode,
+		dbMode,
 	}
 	app.Authors = []cli.Author{
 		{
@@ -73,9 +73,10 @@ func startConnector(ctx *cli.Context) error {
 		}
 	}
 
-	importDBMode := ctx.GlobalBool(importDBMode.Name)
+	dbMode := ctx.GlobalString(dbMode.Name)
+	log.Info("storer sync mode", "dbMode", dbMode)
 
-	connectorRunner, err := connector.NewConnectorRunner(cfg, importDBMode)
+	connectorRunner, err := connector.NewConnectorRunner(cfg, dbMode)
 	if err != nil {
 		return fmt.Errorf("cannot create connector runner, error: %w", err)
 	}

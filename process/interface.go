@@ -57,27 +57,11 @@ type DataAggregator interface {
 
 // DataPool defines the behaviour of a data pool handler component
 type DataPool interface {
-	PutBlock(hash []byte, data []byte, index uint64, shardID uint32) error
-	GetBlock(hash []byte) ([]byte, error)
-	UpdateMetaState(index uint64)
-	Close() error
-	IsInterfaceNil() bool
-}
-
-// OutportBlocksPool defines the behaviour of an outport blocks pool handler component
-type OutportBlocksPool interface {
+	Put(key []byte, value []byte) error
+	Get(key []byte) ([]byte, error)
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
-	UpdateMetaState(round uint64)
-	Close() error
-	IsInterfaceNil() bool
-}
-
-// HyperOutportBlocksPool defines the behaviour of a hyper blocks pool handler component
-type HyperOutportBlocksPool interface {
-	PutBlock(hash []byte, outportBlock *data.HyperOutportBlock, round uint64) error
-	GetBlock(hash []byte) (*data.HyperOutportBlock, error)
-	UpdateMetaState(round uint64)
+	UpdateMetaState(index uint64)
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -90,6 +74,7 @@ type PruningStorer interface {
 	Dump() error
 	SetCheckpoint(round uint64) error
 	Close() error
+	Destroy() error
 	IsInterfaceNil() bool
 }
 
