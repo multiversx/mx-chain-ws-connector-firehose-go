@@ -53,7 +53,8 @@ func NewBlocksPool(
 func (bp *blocksPool) initIndexesMap() {
 	lastCheckpoint, err := bp.getLastCheckpoint()
 	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastRounds == nil {
-		bp.initIndexedMapFromStart()
+		indexesMap := make(map[uint32]uint64)
+		bp.indexesMap = indexesMap
 		return
 	}
 
@@ -63,15 +64,6 @@ func (bp *blocksPool) initIndexesMap() {
 	for shardID, round := range lastCheckpoint.LastRounds {
 		indexesMap[shardID] = round
 	}
-	bp.indexesMap = indexesMap
-}
-
-func (bp *blocksPool) initIndexedMapFromStart() {
-	log.Info("initialized blocks pool indexes map from start")
-
-	indexesMap := make(map[uint32]uint64)
-	indexesMap[core.MetachainShardId] = initIndex
-
 	bp.indexesMap = indexesMap
 }
 
@@ -86,7 +78,10 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 }
 
 func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
-	index := checkpoint.LastRounds[core.MetachainShardId]
+	index, ok := checkpoint.LastRounds[core.MetachainShardId]
+	if !ok {
+		index = initIndex
+	}
 
 	bp.mutMap.Lock()
 	bp.indexesMap[core.MetachainShardId] = index
