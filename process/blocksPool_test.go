@@ -4,7 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/assert"
@@ -131,7 +133,13 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			cleanupInterval,
 		)
 
-		bp.UpdateMetaState(2)
+		checkpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: 2,
+			},
+		}
+
+		bp.UpdateMetaState(checkpoint)
 	})
 
 	t.Run("should trigger prune if cleanup interval", func(t *testing.T) {
@@ -154,7 +162,13 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			cleanupInterval,
 		)
 
-		bp.UpdateMetaState(100)
+		checkpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: 100,
+			},
+		}
+
+		bp.UpdateMetaState(checkpoint)
 
 		require.True(t, wasCalled)
 	})
@@ -188,7 +202,13 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 
 		require.True(t, wasCalled)
 
-		bp.UpdateMetaState(2)
+		checkpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: 2,
+			},
+		}
+
+		bp.UpdateMetaState(checkpoint)
 		require.Nil(t, err)
 
 		err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, 2+maxDelta+1)

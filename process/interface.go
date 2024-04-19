@@ -60,7 +60,7 @@ type DataPool interface {
 	Get(key []byte) ([]byte, error)
 	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlock(hash []byte) (*outport.OutportBlock, error)
-	UpdateMetaState(index uint64)
+	UpdateMetaState(checkpoint *data.BlockCheckpoint)
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -71,7 +71,6 @@ type PruningStorer interface {
 	Put(key, data []byte) error
 	Prune(index uint64) error
 	Dump() error
-	SetCheckpoint(round uint64) error
 	Close() error
 	Destroy() error
 	IsInterfaceNil() bool

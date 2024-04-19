@@ -9,6 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 const initIndex = 0
@@ -53,6 +54,31 @@ func NewBlocksPool(
 }
 
 func (bp *blocksPool) initIndexesMap() {
+	lastCheckpoint, err := bp.getLastCheckpoint()
+	if err != nil {
+		bp.initIndexedMapFromStart()
+		return
+	}
+
+	isCheckpointDataComplete := lastCheckpoint == nil || lastCheckpoint.LastRounds == nil || uint32(len(lastCheckpoint.LastRounds)) == bp.numOfShards+1
+
+	if !isCheckpointDataComplete {
+		bp.initIndexedMapFromStart()
+		return
+	}
+
+	log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
+
+	indexesMap := make(map[uint32]uint64)
+	for shardID, round := range lastCheckpoint.LastRounds {
+		indexesMap[shardID] = round
+	}
+	bp.indexesMap = indexesMap
+}
+
+func (bp *blocksPool) initIndexedMapFromStart() {
+	log.Info("initialized blocks pool indexes map from start")
+
 	indexesMap := make(map[uint32]uint64)
 	for shardID := uint32(0); shardID < bp.numOfShards; shardID++ {
 		indexesMap[shardID] = initIndex
@@ -72,13 +98,15 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	return bp.storer.Get(key)
 }
 
-func (bp *blocksPool) UpdateMetaState(index uint64) {
+func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
-	bp.indexesMap[core.MetachainShardId] = index
+	index := checkpoint.LastRounds[core.MetachainShardId]
 
-	err := bp.storer.SetCheckpoint(index)
+	bp.indexesMap[core.MetachainShardId] = checkpoint.LastRounds[core.MetachainShardId]
+
+	err := bp.setCheckpoint(checkpoint)
 	if err != nil {
 		log.Warn("failed to set checkpoint", "error", err.Error())
 	}
@@ -167,6 +195,32 @@ func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 	}
 
 	return outportBlock, nil
+}
+
+func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
+	checkpointBytes, err := bp.marshaller.Marshal(checkpoint)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("setCheckpoint", "checkpoint", checkpoint)
+
+	return bp.storer.Put([]byte(metaCheckpointKey), checkpointBytes)
+}
+
+func (bp *blocksPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
+	checkpointBytes, err := bp.storer.Get([]byte(metaCheckpointKey))
+	if err != nil {
+		return nil, err
+	}
+
+	checkpoint := &data.BlockCheckpoint{}
+	err = bp.marshaller.Unmarshal(checkpoint, checkpointBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return checkpoint, nil
 }
 
 // Close will trigger close on blocks pool component

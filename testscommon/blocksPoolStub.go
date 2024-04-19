@@ -1,6 +1,9 @@
 package testscommon
 
-import "github.com/multiversx/mx-chain-core-go/data/outport"
+import (
+	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+)
 
 // BlocksPoolStub -
 type BlocksPoolStub struct {
@@ -8,7 +11,7 @@ type BlocksPoolStub struct {
 	GetCalled             func(hash []byte) ([]byte, error)
 	PutBlockCalled        func(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
 	GetBlockCalled        func(hash []byte) (*outport.OutportBlock, error)
-	UpdateMetaStateCalled func(round uint64)
+	UpdateMetaStateCalled func(checkpoint *data.BlockCheckpoint)
 	CloseCalled           func() error
 }
 
@@ -49,9 +52,9 @@ func (b *BlocksPoolStub) GetBlock(hash []byte) (*outport.OutportBlock, error) {
 }
 
 // UpdateMetaState -
-func (b *BlocksPoolStub) UpdateMetaState(round uint64) {
+func (b *BlocksPoolStub) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 	if b.UpdateMetaStateCalled != nil {
-		b.UpdateMetaStateCalled(round)
+		b.UpdateMetaStateCalled(checkpoint)
 	}
 }
 

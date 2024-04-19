@@ -5,10 +5,11 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data"
+	coreData "github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 type dataProcessor struct {
@@ -115,9 +116,39 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	dp.outportBlocksPool.UpdateMetaState(header.GetRound())
+	lastCheckpoint, err := dp.getLastRoundsData(hyperOutportBlock)
+	if err != nil {
+		return err
+	}
+
+	dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 
 	return nil
+}
+
+// TODO: update to use latest data structures
+func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *data.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+	checkpoint := &data.BlockCheckpoint{
+		LastRounds: make(map[uint32]uint64),
+	}
+
+	metaBlock, err := dp.getHeader(hyperOutportBlock.MetaOutportBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	checkpoint.LastRounds[core.MetachainShardId] = metaBlock.GetRound()
+
+	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
+		header, err := dp.getHeader(outportBlockData.OutportBlock)
+		if err != nil {
+			return nil, err
+		}
+
+		checkpoint.LastRounds[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
+	}
+
+	return checkpoint, nil
 }
 
 func (dp *dataProcessor) putMetaNonce(nonce uint64, hash []byte) error {
@@ -143,7 +174,7 @@ func (dp *dataProcessor) pushToBlocksPool(outportBlock *outport.OutportBlock) er
 	return nil
 }
 
-func (dp *dataProcessor) getHeader(outportBlock *outport.OutportBlock) (data.HeaderHandler, error) {
+func (dp *dataProcessor) getHeader(outportBlock *outport.OutportBlock) (coreData.HeaderHandler, error) {
 	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
 	if err != nil {
 		return nil, err
