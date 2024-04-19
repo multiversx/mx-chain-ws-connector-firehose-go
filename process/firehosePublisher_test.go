@@ -11,7 +11,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/block"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
 	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
@@ -19,7 +18,7 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
-var protoMarshaller = &marshal.GogoProtoMarshalizer{}
+var protoMarshaller = &process.ProtoMarshaller{}
 
 func createHyperOutportBlock() *data.HyperOutportBlock {
 	hyperOutportBlock := &data.HyperOutportBlock{

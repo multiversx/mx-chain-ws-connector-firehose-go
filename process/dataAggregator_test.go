@@ -5,9 +5,10 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/stretchr/testify/require"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewDataAggregator(t *testing.T) {
@@ -60,6 +61,9 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 		},
 	}
 
+	converter := process.NewOutportBlockConverter()
+	expectedResult, err := converter.HandleShardOutportBlock(shardOutportBlock)
+
 	da, err := process.NewDataAggregator(blocksPoolStub)
 	require.Nil(t, err)
 
@@ -68,5 +72,5 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 
 	hyperOutportBlock, err := da.ProcessHyperBlock(outportBlock)
 	require.Nil(t, err)
-	require.Equal(t, shardOutportBlock, hyperOutportBlock.NotarizedHeadersOutportData[0].OutportBlock)
+	require.Equal(t, expectedResult, hyperOutportBlock.NotarizedHeadersOutportData[0].OutportBlock)
 }

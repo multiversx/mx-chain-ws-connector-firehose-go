@@ -228,7 +228,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.DataAggregatorStub{
 				ProcessHyperBlockCalled: func(outportBlock *outportcore.OutportBlock) (*data.HyperOutportBlock, error) {
 					return &data.HyperOutportBlock{
-						MetaOutportBlock: outportBlock,
+						MetaOutportBlock: &data.MetaOutportBlock{},
 					}, nil
 				},
 			},
