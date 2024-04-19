@@ -63,6 +63,7 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 
 	converter := process.NewOutportBlockConverter()
 	expectedResult, err := converter.HandleShardOutportBlock(shardOutportBlock)
+	require.NoError(t, err)
 
 	da, err := process.NewDataAggregator(blocksPoolStub)
 	require.Nil(t, err)
