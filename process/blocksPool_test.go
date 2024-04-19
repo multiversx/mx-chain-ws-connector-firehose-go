@@ -20,7 +20,6 @@ func TestNewBlocksPool(t *testing.T) {
 		bp, err := process.NewBlocksPool(
 			nil,
 			&testscommon.MarshallerMock{},
-			3,
 			10,
 			100,
 		)
@@ -34,7 +33,6 @@ func TestNewBlocksPool(t *testing.T) {
 		bp, err := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			nil,
-			3,
 			10,
 			100,
 		)
@@ -48,7 +46,6 @@ func TestNewBlocksPool(t *testing.T) {
 		bp, err := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{},
 			&testscommon.MarshallerMock{},
-			3,
 			10,
 			100,
 		)
@@ -71,7 +68,6 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			3,
 			10,
 			100,
 		)
@@ -98,7 +94,6 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			3,
 			10,
 			100,
 		)
@@ -126,7 +121,6 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			3,
 			100,
 			cleanupInterval,
 		)
@@ -149,7 +143,6 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			3,
 			100,
 			cleanupInterval,
 		)
@@ -178,7 +171,6 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				},
 			},
 			protoMarshaller,
-			3,
 			maxDelta,
 			100,
 		)

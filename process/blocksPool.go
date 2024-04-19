@@ -1,7 +1,6 @@
 package process
 
 import (
-	"fmt"
 	"math"
 	"sync"
 
@@ -17,7 +16,6 @@ type blocksPool struct {
 	storer          PruningStorer
 	marshaller      marshal.Marshalizer
 	maxDelta        uint64
-	numOfShards     uint32
 	cleanupInterval uint64
 
 	indexesMap map[uint32]uint64
@@ -28,7 +26,6 @@ type blocksPool struct {
 func NewBlocksPool(
 	storer PruningStorer,
 	marshaller marshal.Marshalizer,
-	numOfShards uint32,
 	maxDelta uint64,
 	cleanupInterval uint64,
 ) (*blocksPool, error) {
@@ -43,7 +40,6 @@ func NewBlocksPool(
 		storer:          storer,
 		marshaller:      marshaller,
 		maxDelta:        maxDelta,
-		numOfShards:     numOfShards,
 		cleanupInterval: cleanupInterval,
 	}
 
@@ -54,9 +50,6 @@ func NewBlocksPool(
 
 func (bp *blocksPool) initIndexesMap() {
 	indexesMap := make(map[uint32]uint64)
-	for shardID := uint32(0); shardID < bp.numOfShards; shardID++ {
-		indexesMap[shardID] = initIndex
-	}
 	indexesMap[core.MetachainShardId] = initIndex
 
 	bp.indexesMap = indexesMap
@@ -74,9 +67,8 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 
 func (bp *blocksPool) UpdateMetaState(index uint64) {
 	bp.mutMap.Lock()
-	defer bp.mutMap.Unlock()
-
 	bp.indexesMap[core.MetachainShardId] = index
+	bp.mutMap.Unlock()
 
 	err := bp.storer.SetCheckpoint(index)
 	if err != nil {
@@ -99,9 +91,6 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 
 // PutBlock will put the provided outport block data to the pool
 func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, index uint64) error {
-	bp.mutMap.Lock()
-	defer bp.mutMap.Unlock()
-
 	shardID := outportBlock.ShardID
 
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
@@ -109,9 +98,13 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 		return err
 	}
 
+	bp.mutMap.Lock()
+	defer bp.mutMap.Unlock()
+
 	currentIndex, ok := bp.indexesMap[shardID]
 	if !ok {
-		return fmt.Errorf("did not find shard id %d in blocksMap", shardID)
+		bp.indexesMap[shardID] = initIndex
+		currentIndex = initIndex
 	}
 
 	if currentIndex == initIndex {
@@ -141,7 +134,6 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 	return nil
 }
 
-// should be run under mutex
 func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
