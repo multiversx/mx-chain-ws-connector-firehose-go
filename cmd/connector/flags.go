@@ -22,4 +22,10 @@ var (
 		Name:  "disable-ansi-color",
 		Usage: "Boolean option for disabling ANSI colors in the logging system.",
 	}
+
+	dbMode = cli.StringFlag{
+		Name:  "db-mode",
+		Usage: "Option for specifying db mode. Available options: `full-persister`, `import-db`, `optimized-persister`",
+		Value: "full-persister",
+	}
 )

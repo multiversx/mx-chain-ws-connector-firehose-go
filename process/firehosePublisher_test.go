@@ -52,7 +52,10 @@ func createHyperOutportBlock() *data.HyperOutportBlock {
 
 func createContainer() process.BlockContainerHandler {
 	container := block.NewEmptyBlockCreatorsContainer()
+
+	_ = container.Add(core.MetaHeader, block.NewEmptyMetaBlockCreator())
 	_ = container.Add(core.ShardHeaderV1, block.NewEmptyHeaderCreator())
+	_ = container.Add(core.ShardHeaderV2, block.NewEmptyHeaderV2Creator())
 
 	return container
 }
