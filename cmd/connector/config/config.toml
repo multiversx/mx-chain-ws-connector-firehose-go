@@ -48,3 +48,7 @@
         BatchDelaySeconds = 2
         MaxBatchSize = 100
         MaxOpenFiles = 10
+
+[GRPC]
+    Enable = true
+    URL = "localhost:8000"

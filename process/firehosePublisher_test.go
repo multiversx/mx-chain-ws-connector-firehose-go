@@ -11,11 +11,10 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/block"
-	outportcore "github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
@@ -23,20 +22,17 @@ import (
 var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 
 func createHyperOutportBlock() *data.HyperOutportBlock {
-	header := &block.Header{
-		Nonce:     1,
-		PrevHash:  []byte("prev hash"),
-		TimeStamp: 100,
-	}
-	headerBytes, _ := protoMarshaller.Marshal(header)
-
 	hyperOutportBlock := &data.HyperOutportBlock{
-		MetaOutportBlock: &outportcore.OutportBlock{
+		MetaOutportBlock: &data.MetaOutportBlock{
 			ShardID: 1,
-			BlockData: &outportcore.BlockData{
-				HeaderBytes: headerBytes,
-				HeaderType:  string(core.ShardHeaderV1),
-				HeaderHash:  []byte("hash"),
+			BlockData: &data.MetaBlockData{
+				Header: &data.MetaHeader{
+					Nonce:     1,
+					PrevHash:  []byte("prev hash"),
+					TimeStamp: 100,
+				},
+				HeaderType: string(core.ShardHeaderV1),
+				HeaderHash: []byte("hash"),
 			},
 			NotarizedHeadersHashes: []string{},
 			NumberOfShards:         0,
@@ -191,20 +187,17 @@ func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		header := &block.Header{
-			Nonce:     1,
-			PrevHash:  []byte("prev hash"),
-			TimeStamp: 100,
-		}
-		headerBytes, _ := protoMarshaller.Marshal(header)
-
 		outportBlock := &data.HyperOutportBlock{
-			MetaOutportBlock: &outportcore.OutportBlock{
+			MetaOutportBlock: &data.MetaOutportBlock{
 				ShardID: 1,
-				BlockData: &outportcore.BlockData{
-					HeaderBytes: headerBytes,
-					HeaderType:  string(core.ShardHeaderV1),
-					HeaderHash:  []byte("hash"),
+				BlockData: &data.MetaBlockData{
+					Header: &data.MetaHeader{
+						Nonce:     1,
+						PrevHash:  []byte("prev hash"),
+						TimeStamp: 100,
+					},
+					HeaderType: string(core.ShardHeaderV1),
+					HeaderHash: []byte("hash"),
 				},
 				NotarizedHeadersHashes: []string{},
 				NumberOfShards:         0,
@@ -218,6 +211,7 @@ func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 		require.Nil(t, err)
 
 		ioWriterCalledCt := 0
+		header := outportBlock.MetaOutportBlock.BlockData.Header
 		ioWriter := &testscommon.IoWriterStub{
 			WriteCalled: func(p []byte) (n int, err error) {
 				defer func() {

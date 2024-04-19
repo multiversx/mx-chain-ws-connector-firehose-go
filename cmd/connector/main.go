@@ -9,15 +9,16 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/closing"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
+	"github.com/urfave/cli"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/connector"
-	"github.com/urfave/cli"
 )
 
 var log = logger.GetOrCreate("main")
 
 const (
-	configPath = "config/config.toml"
+	configPath = "/home/cristu/go/src/github.com/multiversx/mx-chain-ws-connector-firehose-go/cmd/connector/config/config.toml"
 
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"

@@ -5,6 +5,7 @@ type Config struct {
 	WebSocket            WebSocketConfig
 	DataPool             DataPoolConfig
 	OutportBlocksStorage StorageConfig
+	GRPC                 GRPCConfig
 }
 
 // WebSocketConfig holds web sockets config
@@ -48,4 +49,10 @@ type DBConfig struct {
 	BatchDelaySeconds int
 	MaxBatchSize      int
 	MaxOpenFiles      int
+}
+
+// GRPCConfig will map the gRPC server configuration
+type GRPCConfig struct {
+	Enable bool
+	URL    string
 }

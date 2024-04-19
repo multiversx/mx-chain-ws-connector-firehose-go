@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -60,10 +62,31 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
+	var (
+		server *factory.GRPCServer
+		writer process.Writer
+	)
+	if cr.config.GRPC.Enable {
+		writer = &fakeWriter{}
+		handler, err := process.NewGRPCBlocksHandler(outportBlocksPool, dataAggregator)
+		if err != nil {
+			return fmt.Errorf("couldn't create grpc blocks handler, error: %w", err)
+		}
+		server = factory.NewServer(cr.config.GRPC, handler)
+
+		go func() {
+			if err := server.Start(); err != nil {
+				log.Error("couldn't start grpc server", "error", err)
+			}
+		}()
+	} else {
+		writer = os.Stdout
+	}
+
 	publisher, err := process.NewFirehosePublisher(
-		os.Stdout,
+		writer,
 		blockContainer,
-		protoMarshaller,
+		&process.ProtoMarshaller{},
 	)
 	if err != nil {
 		return err
@@ -98,5 +121,27 @@ func (cr *connectorRunner) Run() error {
 		log.Error(err.Error())
 	}
 
+	if server != nil {
+		server.Stop()
+	}
+
 	return err
+}
+
+type fakeWriter struct {
+	err      error
+	duration time.Duration
+}
+
+func (f *fakeWriter) Write(p []byte) (int, error) {
+	time.Sleep(f.duration)
+	if f.err != nil {
+		return 0, f.err
+	}
+
+	return len(p), nil
+}
+
+func (f *fakeWriter) Close() error {
+	return nil
 }

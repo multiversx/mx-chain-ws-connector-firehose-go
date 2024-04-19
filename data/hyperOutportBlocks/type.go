@@ -1,4 +1,4 @@
-package data
+package hyperOutportBlocks
 
 // FieldsGetter used to retrieve common fields from data.ShardOutportBlock and data.MetaOutportBlock
 type FieldsGetter interface {

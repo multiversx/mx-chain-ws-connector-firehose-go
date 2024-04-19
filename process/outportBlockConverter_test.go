@@ -11,7 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 const (
@@ -101,7 +101,7 @@ func TestMetaBlockConverter(t *testing.T) {
 	checkBlockData(t, ob.BlockData, metaOutportBlock.BlockData)
 }
 
-func checkHeaderV1(t *testing.T, header *block.Header, fireOutportBlock *data.ShardOutportBlock) {
+func checkHeaderV1(t *testing.T, header *block.Header, fireOutportBlock *hyperOutportBlocks.ShardOutportBlock) {
 	// Block data - Header.
 	require.Equal(t, header.Nonce, fireOutportBlock.BlockData.Header.Nonce)
 	require.Equal(t, header.PrevHash, fireOutportBlock.BlockData.Header.PrevHash)
@@ -143,7 +143,7 @@ func checkHeaderV1(t *testing.T, header *block.Header, fireOutportBlock *data.Sh
 	}
 }
 
-func checkHeaderV2(t *testing.T, headerV2 *block.HeaderV2, fireOutportBlock *data.ShardOutportBlock) {
+func checkHeaderV2(t *testing.T, headerV2 *block.HeaderV2, fireOutportBlock *hyperOutportBlocks.ShardOutportBlock) {
 	// Block data - Header.
 	header := headerV2.Header
 	require.Equal(t, header.Nonce, fireOutportBlock.BlockData.Header.Nonce)
@@ -193,7 +193,7 @@ func checkHeaderV2(t *testing.T, headerV2 *block.HeaderV2, fireOutportBlock *dat
 	require.Equal(t, headerV2.ScheduledGasRefunded, fireOutportBlock.BlockData.ScheduledGasRefunded)
 }
 
-func checkHeaderMeta(t *testing.T, header *block.MetaBlock, fireOutportBlock *data.MetaOutportBlock) {
+func checkHeaderMeta(t *testing.T, header *block.MetaBlock, fireOutportBlock *hyperOutportBlocks.MetaOutportBlock) {
 	require.Equal(t, header.Nonce, fireOutportBlock.BlockData.Header.Nonce)
 	require.Equal(t, header.Epoch, fireOutportBlock.BlockData.Header.Epoch)
 	require.Equal(t, header.Round, fireOutportBlock.BlockData.Header.Round)
@@ -295,7 +295,7 @@ func checkHeaderMeta(t *testing.T, header *block.MetaBlock, fireOutportBlock *da
 	require.Equal(t, header.Reserved, fireOutportBlock.BlockData.Header.Reserved)
 }
 
-func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock data.FieldsGetter) {
+func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock hyperOutportBlocks.FieldsGetter) {
 	// Asserting values.
 	require.Equal(t, outportBlock.ShardID, fireOutportBlock.GetShardID())
 	require.Equal(t, outportBlock.NotarizedHeadersHashes, fireOutportBlock.GetNotarizedHeadersHashes())
@@ -485,7 +485,7 @@ func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBl
 	}
 }
 
-func checkBlockData(t *testing.T, blockData *outport.BlockData, getter data.BlockDataGetter) {
+func checkBlockData(t *testing.T, blockData *outport.BlockData, getter hyperOutportBlocks.BlockDataGetter) {
 	require.Equal(t, blockData.ShardID, getter.GetShardID())
 	require.Equal(t, blockData.HeaderType, getter.GetHeaderType())
 	require.Equal(t, blockData.HeaderHash, getter.GetHeaderHash())
@@ -494,7 +494,7 @@ func checkBlockData(t *testing.T, blockData *outport.BlockData, getter data.Bloc
 		require.Equal(t, miniBlock.TxHashes, getter.GetBody().MiniBlocks[i].TxHashes)
 		require.Equal(t, miniBlock.ReceiverShardID, getter.GetBody().MiniBlocks[i].ReceiverShardID)
 		require.Equal(t, miniBlock.SenderShardID, getter.GetBody().MiniBlocks[i].SenderShardID)
-		require.Equal(t, data.Type(miniBlock.Type), getter.GetBody().MiniBlocks[i].Type)
+		require.Equal(t, hyperOutportBlocks.Type(miniBlock.Type), getter.GetBody().MiniBlocks[i].Type)
 		require.Equal(t, miniBlock.Reserved, getter.GetBody().MiniBlocks[i].Reserved)
 	}
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 func recoveredMarshal(obj interface{}) (buf []byte, err error) {
@@ -46,7 +46,7 @@ func recoveredUnmarshal(obj interface{}, buf []byte) (err error) {
 func TestProtoMarshaller_Marshal(t *testing.T) {
 	t.Parallel()
 
-	outportBlock := data.ShardOutportBlock{}
+	outportBlock := hyperOutportBlocks.ShardOutportBlock{}
 	encNode, err := recoveredMarshal(&outportBlock)
 	assert.Nil(t, err)
 	assert.NotNil(t, encNode)
@@ -65,10 +65,10 @@ func TestProtoMarshaller_Unmarshal(t *testing.T) {
 	t.Parallel()
 
 	protoMarshaller := ProtoMarshaller{}
-	outportBlock := data.ShardOutportBlock{}
+	outportBlock := hyperOutportBlocks.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(&outportBlock)
-	newNode := &data.ShardOutportBlock{}
+	newNode := &hyperOutportBlocks.ShardOutportBlock{}
 
 	err := recoveredUnmarshal(newNode, encNode)
 	assert.Nil(t, err)
@@ -79,7 +79,7 @@ func TestProtoMarshaller_UnmarshalWrongObj(t *testing.T) {
 	t.Parallel()
 
 	protoMarshaller := ProtoMarshaller{}
-	outportBlock := data.ShardOutportBlock{}
+	outportBlock := hyperOutportBlocks.ShardOutportBlock{}
 
 	encNode, _ := protoMarshaller.Marshal(&outportBlock)
 	err := recoveredUnmarshal([]byte{}, encNode)
