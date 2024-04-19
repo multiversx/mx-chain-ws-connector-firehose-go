@@ -50,7 +50,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, protoMarshaller, cr.config.DataPool.NumberOfShards, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, protoMarshaller, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
 	if err != nil {
 		return err
 	}

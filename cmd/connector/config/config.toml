@@ -29,8 +29,6 @@
     Version = 1
 
 [DataPool]
-    NumberOfShards = 3
-
     # Should be smaller then PruningWindow
     MaxDelta = 10
     PruningWindow = 1000
