@@ -50,7 +50,13 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, protoMarshaller, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	outportBlocksPool, err := process.NewBlocksPool(
+		blocksStorer,
+		protoMarshaller,
+		cr.config.DataPool.MaxDelta,
+		cr.config.DataPool.PruningWindow,
+		cr.config.DataPool.FirstCommitableBlock,
+	)
 	if err != nil {
 		return err
 	}
@@ -69,7 +75,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	dataProcessor, err := process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
+	dataProcessor, err := process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer, cr.config.DataPool.FirstCommitableBlock)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}

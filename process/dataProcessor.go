@@ -1,8 +1,6 @@
 package process
 
 import (
-	"encoding/binary"
-
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	coreData "github.com/multiversx/mx-chain-core-go/data"
@@ -13,12 +11,13 @@ import (
 )
 
 type dataProcessor struct {
-	marshaller        marshal.Marshalizer
-	operationHandlers map[string]func(marshalledData []byte) error
-	publisher         Publisher
-	outportBlocksPool DataPool
-	dataAggregator    DataAggregator
-	blockCreator      BlockContainerHandler
+	marshaller           marshal.Marshalizer
+	operationHandlers    map[string]func(marshalledData []byte) error
+	publisher            Publisher
+	outportBlocksPool    DataPool
+	dataAggregator       DataAggregator
+	blockCreator         BlockContainerHandler
+	firstCommitableBlock uint64
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -28,6 +27,7 @@ func NewDataProcessor(
 	outportBlocksPool DataPool,
 	dataAggregator DataAggregator,
 	blockCreator BlockContainerHandler,
+	firstCommitableBlock uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -46,11 +46,12 @@ func NewDataProcessor(
 	}
 
 	dp := &dataProcessor{
-		marshaller:        marshaller,
-		publisher:         publisher,
-		outportBlocksPool: outportBlocksPool,
-		dataAggregator:    dataAggregator,
-		blockCreator:      blockCreator,
+		marshaller:           marshaller,
+		publisher:            publisher,
+		outportBlocksPool:    outportBlocksPool,
+		dataAggregator:       dataAggregator,
+		blockCreator:         blockCreator,
+		firstCommitableBlock: firstCommitableBlock,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -96,27 +97,39 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 }
 
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
+	metaBlock, err := dp.getHeader(outportBlock)
+	if err != nil {
+		return err
+	}
+	metaRound := metaBlock.GetRound()
+
+	if metaRound < dp.firstCommitableBlock {
+		// do not try to aggregate or publish hyper outport block
+		// update only blocks pool state
+
+		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", dp.firstCommitableBlock)
+
+		lastCheckpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: metaRound,
+			},
+		}
+		dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+
+		return nil
+	}
+
 	hyperOutportBlock, err := dp.dataAggregator.ProcessHyperBlock(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
-	if err != nil {
-		return err
-	}
-
-	header, err := dp.getHeader(hyperOutportBlock.MetaOutportBlock)
-	if err != nil {
-		return err
-	}
-
-	err = dp.putMetaNonce(header.GetNonce(), outportBlock.BlockData.GetHeaderHash())
-	if err != nil {
-		return err
-	}
-
 	lastCheckpoint, err := dp.getLastRoundsData(hyperOutportBlock)
+	if err != nil {
+		return err
+	}
+
+	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
 	if err != nil {
 		return err
 	}
@@ -149,13 +162,6 @@ func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *data.HyperOutportB
 	}
 
 	return checkpoint, nil
-}
-
-func (dp *dataProcessor) putMetaNonce(nonce uint64, hash []byte) error {
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, nonce)
-
-	return dp.outportBlocksPool.Put(nonceBytes, hash)
 }
 
 func (dp *dataProcessor) pushToBlocksPool(outportBlock *outport.OutportBlock) error {

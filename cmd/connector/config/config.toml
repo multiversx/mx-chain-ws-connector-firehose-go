@@ -36,6 +36,11 @@
     # Defines the number of active persisters to keep open
     NumPersistersToKeep = 2
 
+    # Defines the first commitable meta block round
+    # If it is set to 0, it will try to get last rounds info from storage,
+    # otherwise, it will try to sync from observers
+    FirstCommitableBlock = 30
+
 [OutportBlocksStorage]
     [OutportBlocksStorage.Cache]
         Name = "OutportBlocksStorage"

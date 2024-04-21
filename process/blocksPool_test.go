@@ -24,6 +24,7 @@ func TestNewBlocksPool(t *testing.T) {
 			&testscommon.MarshallerMock{},
 			10,
 			100,
+			0,
 		)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilPruningStorer, err)
@@ -37,6 +38,7 @@ func TestNewBlocksPool(t *testing.T) {
 			nil,
 			10,
 			100,
+			0,
 		)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilMarshaller, err)
@@ -50,6 +52,7 @@ func TestNewBlocksPool(t *testing.T) {
 			&testscommon.MarshallerMock{},
 			10,
 			100,
+			0,
 		)
 		require.Nil(t, err)
 		require.False(t, bp.IsInterfaceNil())
@@ -72,6 +75,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			protoMarshaller,
 			10,
 			100,
+			0,
 		)
 
 		ret, err := bp.GetBlock([]byte("hash1"))
@@ -98,6 +102,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			protoMarshaller,
 			10,
 			100,
+			0,
 		)
 
 		ret, err := bp.GetBlock([]byte("hash1"))
@@ -125,6 +130,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			protoMarshaller,
 			100,
 			cleanupInterval,
+			0,
 		)
 
 		checkpoint := &data.BlockCheckpoint{
@@ -153,6 +159,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			protoMarshaller,
 			100,
 			cleanupInterval,
+			0,
 		)
 
 		checkpoint := &data.BlockCheckpoint{
@@ -187,6 +194,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			protoMarshaller,
 			maxDelta,
 			100,
+			0,
 		)
 
 		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, 2)

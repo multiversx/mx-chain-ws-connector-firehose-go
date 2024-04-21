@@ -61,6 +61,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilPublisher, err)
@@ -75,6 +76,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilMarshaller, err)
@@ -89,6 +91,7 @@ func TestNewDataProcessor(t *testing.T) {
 			nil,
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilBlocksPool, err)
@@ -103,6 +106,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			nil,
 			createContainer(),
+			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilDataAggregator, err)
@@ -117,6 +121,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 		require.Nil(t, err)
 		require.False(t, dp.IsInterfaceNil())
@@ -132,6 +137,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
 		createContainer(),
+		0,
 	)
 
 	require.Nil(t, dp.ProcessPayload([]byte("payload"), "random topic", 1))
@@ -154,6 +160,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 
 		err := dp.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
@@ -176,6 +183,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 
 		err := dp.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
@@ -200,6 +208,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
+			0,
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -232,6 +241,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 				},
 			},
 			createContainer(),
+			0,
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -256,6 +266,7 @@ func TestDataProcessor_Close(t *testing.T) {
 		&testscommon.BlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
 		createContainer(),
+		0,
 	)
 	require.Nil(t, err)
 

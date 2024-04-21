@@ -15,10 +15,11 @@ const initIndex = 0
 const metaCheckpointKey = "lastMetaRound"
 
 type blocksPool struct {
-	storer          PruningStorer
-	marshaller      marshal.Marshalizer
-	maxDelta        uint64
-	cleanupInterval uint64
+	storer               PruningStorer
+	marshaller           marshal.Marshalizer
+	maxDelta             uint64
+	cleanupInterval      uint64
+	firstCommitableBlock uint64
 
 	indexesMap map[uint32]uint64
 	mutMap     sync.RWMutex
@@ -30,6 +31,7 @@ func NewBlocksPool(
 	marshaller marshal.Marshalizer,
 	maxDelta uint64,
 	cleanupInterval uint64,
+	firstCommitableBlock uint64,
 ) (*blocksPool, error) {
 	if check.IfNil(storer) {
 		return nil, ErrNilPruningStorer
@@ -39,10 +41,11 @@ func NewBlocksPool(
 	}
 
 	bp := &blocksPool{
-		storer:          storer,
-		marshaller:      marshaller,
-		maxDelta:        maxDelta,
-		cleanupInterval: cleanupInterval,
+		storer:               storer,
+		marshaller:           marshaller,
+		maxDelta:             maxDelta,
+		cleanupInterval:      cleanupInterval,
+		firstCommitableBlock: firstCommitableBlock,
 	}
 
 	bp.initIndexesMap()
@@ -87,12 +90,14 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 	bp.indexesMap[core.MetachainShardId] = index
 	bp.mutMap.Unlock()
 
-	err := bp.setCheckpoint(checkpoint)
-	if err != nil {
-		log.Warn("failed to set checkpoint", "error", err.Error())
+	if index >= bp.firstCommitableBlock {
+		err := bp.setCheckpoint(checkpoint)
+		if err != nil {
+			log.Warn("failed to set checkpoint", "error", err.Error())
+		}
 	}
 
-	err = bp.pruneStorer(index)
+	err := bp.pruneStorer(index)
 	if err != nil {
 		log.Warn("failed to prune storer", "error", err.Error())
 	}
