@@ -11,6 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/block"
+	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
 	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
@@ -18,7 +19,10 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
-var protoMarshaller = &process.ProtoMarshaller{}
+var (
+	protoMarshaller     = &process.ProtoMarshaller{}
+	gogoProtoMarshaller = &marshal.GogoProtoMarshalizer{}
+)
 
 func createHyperOutportBlock() *data.HyperOutportBlock {
 	hyperOutportBlock := &data.HyperOutportBlock{
@@ -108,7 +112,7 @@ func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 			},
 		}
 
-		fi, _ := process.NewFirehosePublisher(ioWriter, createContainer(), protoMarshaller)
+		fi, _ := process.NewFirehosePublisher(ioWriter, createContainer(), gogoProtoMarshaller)
 
 		err := fi.PublishHyperBlock(outportBlock)
 		require.NotNil(t, err)
@@ -128,8 +132,8 @@ func TestFirehosePublisher_PublishHyperBlock(t *testing.T) {
 
 		expectedErr := errors.New("expected err")
 		marshaller := &testscommon.MarshallerStub{
-			UnmarshalCalled: func(obj interface{}, buff []byte) error {
-				return expectedErr
+			MarshalCalled: func(obj interface{}) ([]byte, error) {
+				return nil, expectedErr
 			},
 		}
 

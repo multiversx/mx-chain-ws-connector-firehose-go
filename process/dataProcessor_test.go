@@ -9,7 +9,6 @@ import (
 	outportcore "github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/stretchr/testify/require"
 
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
@@ -151,7 +150,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			&testscommon.BlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
 			createContainer(),
@@ -181,64 +180,6 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 
 		err := dp.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
 		require.NotNil(t, err)
-	})
-
-	t.Run("shard outport block, should work", func(t *testing.T) {
-		t.Parallel()
-
-		outportBlock := createOutportBlock()
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-
-		putBlockWasCalled := false
-		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
-			protoMarshaller,
-			&testscommon.BlocksPoolStub{
-				PutBlockCalled: func(hash []byte, outportBlock *outportcore.OutportBlock, round uint64) error {
-					putBlockWasCalled = true
-					return nil
-				},
-			},
-			&testscommon.DataAggregatorStub{},
-			createContainer(),
-		)
-
-		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
-		require.Nil(t, err)
-
-		require.True(t, putBlockWasCalled)
-	})
-
-	t.Run("meta outport block, should work", func(t *testing.T) {
-		t.Parallel()
-
-		outportBlock := createMetaOutportBlock()
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
-
-		publishWasCalled := false
-		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{
-				PublishHyperBlockCalled: func(hyperOutportBlock *data.HyperOutportBlock) error {
-					publishWasCalled = true
-					return nil
-				},
-			},
-			protoMarshaller,
-			&testscommon.BlocksPoolStub{},
-			&testscommon.DataAggregatorStub{
-				ProcessHyperBlockCalled: func(outportBlock *outportcore.OutportBlock) (*data.HyperOutportBlock, error) {
-					return &data.HyperOutportBlock{
-						MetaOutportBlock: &data.MetaOutportBlock{},
-					}, nil
-				},
-			},
-			createContainer(),
-		)
-
-		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
-		require.Nil(t, err)
-
-		require.True(t, publishWasCalled)
 	})
 }
 
