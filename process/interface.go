@@ -81,10 +81,16 @@ type PruningStorer interface {
 type OutportBlockConverter interface {
 	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error)
 	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error)
+	IsInterfaceNil() bool
 }
 
 // GRPCBlocksHandler defines the behaviour of handling block via gRPC
 type GRPCBlocksHandler interface {
 	FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error)
 	FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error)
+}
+
+type GRPCServer interface {
+	Start() error
+	Close()
 }

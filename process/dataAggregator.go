@@ -19,14 +19,18 @@ type dataAggregator struct {
 // NewDataAggregator will create a new data aggregator instance
 func NewDataAggregator(
 	blocksPool DataPool,
+	converter OutportBlockConverter,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool
 	}
+	if check.IfNil(converter) {
+		return nil, ErrNilOutportBlocksConverter
+	}
 
 	return &dataAggregator{
 		blocksPool: blocksPool,
-		converter:  NewOutportBlockConverter(),
+		converter:  converter,
 	}, nil
 }
 

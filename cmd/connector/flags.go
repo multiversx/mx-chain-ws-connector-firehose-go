@@ -28,4 +28,9 @@ var (
 		Usage: "Option for specifying db mode. Available options: `full-persister`, `import-db`, `optimized-persister`",
 		Value: "full-persister",
 	}
+
+	enableGrpcServer = cli.BoolFlag{
+		Name:  "enable-grpc-server",
+		Usage: "Option for enabling grpc server",
+	}
 )

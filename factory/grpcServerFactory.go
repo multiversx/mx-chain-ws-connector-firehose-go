@@ -2,48 +2,54 @@ package factory
 
 import (
 	"fmt"
-	"net"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	"os"
+	"time"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/service/hyperOutportBlock"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/server"
 )
 
-type GRPCServer struct {
-	server *grpc.Server
-	config config.GRPCConfig
-}
+// CreateGRPCServer will create the gRPC server along with the required handlers.
+func CreateGRPCServer(
+	enableGrpcServer bool,
+	cfg config.GRPCConfig,
+	outportBlocksPool process.DataPool,
+	dataAggregator process.DataAggregator) (process.GRPCServer, process.Writer, error) {
+	if !enableGrpcServer {
+		return nil, os.Stdout, nil
+	}
 
-// NewServer instantiates the underlying grpc server handling rpc requests.
-func NewServer(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) *GRPCServer {
-	s := grpc.NewServer()
-
-	service := hyperOutportBlock.NewService(blocksHandler)
-	data.RegisterHyperOutportBlockServiceServer(s, service)
-	reflection.Register(s)
-
-	return &GRPCServer{s, config}
-}
-
-// Start will start the grpc server on the configured URL.
-func (s *GRPCServer) Start() error {
-	lis, err := net.Listen("tcp", s.config.URL)
+	handler, err := process.NewGRPCBlocksHandler(outportBlocksPool, dataAggregator)
 	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
+		return nil, nil, fmt.Errorf("failed to create grpc blocks handler: %w", err)
+	}
+	s := server.New(cfg, handler)
+	err = s.Start()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to start grpc server: %w", err)
 	}
 
-	if err = s.server.Serve(lis); err != nil {
-		return fmt.Errorf("failed to serve: %v", err)
-	}
+	return s, &fakeWriter{}, nil
 
-	return nil
 }
 
-// Stop will gracefully stop the grpc server.
-func (s *GRPCServer) Stop() {
-	s.server.GracefulStop()
+type fakeWriter struct {
+	err      error
+	duration time.Duration
+}
+
+// Write is a mock writer.
+func (f *fakeWriter) Write(p []byte) (int, error) {
+	time.Sleep(f.duration)
+	if f.err != nil {
+		return 0, f.err
+	}
+
+	return len(p), nil
+}
+
+// Close is mock closer.
+func (f *fakeWriter) Close() error {
+	return nil
 }

@@ -172,3 +172,8 @@ func (o *outportBlockConverter) castBigInt(i *big.Int) ([]byte, error) {
 
 	return buf, err
 }
+
+// IsInterfaceNil returns nil if there is no value under the interface
+func (o *outportBlockConverter) IsInterfaceNil() bool {
+	return o == nil
+}

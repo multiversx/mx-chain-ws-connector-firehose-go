@@ -76,7 +76,10 @@ func startConnector(ctx *cli.Context) error {
 	dbMode := ctx.GlobalString(dbMode.Name)
 	log.Info("storer sync mode", "dbMode", dbMode)
 
-	connectorRunner, err := connector.NewConnectorRunner(cfg, dbMode)
+	enableGrpcServer := ctx.GlobalBool(enableGrpcServer.Name)
+	log.Info("grpc server enabled", "enableGrpcServer", enableGrpcServer)
+
+	connectorRunner, err := connector.NewConnectorRunner(cfg, dbMode, enableGrpcServer)
 	if err != nil {
 		return fmt.Errorf("cannot create connector runner, error: %w", err)
 	}

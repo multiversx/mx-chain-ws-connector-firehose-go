@@ -30,7 +30,7 @@
 
 [DataPool]
     # Should be smaller then PruningWindow
-    MaxDelta = 10
+    MaxDelta = 100
     PruningWindow = 1000
 
     # Defines the number of active persisters to keep open
@@ -50,5 +50,4 @@
         MaxOpenFiles = 10
 
 [GRPC]
-    Enable = true
     URL = "localhost:8000"

@@ -20,6 +20,9 @@ var ErrNilPublisher = errors.New("nil publisher provided")
 // ErrNilBlocksPool signals that a nil blocks pool was provided
 var ErrNilBlocksPool = errors.New("nil blocks pool provided")
 
+// ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
+var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter provided")
+
 // ErrNilDataAggregator signals that a nil data aggregator was provided
 var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 

@@ -17,7 +17,7 @@ func TestNewDataAggregator(t *testing.T) {
 	t.Run("nil blocks pool", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(nil)
+		da, err := process.NewDataAggregator(nil, nil)
 		require.Nil(t, da)
 		require.Equal(t, process.ErrNilBlocksPool, err)
 	})
@@ -25,7 +25,7 @@ func TestNewDataAggregator(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(&testscommon.BlocksPoolStub{})
+		da, err := process.NewDataAggregator(&testscommon.BlocksPoolStub{}, process.NewOutportBlockConverter())
 		require.Nil(t, err)
 		require.False(t, da.IsInterfaceNil())
 	})
@@ -39,7 +39,7 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 
 		blocksPoolStub := &testscommon.BlocksPoolStub{}
 
-		da, err := process.NewDataAggregator(blocksPoolStub)
+		da, err := process.NewDataAggregator(blocksPoolStub, process.NewOutportBlockConverter())
 		require.Nil(t, err)
 
 		shardOutportBlock := createOutportBlock()
@@ -65,7 +65,7 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 	expectedResult, err := converter.HandleShardOutportBlock(shardOutportBlock)
 	require.NoError(t, err)
 
-	da, err := process.NewDataAggregator(blocksPoolStub)
+	da, err := process.NewDataAggregator(blocksPoolStub, process.NewOutportBlockConverter())
 	require.Nil(t, err)
 
 	outportBlock := createMetaOutportBlock()
