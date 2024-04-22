@@ -15,8 +15,12 @@ type Service struct {
 	data.UnimplementedHyperOutportBlockServiceServer
 }
 
-func NewService(blocksHandler process.GRPCBlocksHandler) *Service {
-	return &Service{blocksHandler: blocksHandler}
+func NewService(blocksHandler process.GRPCBlocksHandler) (*Service, error) {
+	if blocksHandler.IsInterfaceNil() {
+		return nil, process.ErrNilOutportBlockData
+	}
+
+	return &Service{blocksHandler: blocksHandler}, nil
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.

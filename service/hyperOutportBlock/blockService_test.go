@@ -12,6 +12,7 @@ import (
 )
 
 func TestService_GetHyperOutportBlockByHash(t *testing.T) {
+	t.Parallel()
 	handler := testscommon.GRPCBlocksHandlerStub{
 		FetchHyperBlockByHashCalled: func(hash []byte) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
@@ -23,7 +24,8 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 			}, nil
 		},
 	}
-	bs := NewService(&handler)
+	bs, err := NewService(&handler)
+	require.NoError(t, err)
 	hash := "437a88d24178dea0060afd74f1282c23b34947cf96adcf71cdfa0f3f7bdcdc73"
 	expectedHash, _ := hex.DecodeString(hash)
 	outportBlock, err := bs.GetHyperOutportBlockByHash(context.Background(), &data.BlockHashRequest{Hash: hash})
@@ -32,6 +34,7 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 }
 
 func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
+	t.Parallel()
 	handler := testscommon.GRPCBlocksHandlerStub{
 		FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
@@ -43,7 +46,8 @@ func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 			}, nil
 		},
 	}
-	bs := NewService(&handler)
+	bs, err := NewService(&handler)
+	require.NoError(t, err)
 	nonce := uint64(1)
 	outportBlock, err := bs.GetHyperOutportBlockByNonce(context.Background(), &data.BlockNonceRequest{Nonce: nonce})
 	require.NoError(t, err, "couldn't get block by nonce")

@@ -44,6 +44,9 @@ var ErrNilPruningStorer = errors.New("nil pruning storer")
 // ErrNilCacher signals that a nil cacher was provided
 var ErrNilCacher = errors.New("nil cacher")
 
+// ErrNilGRPCBlocksHandler singals that nil blocks handler was provided
+var ErrNilGRPCBlocksHandler = errors.New("nil gRPC blocks handler")
+
 // ErrInvalidOutportBlock signals that an invalid outport block was provided
 var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
 

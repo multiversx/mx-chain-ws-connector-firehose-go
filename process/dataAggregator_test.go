@@ -17,9 +17,17 @@ func TestNewDataAggregator(t *testing.T) {
 	t.Run("nil blocks pool", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(nil, nil)
+		da, err := process.NewDataAggregator(nil, process.NewOutportBlockConverter())
 		require.Nil(t, da)
 		require.Equal(t, process.ErrNilBlocksPool, err)
+	})
+
+	t.Run("nil outport block converter", func(t *testing.T) {
+		t.Parallel()
+
+		da, err := process.NewDataAggregator(&testscommon.BlocksPoolStub{}, nil)
+		require.Nil(t, da)
+		require.Equal(t, process.ErrNilOutportBlockData, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {

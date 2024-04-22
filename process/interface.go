@@ -78,6 +78,7 @@ type PruningStorer interface {
 	IsInterfaceNil() bool
 }
 
+// OutportBlockConverter handles the conversion between gogo and google proto buffer definitions.
 type OutportBlockConverter interface {
 	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error)
 	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error)
@@ -88,9 +89,11 @@ type OutportBlockConverter interface {
 type GRPCBlocksHandler interface {
 	FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error)
 	FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error)
+	IsInterfaceNil() bool
 }
 
+// GRPCServer is the server that will serve the stored hyperOutportBlocks.
 type GRPCServer interface {
-	Start() error
+	Start()
 	Close()
 }
