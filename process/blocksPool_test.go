@@ -2,6 +2,7 @@ package process_test
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -177,7 +178,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 func TestBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
-	t.Run("first put, should put directly", func(t *testing.T) {
+	t.Run("should work on init, index 0", func(t *testing.T) {
 		t.Parallel()
 
 		maxDelta := uint64(10)
@@ -197,7 +198,153 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			0,
 		)
 
-		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, 2)
+		startIndex := uint64(0)
+		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
+		require.Nil(t, err)
+
+		require.True(t, wasCalled)
+	})
+
+	t.Run("should work on init with any index if not previous checkpoint", func(t *testing.T) {
+		t.Parallel()
+
+		maxDelta := uint64(10)
+
+		wasCalled := false
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				GetCalled: func(key []byte) ([]byte, error) {
+					if string(key) == process.MetaCheckpointKey {
+						wasCalled = true
+						return nil, fmt.Errorf("no checkpoint key found")
+					}
+
+					return []byte{}, nil
+				},
+			},
+			protoMarshaller,
+			maxDelta,
+			100,
+			0,
+		)
+
+		startIndex := uint64(123)
+		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
+		require.Nil(t, err)
+
+		require.True(t, wasCalled)
+	})
+
+	t.Run("should work succesively from init if there is previous checkpoint", func(t *testing.T) {
+		t.Parallel()
+
+		maxDelta := uint64(10)
+
+		shardID := uint32(1)
+		startIndex := uint64(123)
+
+		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				shardID:               startIndex,
+				core.MetachainShardId: startIndex - 2,
+			},
+		})
+		require.Nil(t, err)
+
+		putCalled := false
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				GetCalled: func(key []byte) ([]byte, error) {
+					if string(key) == process.MetaCheckpointKey {
+						return lastCheckpointData, nil
+					}
+
+					return []byte{}, nil
+				},
+				PutCalled: func(key, data []byte) error {
+					putCalled = true
+
+					return nil
+				},
+			},
+			protoMarshaller,
+			maxDelta,
+			100,
+			0,
+		)
+
+		err = bp.PutBlock([]byte("hash1"), &outport.OutportBlock{ShardID: shardID}, startIndex+1)
+		require.Nil(t, err)
+
+		require.True(t, putCalled)
+	})
+
+	t.Run("should fail if no succesive index", func(t *testing.T) {
+		t.Parallel()
+
+		maxDelta := uint64(10)
+
+		shardID := uint32(1)
+		startIndex := uint64(123)
+
+		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				shardID:               startIndex,
+				core.MetachainShardId: startIndex - 2,
+			},
+		})
+		require.Nil(t, err)
+
+		putCalled := false
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				GetCalled: func(key []byte) ([]byte, error) {
+					if string(key) == process.MetaCheckpointKey {
+						return lastCheckpointData, nil
+					}
+
+					return []byte{}, nil
+				},
+				PutCalled: func(key, data []byte) error {
+					putCalled = true
+
+					return nil
+				},
+			},
+			protoMarshaller,
+			maxDelta,
+			100,
+			0,
+		)
+
+		err = bp.PutBlock([]byte("hash1"), &outport.OutportBlock{ShardID: shardID}, startIndex)
+		require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
+
+		require.False(t, putCalled)
+	})
+
+	t.Run("should fail if max delta is reached", func(t *testing.T) {
+		t.Parallel()
+
+		maxDelta := uint64(10)
+
+		wasCalled := false
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				PutCalled: func(key, data []byte) error {
+					wasCalled = true
+
+					return nil
+				},
+			},
+			protoMarshaller,
+			maxDelta,
+			100,
+			0,
+		)
+
+		startIndex := uint64(2)
+		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -211,10 +358,36 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		bp.UpdateMetaState(checkpoint)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, 2+maxDelta+1)
-		require.Nil(t, err)
+		for i := uint64(1); i <= maxDelta; i++ {
+			err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, startIndex+i)
+			require.Nil(t, err)
+		}
 
-		err = bp.PutBlock([]byte("hash3"), &outport.OutportBlock{}, 2+maxDelta+2)
+		err = bp.PutBlock([]byte("hash3"), &outport.OutportBlock{}, startIndex+maxDelta+1)
 		require.Error(t, err)
 	})
+}
+
+func TestBlocksPool_Close(t *testing.T) {
+	t.Parallel()
+
+	wasCalled := false
+	bp, _ := process.NewBlocksPool(
+		&testscommon.PruningStorerStub{
+			CloseCalled: func() error {
+				wasCalled = true
+
+				return nil
+			},
+		},
+		protoMarshaller,
+		10,
+		100,
+		0,
+	)
+
+	err := bp.Close()
+	require.Nil(t, err)
+
+	require.True(t, wasCalled)
 }

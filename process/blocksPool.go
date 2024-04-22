@@ -1,6 +1,7 @@
 package process
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -21,8 +22,8 @@ type blocksPool struct {
 	cleanupInterval      uint64
 	firstCommitableBlock uint64
 
-	indexesMap map[uint32]uint64
-	mutMap     sync.RWMutex
+	previousIndexesMap map[uint32]uint64
+	mutMap             sync.RWMutex
 }
 
 // NewBlocksPool will create a new blocks pool instance
@@ -57,7 +58,7 @@ func (bp *blocksPool) initIndexesMap() {
 	lastCheckpoint, err := bp.getLastCheckpoint()
 	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastRounds == nil {
 		indexesMap := make(map[uint32]uint64)
-		bp.indexesMap = indexesMap
+		bp.previousIndexesMap = indexesMap
 		return
 	}
 
@@ -67,7 +68,7 @@ func (bp *blocksPool) initIndexesMap() {
 	for shardID, round := range lastCheckpoint.LastRounds {
 		indexesMap[shardID] = round
 	}
-	bp.indexesMap = indexesMap
+	bp.previousIndexesMap = indexesMap
 }
 
 // Put will put value into storer
@@ -86,8 +87,9 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 		index = initIndex
 	}
 
+	// TODO: no need to set meta round index here if meta outport block will be also saved
 	bp.mutMap.Lock()
-	bp.indexesMap[core.MetachainShardId] = index
+	bp.previousIndexesMap[core.MetachainShardId] = index
 	bp.mutMap.Unlock()
 
 	if index >= bp.firstCommitableBlock {
@@ -112,7 +114,7 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, index uint64) error {
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, newIndex uint64) error {
 	shardID := outportBlock.ShardID
 
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
@@ -123,26 +125,30 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
-	currentIndex, ok := bp.indexesMap[shardID]
+	previousIndex, ok := bp.previousIndexesMap[shardID]
 	if !ok {
-		bp.indexesMap[shardID] = initIndex
-		currentIndex = initIndex
+		bp.previousIndexesMap[shardID] = initIndex
+		previousIndex = initIndex
 	}
 
-	if currentIndex == initIndex {
+	if previousIndex == initIndex {
 		err := bp.storer.Put(hash, outportBlockBytes)
 		if err != nil {
 			return err
 		}
 
-		bp.indexesMap[shardID] = index
+		bp.previousIndexesMap[shardID] = newIndex
 
 		return nil
 	}
 
-	metaIndex := bp.indexesMap[core.MetachainShardId]
+	isSuccesiveIndex := previousIndex+1 == newIndex
+	if !isSuccesiveIndex {
+		return fmt.Errorf("%w: new index should succesive, previous index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, previousIndex, newIndex)
+	}
 
-	if !bp.shouldPutBlockData(currentIndex, metaIndex) {
+	if !bp.shouldPutBlockData(previousIndex) {
 		return ErrFailedToPutBlockDataToPool
 	}
 
@@ -151,12 +157,14 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 		return err
 	}
 
-	bp.indexesMap[shardID] = index
+	bp.previousIndexesMap[shardID] = newIndex
 
 	return nil
 }
 
-func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
+func (bp *blocksPool) shouldPutBlockData(index uint64) bool {
+	baseIndex := bp.previousIndexesMap[core.MetachainShardId]
+
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 

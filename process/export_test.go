@@ -3,8 +3,9 @@ package process
 import "github.com/multiversx/mx-chain-storage-go/types"
 
 const (
-	FirehosePrefix = firehosePrefix
-	BlockPrefix    = blockPrefix
+	FirehosePrefix    = firehosePrefix
+	BlockPrefix       = blockPrefix
+	MetaCheckpointKey = metaCheckpointKey
 )
 
 // GetActivePersisters -

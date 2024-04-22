@@ -7,7 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process/dataPool"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,10 +17,10 @@ func getDefaultConfig() config.Config {
 
 	cfg := config.Config{
 		DataPool: config.DataPoolConfig{
-			NumberOfShards:      3,
-			MaxDelta:            maxDelta,
-			PruningWindow:       pruningWindow,
-			NumPersistersToKeep: 2,
+			MaxDelta:             maxDelta,
+			PruningWindow:        pruningWindow,
+			NumPersistersToKeep:  2,
+			FirstCommitableBlock: 0,
 		},
 		OutportBlocksStorage: config.StorageConfig{
 			Cache: config.CacheConfig{
@@ -55,7 +55,7 @@ func TestBlocksPool(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	blocksPool, err := dataPool.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.NumberOfShards, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow)
+	blocksPool, err := process.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow, cfg.DataPool.FirstCommitableBlock)
 	require.Nil(t, err)
 
 	shardID := uint32(2)
