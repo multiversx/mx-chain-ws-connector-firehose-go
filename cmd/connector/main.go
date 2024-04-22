@@ -9,17 +9,16 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/closing"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
-	"github.com/urfave/cli"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/connector"
+
+	"github.com/urfave/cli"
 )
 
 var log = logger.GetOrCreate("main")
 
 const (
-	configPath = "config/config.toml"
-
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
 	logLifeSpanSec = 432000 // 5 days
@@ -32,6 +31,7 @@ func main() {
 	app.Usage = "This tool will communicate with an observer/light client connected to mx-chain via " +
 		"websocket outport driver and listen to incoming exported data."
 	app.Flags = []cli.Flag{
+		configFile,
 		logLevel,
 		logSaveFile,
 		disableAnsiColor,
@@ -54,7 +54,9 @@ func main() {
 }
 
 func startConnector(ctx *cli.Context) error {
-	cfg, err := loadConfig(configPath)
+	configFilePath := ctx.GlobalString(configFile.Name)
+
+	cfg, err := loadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
@@ -101,7 +103,7 @@ func loadConfig(filepath string) (*config.Config, error) {
 	cfg := &config.Config{}
 	err := core.LoadTomlFile(cfg, filepath)
 
-	log.Info("loaded config", "path", configPath)
+	log.Info("loaded config", "path", filepath)
 
 	return cfg, err
 }
