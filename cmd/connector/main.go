@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
+	"path/filepath"
 	"time"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/closing"
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/connector"
+
 	"github.com/urfave/cli"
 )
 
