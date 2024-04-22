@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/multiversx/mx-chain-core-go/core"
@@ -20,8 +19,6 @@ import (
 var log = logger.GetOrCreate("main")
 
 const (
-	configPath = "config/config.toml"
-
 	logsPath       = "logs"
 	logFilePrefix  = "ws-connector-firehose"
 	logLifeSpanSec = 432000 // 5 days
@@ -59,12 +56,7 @@ func main() {
 func startConnector(ctx *cli.Context) error {
 	configFilePath := ctx.GlobalString(configFile.Name)
 
-	absoluteConfigPath, err := filepath.Abs(configFilePath)
-	if err != nil {
-		return err
-	}
-
-	cfg, err := loadConfig(absoluteConfigPath)
+	cfg, err := loadConfig(configFilePath)
 	if err != nil {
 		return err
 	}
