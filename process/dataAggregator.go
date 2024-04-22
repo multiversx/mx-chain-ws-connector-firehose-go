@@ -3,18 +3,19 @@ package process
 import (
 	"encoding/hex"
 
+	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
 
 type dataAggregator struct {
-	blocksPool BlocksPool
+	blocksPool DataPool
 }
 
 // NewDataAggregator will create a new data aggregator instance
 func NewDataAggregator(
-	blocksPool BlocksPool,
+	blocksPool DataPool,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool
@@ -28,10 +29,18 @@ func NewDataAggregator(
 // ProcessHyperBlock will process meta outport block. It will try to fetch and aggregate
 // notarized shards data
 func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error) {
+	if outportBlock.ShardID != core.MetachainShardId {
+		return nil, ErrInvalidOutportBlock
+	}
+
 	hyperOutportBlock := &data.HyperOutportBlock{}
 	hyperOutportBlock.MetaOutportBlock = outportBlock
 
 	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0)
+
+	log.Info("dataAggregator: notarizedHashes", "block hash", outportBlock.BlockData.HeaderHash,
+		"num notarizedHashes", len(outportBlock.NotarizedHeadersHashes))
+
 	for _, notarizedHash := range outportBlock.NotarizedHeadersHashes {
 		hash, err := hex.DecodeString(notarizedHash)
 		if err != nil {
@@ -42,6 +51,8 @@ func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) 
 		if err != nil {
 			return nil, err
 		}
+
+		log.Info("dataAggregator: get block", "hash", hash)
 
 		notarizedShardOutportBlock := &data.NotarizedHeaderOutportData{
 			NotarizedHeaderHash: notarizedHash,
