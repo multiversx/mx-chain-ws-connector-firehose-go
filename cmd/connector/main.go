@@ -36,6 +36,7 @@ func main() {
 		logSaveFile,
 		disableAnsiColor,
 		dbMode,
+		enableGrpcServer,
 	}
 	app.Authors = []cli.Author{
 		{

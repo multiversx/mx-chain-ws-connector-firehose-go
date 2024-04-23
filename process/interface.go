@@ -97,3 +97,8 @@ type GRPCServer interface {
 	Start()
 	Close()
 }
+
+type HyperOutportBlocksQueue interface {
+	Enqueue(elem *data.HyperOutportBlock) error
+	Dequeue() (*data.HyperOutportBlock, error)
+}

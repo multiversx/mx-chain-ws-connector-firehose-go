@@ -8,6 +8,7 @@ package hyperOutportBlocks
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -22,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HyperOutportBlockServiceClient interface {
+	HyperOutportBlockStream(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamClient, error)
 	GetHyperOutportBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
 	GetHyperOutportBlockByNonce(ctx context.Context, in *BlockNonceRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
 }
@@ -32,6 +34,38 @@ type hyperOutportBlockServiceClient struct {
 
 func NewHyperOutportBlockServiceClient(cc grpc.ClientConnInterface) HyperOutportBlockServiceClient {
 	return &hyperOutportBlockServiceClient{cc}
+}
+
+func (c *hyperOutportBlockServiceClient) HyperOutportBlockStream(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &HyperOutportBlockService_ServiceDesc.Streams[0], "/proto.HyperOutportBlockService/HyperOutportBlockStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &hyperOutportBlockServiceHyperOutportBlockStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type HyperOutportBlockService_HyperOutportBlockStreamClient interface {
+	Recv() (*HyperOutportBlock, error)
+	grpc.ClientStream
+}
+
+type hyperOutportBlockServiceHyperOutportBlockStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *hyperOutportBlockServiceHyperOutportBlockStreamClient) Recv() (*HyperOutportBlock, error) {
+	m := new(HyperOutportBlock)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *hyperOutportBlockServiceClient) GetHyperOutportBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error) {
@@ -56,6 +90,7 @@ func (c *hyperOutportBlockServiceClient) GetHyperOutportBlockByNonce(ctx context
 // All implementations must embed UnimplementedHyperOutportBlockServiceServer
 // for forward compatibility
 type HyperOutportBlockServiceServer interface {
+	HyperOutportBlockStream(*empty.Empty, HyperOutportBlockService_HyperOutportBlockStreamServer) error
 	GetHyperOutportBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error)
 	GetHyperOutportBlockByNonce(context.Context, *BlockNonceRequest) (*HyperOutportBlock, error)
 	mustEmbedUnimplementedHyperOutportBlockServiceServer()
@@ -65,6 +100,9 @@ type HyperOutportBlockServiceServer interface {
 type UnimplementedHyperOutportBlockServiceServer struct {
 }
 
+func (UnimplementedHyperOutportBlockServiceServer) HyperOutportBlockStream(*empty.Empty, HyperOutportBlockService_HyperOutportBlockStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method HyperOutportBlockStream not implemented")
+}
 func (UnimplementedHyperOutportBlockServiceServer) GetHyperOutportBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHyperOutportBlockByHash not implemented")
 }
@@ -83,6 +121,27 @@ type UnsafeHyperOutportBlockServiceServer interface {
 
 func RegisterHyperOutportBlockServiceServer(s grpc.ServiceRegistrar, srv HyperOutportBlockServiceServer) {
 	s.RegisterService(&HyperOutportBlockService_ServiceDesc, srv)
+}
+
+func _HyperOutportBlockService_HyperOutportBlockStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HyperOutportBlockServiceServer).HyperOutportBlockStream(m, &hyperOutportBlockServiceHyperOutportBlockStreamServer{stream})
+}
+
+type HyperOutportBlockService_HyperOutportBlockStreamServer interface {
+	Send(*HyperOutportBlock) error
+	grpc.ServerStream
+}
+
+type hyperOutportBlockServiceHyperOutportBlockStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *hyperOutportBlockServiceHyperOutportBlockStreamServer) Send(m *HyperOutportBlock) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _HyperOutportBlockService_GetHyperOutportBlockByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -137,6 +196,12 @@ var HyperOutportBlockService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HyperOutportBlockService_GetHyperOutportBlockByNonce_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "HyperOutportBlockStream",
+			Handler:       _HyperOutportBlockService_HyperOutportBlockStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "data/hyperOutportBlocks/hyperOutportBlock.proto",
 }

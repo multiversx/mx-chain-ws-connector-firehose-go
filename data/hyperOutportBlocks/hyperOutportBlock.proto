@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package proto;
 
+import "google/protobuf/empty.proto";
+
 option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks";
 
 message HyperOutportBlock {
@@ -23,6 +25,7 @@ message BlockNonceRequest {
 }
 
 service HyperOutportBlockService {
+  rpc HyperOutportBlockStream(google.protobuf.Empty) returns (stream HyperOutportBlock) {}
   rpc GetHyperOutportBlockByHash(BlockHashRequest) returns (HyperOutportBlock) {}
   rpc GetHyperOutportBlockByNonce(BlockNonceRequest) returns (HyperOutportBlock) {}
 }

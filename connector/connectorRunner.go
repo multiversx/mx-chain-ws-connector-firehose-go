@@ -64,12 +64,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	s, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
-	if err != nil {
-		return err
-	}
-
-	publisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
+	publisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, outportBlocksPool, dataAggregator)
 	if err != nil {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
@@ -101,10 +96,6 @@ func (cr *connectorRunner) Run() error {
 	err = wsClient.Close()
 	if err != nil {
 		log.Error(err.Error())
-	}
-
-	if s != nil {
-		s.Close()
 	}
 
 	return err

@@ -24,10 +24,10 @@ type grpcServer struct {
 }
 
 // New instantiates the underlying grpc server handling rpc requests.
-func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) (*grpcServer, error) {
+func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler, queue process.HyperOutportBlocksQueue) (*grpcServer, error) {
 	s := grpc.NewServer()
 
-	service, err := hyperOutportBlock.NewService(blocksHandler)
+	service, err := hyperOutportBlock.NewService(blocksHandler, queue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create service: %w", err)
 	}
