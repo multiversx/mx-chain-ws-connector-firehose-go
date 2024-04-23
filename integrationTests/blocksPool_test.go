@@ -52,6 +52,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	marshaller := &marshal.GogoProtoMarshalizer{}
 
 	cfg := getDefaultConfig()
+	cfg.OutportBlocksStorage.DB.FilePath = t.TempDir()
 
 	blocksStorer, err := factory.CreateStorer(cfg, dbMode)
 	defer func() {
@@ -176,6 +177,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	marshaller := &marshal.GogoProtoMarshalizer{}
 
 	cfg := getDefaultConfig()
+	cfg.OutportBlocksStorage.DB.FilePath = t.TempDir()
 	cfg.DataPool.PruningWindow = 25
 	cfg.OutportBlocksStorage.Cache.Capacity = 20
 
