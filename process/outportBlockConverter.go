@@ -74,7 +74,8 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	miniBlockHeaders := make([]*hyperOutportBlocks.MiniBlockHeader, 0)
+	n := len(header.Header.MiniBlockHeaders)
+	miniBlockHeaders := make([]*data.MiniBlockHeader, 0, n)
 	for _, miniBlockHeader := range header.Header.MiniBlockHeaders {
 		mb := &hyperOutportBlocks.MiniBlockHeader{
 			Hash:            miniBlockHeader.Hash,
@@ -87,7 +88,8 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		miniBlockHeaders = append(miniBlockHeaders, mb)
 	}
 
-	peerChanges := make([]*hyperOutportBlocks.PeerChange, 0)
+	n = len(header.Header.PeerChanges)
+	peerChanges := make([]*data.PeerChange, 0, n)
 	for _, peerChange := range header.Header.PeerChanges {
 		pc := &hyperOutportBlocks.PeerChange{
 			PubKey:      peerChange.PubKey,
