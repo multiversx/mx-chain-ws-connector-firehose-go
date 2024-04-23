@@ -17,6 +17,7 @@ type Service struct {
 	data.UnimplementedHyperOutportBlockServiceServer
 }
 
+// NewService returns a new instance of the hyperOutportBlock service.
 func NewService(blocksHandler process.GRPCBlocksHandler) (*Service, error) {
 	if check.IfNil(blocksHandler) {
 		return nil, process.ErrNilOutportBlockData
