@@ -3,9 +3,7 @@ package hyperOutportBlock
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -57,23 +55,4 @@ func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 	outportBlock, err := bs.GetHyperOutportBlockByNonce(context.Background(), &data.BlockNonceRequest{Nonce: nonce})
 	require.NoError(t, err, "couldn't get block by nonce")
 	require.Equal(t, nonce, outportBlock.MetaOutportBlock.BlockData.Header.Nonce)
-}
-
-func Test111(t *testing.T) {
-
-	a := make([]int, 0)
-	i := 0
-
-	go func() {
-		for {
-			a = append(a, i)
-			i++
-		}
-	}()
-
-	time.Sleep(5 * time.Second)
-
-	for _, j := range a {
-		fmt.Println(j)
-	}
 }
