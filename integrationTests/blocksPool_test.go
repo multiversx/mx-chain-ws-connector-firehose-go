@@ -67,6 +67,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	pruningWindow := cfg.DataPool.PruningWindow
 
 	outportData := &outport.OutportBlock{ShardID: shardID}
+	metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
 
 	// should fail after maxDelta attempts
 	for i := uint64(0); i < maxDelta; i++ {
@@ -105,6 +106,9 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
+		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		require.Nil(t, err)
+
 		err = blocksPool.PutBlock(hash, outportData, i)
 		require.Nil(t, err)
 	}
@@ -124,6 +128,9 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
+		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		require.Nil(t, err)
+
 		err = blocksPool.PutBlock(hash, outportData, i)
 		require.Nil(t, err)
 	}
@@ -142,6 +149,9 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 		blocksPool.UpdateMetaState(checkpoint)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
+
+		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		require.Nil(t, err)
 
 		err = blocksPool.PutBlock(hash, outportData, i)
 		require.Nil(t, err)
@@ -183,6 +193,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	pruningWindow := cfg.DataPool.PruningWindow
 
 	outportData := &outport.OutportBlock{ShardID: shardID}
+	metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
 
 	// should fail after maxDelta attempts
 	for i := uint64(0); i < maxDelta; i++ {
@@ -220,6 +231,9 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
+		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		require.Nil(t, err)
+
 		err = blocksPool.PutBlock(hash, outportData, i)
 		require.Nil(t, err)
 	}
@@ -233,6 +247,9 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 		blocksPool.UpdateMetaState(checkpoint)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
+
+		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		require.Nil(t, err)
 
 		err = blocksPool.PutBlock(hash, outportData, i)
 		require.Nil(t, err)

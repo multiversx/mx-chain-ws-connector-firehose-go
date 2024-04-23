@@ -115,10 +115,79 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 func TestBlocksPool_UpdateMetaState(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should not trigger prune if not cleanup interval", func(t *testing.T) {
+	cleanupInterval := uint64(100)
+
+	t.Run("should not set checkpoint if index is not commitable", func(t *testing.T) {
 		t.Parallel()
 
-		cleanupInterval := uint64(100)
+		firstCommitableBlock := uint64(10)
+
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				PutCalled: func(key, data []byte) error {
+					assert.Fail(t, "should have not been called")
+
+					return nil
+				},
+				PruneCalled: func(index uint64) error {
+					assert.Fail(t, "should have not been called")
+
+					return nil
+				},
+			},
+			protoMarshaller,
+			100,
+			cleanupInterval,
+			firstCommitableBlock,
+		)
+
+		checkpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: firstCommitableBlock - 1,
+			},
+		}
+
+		bp.UpdateMetaState(checkpoint)
+	})
+
+	t.Run("should set checkpoint if index if commitable", func(t *testing.T) {
+		t.Parallel()
+
+		firstCommitableBlock := uint64(10)
+
+		putCalled := false
+		bp, _ := process.NewBlocksPool(
+			&testscommon.PruningStorerStub{
+				PutCalled: func(key, data []byte) error {
+					putCalled = true
+
+					return nil
+				},
+				PruneCalled: func(index uint64) error {
+					assert.Fail(t, "should have not been called")
+
+					return nil
+				},
+			},
+			protoMarshaller,
+			100,
+			cleanupInterval,
+			firstCommitableBlock,
+		)
+
+		checkpoint := &data.BlockCheckpoint{
+			LastRounds: map[uint32]uint64{
+				core.MetachainShardId: firstCommitableBlock,
+			},
+		}
+
+		bp.UpdateMetaState(checkpoint)
+
+		require.True(t, putCalled)
+	})
+
+	t.Run("should not trigger prune if not cleanup interval", func(t *testing.T) {
+		t.Parallel()
 
 		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
@@ -145,8 +214,6 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 
 	t.Run("should trigger prune if cleanup interval", func(t *testing.T) {
 		t.Parallel()
-
-		cleanupInterval := uint64(100)
 
 		wasCalled := false
 		bp, _ := process.NewBlocksPool(
@@ -343,8 +410,10 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			0,
 		)
 
+		outportData := &outport.OutportBlock{ShardID: uint32(1)}
+
 		startIndex := uint64(2)
-		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
+		err := bp.PutBlock([]byte("hash1"), outportData, startIndex)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -358,12 +427,16 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		bp.UpdateMetaState(checkpoint)
 		require.Nil(t, err)
 
+		metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
+		err = bp.PutBlock([]byte("hash2"), metaOutportData, startIndex)
+		require.Nil(t, err)
+
 		for i := uint64(1); i <= maxDelta; i++ {
-			err = bp.PutBlock([]byte("hash2"), &outport.OutportBlock{}, startIndex+i)
+			err = bp.PutBlock([]byte("hash2"), outportData, startIndex+i)
 			require.Nil(t, err)
 		}
 
-		err = bp.PutBlock([]byte("hash3"), &outport.OutportBlock{}, startIndex+maxDelta+1)
+		err = bp.PutBlock([]byte("hash3"), outportData, startIndex+maxDelta+1)
 		require.Error(t, err)
 	})
 }

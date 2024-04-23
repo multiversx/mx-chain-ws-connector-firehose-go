@@ -87,11 +87,6 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 		index = initIndex
 	}
 
-	// TODO: no need to set meta round index here if meta outport block will be also saved
-	bp.mutMap.Lock()
-	bp.previousIndexesMap[core.MetachainShardId] = index
-	bp.mutMap.Unlock()
-
 	if index >= bp.firstCommitableBlock {
 		err := bp.setCheckpoint(checkpoint)
 		if err != nil {
