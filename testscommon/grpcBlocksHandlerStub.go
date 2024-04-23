@@ -26,6 +26,7 @@ func (g *GRPCBlocksHandlerStub) FetchHyperBlockByNonce(nonce uint64) (*data.Hype
 	return &data.HyperOutportBlock{}, nil
 }
 
+// IsInterfaceNil -
 func (g *GRPCBlocksHandlerStub) IsInterfaceNil() bool {
 	return g == nil
 }
