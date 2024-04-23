@@ -138,7 +138,7 @@ func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 
-	return !(math.Abs(delta) >= float64(bp.maxDelta))
+	return math.Abs(delta) < float64(bp.maxDelta)
 }
 
 // GetBlock will return outport block data from the pool

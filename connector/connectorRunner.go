@@ -64,7 +64,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	s, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
+	server, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
 	if err != nil {
 		return err
 	}
@@ -103,8 +103,8 @@ func (cr *connectorRunner) Run() error {
 		log.Error(err.Error())
 	}
 
-	if s != nil {
-		s.Close()
+	if server != nil {
+		server.Close()
 	}
 
 	return err
