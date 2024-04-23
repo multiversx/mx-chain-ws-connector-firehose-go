@@ -37,8 +37,7 @@ func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) 
 	hyperOutportBlock := &data.HyperOutportBlock{}
 	hyperOutportBlock.MetaOutportBlock = outportBlock
 
-	n := len(outportBlock.NotarizedHeadersHashes)
-	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0, n)
+	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0, len(outportBlock.NotarizedHeadersHashes))
 
 	log.Info("dataAggregator: notarizedHashes", "block hash", outportBlock.BlockData.HeaderHash,
 		"num notarizedHashes", len(outportBlock.NotarizedHeadersHashes))
