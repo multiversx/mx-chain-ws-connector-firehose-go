@@ -16,7 +16,7 @@ type Service struct {
 }
 
 func NewService(blocksHandler process.GRPCBlocksHandler) (*Service, error) {
-	if blocksHandler.IsInterfaceNil() {
+	if check.IfNil(blocksHandler) {
 		return nil, process.ErrNilOutportBlockData
 	}
 
