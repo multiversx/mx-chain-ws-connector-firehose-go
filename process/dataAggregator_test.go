@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/stretchr/testify/require"
 
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
@@ -17,23 +17,15 @@ func TestNewDataAggregator(t *testing.T) {
 	t.Run("nil blocks pool", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(nil, process.NewOutportBlockConverter())
+		da, err := process.NewDataAggregator(nil)
 		require.Nil(t, da)
 		require.Equal(t, process.ErrNilHyperBlocksPool, err)
-	})
-
-	t.Run("nil outport block converter", func(t *testing.T) {
-		t.Parallel()
-
-		da, err := process.NewDataAggregator(&testscommon.BlocksPoolStub{}, nil)
-		require.Nil(t, da)
-		require.Equal(t, process.ErrNilOutportBlocksConverter, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(&testscommon.BlocksPoolStub{}, process.NewOutportBlockConverter())
+		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolStub{})
 		require.Nil(t, err)
 		require.False(t, da.IsInterfaceNil())
 	})
@@ -45,41 +37,46 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 	t.Run("invalid outport block provided", func(t *testing.T) {
 		t.Parallel()
 
-		blocksPoolStub := &testscommon.BlocksPoolStub{}
-
-		da, err := process.NewDataAggregator(blocksPoolStub, process.NewOutportBlockConverter())
+		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolStub{})
 		require.Nil(t, err)
 
-		shardOutportBlock := createOutportBlock()
+		invalidOutportBlock := createMetaOutportBlock()
+		invalidOutportBlock.ShardID = 2
 
-		hyperOutportBlock, err := da.ProcessHyperBlock(shardOutportBlock)
+		hyperOutportBlock, err := da.ProcessHyperBlock(invalidOutportBlock)
 		require.Nil(t, hyperOutportBlock)
 		require.Equal(t, process.ErrInvalidOutportBlock, err)
 	})
 
-	headerHash := []byte("headerHash1")
+	t.Run("should work", func(t *testing.T) {
+		t.Parallel()
 
-	shardOutportBlock := createOutportBlock()
-	shardOutportBlock.BlockData.HeaderHash = headerHash
+		headerHash := []byte("headerHash1")
 
-	blocksPoolStub := &testscommon.BlocksPoolStub{
-		GetBlockCalled: func(hash []byte) (*outport.OutportBlock, error) {
+		shardOutportBlock := createShardOutportBlock()
+		shardOutportBlock.BlockData.HeaderHash = headerHash
 
-			return shardOutportBlock, nil
-		},
-	}
+		blocksPoolStub := &testscommon.HyperBlocksPoolStub{
+			GetShardBlockCalled: func(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
+				return shardOutportBlock, nil
+			},
+		}
 
-	converter := process.NewOutportBlockConverter()
-	expectedResult, err := converter.HandleShardOutportBlock(shardOutportBlock)
-	require.NoError(t, err)
+		da, err := process.NewDataAggregator(blocksPoolStub)
+		require.Nil(t, err)
 
-	da, err := process.NewDataAggregator(blocksPoolStub, process.NewOutportBlockConverter())
-	require.Nil(t, err)
+		outportBlock := createMetaOutportBlock()
+		outportBlock.NotarizedHeadersHashes = []string{hex.EncodeToString(headerHash)}
 
-	outportBlock := createMetaOutportBlock()
-	outportBlock.NotarizedHeadersHashes = []string{hex.EncodeToString(headerHash)}
+		expectedHyperOutportBlock := &hyperOutportBlocks.HyperOutportBlock{}
+		expectedHyperOutportBlock.MetaOutportBlock = outportBlock
+		expectedHyperOutportBlock.NotarizedHeadersOutportData = append(expectedHyperOutportBlock.NotarizedHeadersOutportData, &hyperOutportBlocks.NotarizedHeaderOutportData{
+			NotarizedHeaderHash: hex.EncodeToString(headerHash),
+			OutportBlock:        shardOutportBlock,
+		})
 
-	hyperOutportBlock, err := da.ProcessHyperBlock(outportBlock)
-	require.Nil(t, err)
-	require.Equal(t, expectedResult, hyperOutportBlock.NotarizedHeadersOutportData[0].OutportBlock)
+		hyperOutportBlock, err := da.ProcessHyperBlock(outportBlock)
+		require.Nil(t, err)
+		require.Equal(t, expectedHyperOutportBlock, hyperOutportBlock)
+	})
 }

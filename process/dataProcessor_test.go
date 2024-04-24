@@ -20,7 +20,7 @@ func createOutportBlock() *outportcore.OutportBlock {
 		PrevHash:  []byte("prev hash"),
 		TimeStamp: 100,
 	}
-	headerBytes, _ := protoMarshaller.Marshal(header)
+	headerBytes, _ := gogoProtoMarshaller.Marshal(header)
 
 	return &outportcore.OutportBlock{
 		ShardID: 1,
@@ -32,13 +32,13 @@ func createOutportBlock() *outportcore.OutportBlock {
 	}
 }
 
-func createMetaOutportBlock() *outportcore.OutportBlock {
+func createChainMetaOutportBlock() *outportcore.OutportBlock {
 	header := &block.MetaBlock{
 		Nonce:     1,
 		PrevHash:  []byte("prev hash"),
 		TimeStamp: 100,
 	}
-	headerBytes, _ := protoMarshaller.Marshal(header)
+	headerBytes, _ := gogoProtoMarshaller.Marshal(header)
 
 	return &outportcore.OutportBlock{
 		ShardID: core.MetachainShardId,
@@ -46,6 +46,34 @@ func createMetaOutportBlock() *outportcore.OutportBlock {
 			HeaderBytes: headerBytes,
 			HeaderType:  string(core.MetaHeader),
 			HeaderHash:  []byte("hash"),
+		},
+	}
+}
+
+func createShardOutportBlock() *data.ShardOutportBlock {
+	return &data.ShardOutportBlock{
+		ShardID: 1,
+		BlockData: &data.BlockData{
+			ShardID: 1,
+			Header: &data.Header{
+				Nonce: 10,
+				Round: 10,
+			},
+			HeaderHash: []byte("hash_shard"),
+		},
+	}
+}
+
+func createMetaOutportBlock() *data.MetaOutportBlock {
+	return &data.MetaOutportBlock{
+		ShardID: core.MetachainShardId,
+		BlockData: &data.MetaBlockData{
+			ShardID: 1,
+			Header: &data.MetaHeader{
+				Nonce: 10,
+				Round: 10,
+			},
+			HeaderHash: []byte("hash_meta"),
 		},
 	}
 }
@@ -59,9 +87,9 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			nil,
 			&testscommon.MarshallerStub{},
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -74,9 +102,9 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			nil,
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -91,11 +119,11 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			nil,
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 		require.Nil(t, dp)
-		require.Equal(t, process.ErrNilBlocksPool, err)
+		require.Equal(t, process.ErrNilHyperBlocksPool, err)
 	})
 
 	t.Run("nil data aggregator", func(t *testing.T) {
@@ -104,13 +132,28 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			nil,
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilDataAggregator, err)
+	})
+
+	t.Run("nil block converter", func(t *testing.T) {
+		t.Parallel()
+
+		dp, err := process.NewDataProcessor(
+			&testscommon.PublisherStub{},
+			&testscommon.MarshallerStub{},
+			&testscommon.HyperBlocksPoolStub{},
+			&testscommon.DataAggregatorStub{},
+			nil,
+			0,
+		)
+		require.Nil(t, dp)
+		require.Equal(t, process.ErrNilOutportBlocksConverter, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -119,9 +162,9 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 		require.Nil(t, err)
@@ -135,9 +178,9 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 	dp, _ := process.NewDataProcessor(
 		&testscommon.PublisherStub{},
 		&testscommon.MarshallerStub{},
-		&testscommon.BlocksPoolStub{},
+		&testscommon.HyperBlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
-		createContainer(),
+		&testscommon.OutportBlockConverterStub{},
 		0,
 	)
 
@@ -152,15 +195,17 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 func TestDataProcessor_ProcessPayload(t *testing.T) {
 	t.Parallel()
 
+	outportBlockConverter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+
 	t.Run("nil outport block data, should return error", func(t *testing.T) {
 		t.Parallel()
 
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			gogoProtoMarshaller,
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 
@@ -181,9 +226,9 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			protoMarshaller,
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			&testscommon.OutportBlockConverterStub{},
 			0,
 		)
 
@@ -201,14 +246,14 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{},
 			gogoProtoMarshaller,
-			&testscommon.BlocksPoolStub{
-				PutBlockCalled: func(hash []byte, outportBlock *outportcore.OutportBlock, round uint64) error {
+			&testscommon.HyperBlocksPoolStub{
+				PutShardBlockCalled: func(hash []byte, outportBlock *data.ShardOutportBlock) error {
 					putBlockWasCalled = true
 					return nil
 				},
 			},
 			&testscommon.DataAggregatorStub{},
-			createContainer(),
+			outportBlockConverter,
 			0,
 		)
 
@@ -220,10 +265,13 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 
 	t.Run("meta outport block, should work", func(t *testing.T) {
 		t.Parallel()
-		t.Skip("skipped due to missing mock implementation")
 
-		outportBlock := createMetaOutportBlock()
-		outportBlockBytes, _ := gogoProtoMarshaller.Marshal(outportBlock)
+		outportBlock := createChainMetaOutportBlock()
+		outportBlockBytes, err := gogoProtoMarshaller.Marshal(outportBlock)
+		require.Nil(t, err)
+
+		metaOutportBlock, err := outportBlockConverter.HandleMetaOutportBlock(outportBlock)
+		require.Nil(t, err)
 
 		publishWasCalled := false
 		dp, _ := process.NewDataProcessor(
@@ -234,20 +282,19 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 				},
 			},
 			gogoProtoMarshaller,
-			&testscommon.BlocksPoolStub{},
+			&testscommon.HyperBlocksPoolStub{},
 			&testscommon.DataAggregatorStub{
-				ProcessHyperBlockCalled: func(outportBlock *outportcore.OutportBlock) (*data.HyperOutportBlock, error) {
+				ProcessHyperBlockCalled: func(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
 					return &data.HyperOutportBlock{
-						//TODO: to come in the following PRs.
-						//MetaOutportBlock: outportBlock,
+						MetaOutportBlock: metaOutportBlock,
 					}, nil
 				},
 			},
-			createContainer(),
+			outportBlockConverter,
 			0,
 		)
 
-		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		err = dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
 		require.Nil(t, err)
 
 		require.True(t, publishWasCalled)
@@ -266,9 +313,9 @@ func TestDataProcessor_Close(t *testing.T) {
 			},
 		},
 		&testscommon.MarshallerStub{},
-		&testscommon.BlocksPoolStub{},
+		&testscommon.HyperBlocksPoolStub{},
 		&testscommon.DataAggregatorStub{},
-		createContainer(),
+		&testscommon.OutportBlockConverterStub{},
 		0,
 	)
 	require.Nil(t, err)

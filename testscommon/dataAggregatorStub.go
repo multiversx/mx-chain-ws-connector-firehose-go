@@ -1,18 +1,16 @@
 package testscommon
 
 import (
-	"github.com/multiversx/mx-chain-core-go/data/outport"
-
 	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 // DataAggregatorStub -
 type DataAggregatorStub struct {
-	ProcessHyperBlockCalled func(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error)
+	ProcessHyperBlockCalled func(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error)
 }
 
 // ProcessHyperBlock -
-func (d *DataAggregatorStub) ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error) {
+func (d *DataAggregatorStub) ProcessHyperBlock(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
 	if d.ProcessHyperBlockCalled != nil {
 		return d.ProcessHyperBlockCalled(outportBlock)
 	}

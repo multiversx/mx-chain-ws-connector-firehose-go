@@ -79,7 +79,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			0,
 		)
 
-		ret, err := bp.GetBlock([]byte("hash1"))
+		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, ret)
 		require.Equal(t, expectedErr, err)
 	})
@@ -106,9 +106,9 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			0,
 		)
 
-		ret, err := bp.GetBlock([]byte("hash1"))
+		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, err)
-		require.Equal(t, outportBlock, ret)
+		require.Equal(t, outportBlockBytes, ret)
 	})
 }
 
@@ -169,7 +169,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 					return nil
 				},
 			},
-			gogoProtoMarshaller,
+			protoMarshaller,
 			100,
 			cleanupInterval,
 			firstCommitableBlock,
@@ -181,7 +181,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			},
 		}
 
-		bp.UpdateMetaState(checkpoint)
+		err := bp.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		require.True(t, putCalled)
 	})
@@ -209,7 +210,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			},
 		}
 
-		bp.UpdateMetaState(checkpoint)
+		err := bp.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 	})
 
 	t.Run("should trigger prune if cleanup interval", func(t *testing.T) {
@@ -236,7 +238,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			},
 		}
 
-		bp.UpdateMetaState(checkpoint)
+		err := bp.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		require.True(t, wasCalled)
 	})
@@ -244,6 +247,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 
 func TestBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
+
+	shardID := uint32(2)
 
 	t.Run("should work on init, index 0", func(t *testing.T) {
 		t.Parallel()
@@ -266,7 +271,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		)
 
 		startIndex := uint64(0)
-		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
+		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -296,7 +301,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		)
 
 		startIndex := uint64(123)
-		err := bp.PutBlock([]byte("hash1"), &outport.OutportBlock{}, startIndex)
+		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -310,7 +315,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		shardID := uint32(1)
 		startIndex := uint64(123)
 
-		lastCheckpointData, err := gogoProtoMarshaller.Marshal(&data.BlockCheckpoint{
+		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
 				shardID:               startIndex,
 				core.MetachainShardId: startIndex - 2,
@@ -340,7 +345,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			0,
 		)
 
-		err = bp.PutBlock([]byte("hash1"), &outport.OutportBlock{ShardID: shardID}, startIndex+1)
+		err = bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex+1, shardID)
 		require.Nil(t, err)
 
 		require.True(t, putCalled)
@@ -354,7 +359,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		shardID := uint32(1)
 		startIndex := uint64(123)
 
-		lastCheckpointData, err := gogoProtoMarshaller.Marshal(&data.BlockCheckpoint{
+		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
 				shardID:               startIndex,
 				core.MetachainShardId: startIndex - 2,
@@ -378,13 +383,13 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			gogoProtoMarshaller,
+			protoMarshaller,
 			maxDelta,
 			100,
 			0,
 		)
 
-		err = bp.PutBlock([]byte("hash1"), &outport.OutportBlock{ShardID: shardID}, startIndex)
+		err = bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
 		require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
 		require.False(t, putCalled)
@@ -404,16 +409,14 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			gogoProtoMarshaller,
+			protoMarshaller,
 			maxDelta,
 			100,
 			0,
 		)
 
-		outportData := &outport.OutportBlock{ShardID: uint32(1)}
-
 		startIndex := uint64(2)
-		err := bp.PutBlock([]byte("hash1"), outportData, startIndex)
+		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
 		require.Nil(t, err)
 
 		require.True(t, wasCalled)
@@ -424,19 +427,18 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 			},
 		}
 
-		bp.UpdateMetaState(checkpoint)
+		err = bp.UpdateMetaState(checkpoint)
 		require.Nil(t, err)
 
-		metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
-		err = bp.PutBlock([]byte("hash2"), metaOutportData, startIndex)
+		err = bp.PutBlock([]byte("hash2"), []byte("data1"), startIndex, core.MetachainShardId)
 		require.Nil(t, err)
 
 		for i := uint64(1); i <= maxDelta; i++ {
-			err = bp.PutBlock([]byte("hash2"), outportData, startIndex+i)
+			err = bp.PutBlock([]byte("hash2"), []byte("data1"), startIndex+i, shardID)
 			require.Nil(t, err)
 		}
 
-		err = bp.PutBlock([]byte("hash3"), outportData, startIndex+maxDelta+1)
+		err = bp.PutBlock([]byte("hash3"), []byte("data1"), startIndex+maxDelta+1, shardID)
 		require.Error(t, err)
 	})
 }

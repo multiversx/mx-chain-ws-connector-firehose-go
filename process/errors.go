@@ -55,3 +55,6 @@ var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")
 
 // ErrNilDataPool signals that a nil data pool was provided
 var ErrNilDataPool = errors.New("nil data pool provided")
+
+// ErrNilHyperOutportBlock signals that a nil hyper outport block  was provided
+var ErrNilHyperOutportBlock = errors.New("nil hyper outport block provided")

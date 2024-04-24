@@ -27,7 +27,7 @@ func NewDataProcessor(
 	marshaller marshal.Marshalizer,
 	outportBlocksPool HyperBlocksPool,
 	dataAggregator DataAggregator,
-	converter OutportBlockConverter,
+	outportBlockConverter OutportBlockConverter,
 	firstCommitableBlock uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
@@ -42,7 +42,7 @@ func NewDataProcessor(
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
-	if check.IfNil(converter) {
+	if check.IfNil(outportBlockConverter) {
 		return nil, ErrNilOutportBlocksConverter
 	}
 
@@ -51,7 +51,7 @@ func NewDataProcessor(
 		publisher:             publisher,
 		outportBlocksPool:     outportBlocksPool,
 		dataAggregator:        dataAggregator,
-		outportBlockConverter: converter,
+		outportBlockConverter: outportBlockConverter,
 		firstCommitableBlock:  firstCommitableBlock,
 	}
 
@@ -94,6 +94,9 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	metaOutportBlock, err := dp.outportBlockConverter.HandleMetaOutportBlock(outportBlock)
 	if err != nil {
 		return err
+	}
+	if metaOutportBlock == nil {
+		return ErrInvalidOutportBlock
 	}
 	if metaOutportBlock.BlockData == nil {
 		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)
@@ -153,6 +156,19 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 
 // TODO: update to use latest data structures
 func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+	if hyperOutportBlock == nil {
+		return nil, ErrNilHyperOutportBlock
+	}
+	if hyperOutportBlock.MetaOutportBlock == nil {
+		return nil, fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
+	}
+	if hyperOutportBlock.MetaOutportBlock.BlockData == nil {
+		return nil, fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
+	}
+	if hyperOutportBlock.MetaOutportBlock.BlockData.Header == nil {
+		return nil, fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
+	}
+
 	checkpoint := &data.BlockCheckpoint{
 		LastRounds: make(map[uint32]uint64),
 	}
