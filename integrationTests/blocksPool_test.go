@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
@@ -49,7 +47,7 @@ func getDefaultConfig() config.Config {
 func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	dbMode := common.FullPersisterDBMode
 
-	marshaller := &marshal.GogoProtoMarshalizer{}
+	marshaller := &process.ProtoMarshaller{}
 
 	cfg := getDefaultConfig()
 	cfg.OutportBlocksStorage.DB.FilePath = t.TempDir()
@@ -67,21 +65,18 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	maxDelta := cfg.DataPool.MaxDelta
 	pruningWindow := cfg.DataPool.PruningWindow
 
-	outportData := &outport.OutportBlock{ShardID: shardID}
-	metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
-
 	// should fail after maxDelta attempts
 	for i := uint64(0); i < maxDelta; i++ {
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
 	oldHash := []byte("hash_" + fmt.Sprintf("%d", maxDelta-1))
 	hash := []byte("hash_" + fmt.Sprintf("%d", maxDelta))
 
-	err = blocksPool.PutBlock(hash, outportData, maxDelta)
+	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta, shardID)
 	require.Nil(t, err)
 
 	// should find in storer
@@ -90,7 +85,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	require.NotNil(t, retData)
 
 	hash = []byte("hash_" + fmt.Sprintf("%d", maxDelta+1))
-	err = blocksPool.PutBlock(hash, outportData, maxDelta+1)
+	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.Equal(t, process.ErrFailedToPutBlockDataToPool, err)
 
 	if pruningWindow <= maxDelta {
@@ -103,14 +98,15 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 				core.MetachainShardId: i,
 			},
 		}
-		blocksPool.UpdateMetaState(checkpoint)
+		err = blocksPool.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
 		require.Nil(t, err)
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
@@ -125,14 +121,15 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 				core.MetachainShardId: i,
 			},
 		}
-		blocksPool.UpdateMetaState(checkpoint)
+		err = blocksPool.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
 		require.Nil(t, err)
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
@@ -147,14 +144,15 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 				core.MetachainShardId: i,
 			},
 		}
-		blocksPool.UpdateMetaState(checkpoint)
+		err = blocksPool.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
 		require.Nil(t, err)
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
@@ -163,7 +161,8 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 			core.MetachainShardId: pruningWindow * 3,
 		},
 	}
-	blocksPool.UpdateMetaState(checkpoint)
+	err = blocksPool.UpdateMetaState(checkpoint)
+	require.Nil(t, err)
 
 	// should not find in storer anymore
 	retData, err = blocksStorer.Get(oldHash)
@@ -174,7 +173,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	dbMode := common.OptimizedPersisterDBMode
 
-	marshaller := &marshal.GogoProtoMarshalizer{}
+	marshaller := &process.ProtoMarshaller{}
 
 	cfg := getDefaultConfig()
 	cfg.OutportBlocksStorage.DB.FilePath = t.TempDir()
@@ -194,20 +193,17 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	maxDelta := cfg.DataPool.MaxDelta
 	pruningWindow := cfg.DataPool.PruningWindow
 
-	outportData := &outport.OutportBlock{ShardID: shardID}
-	metaOutportData := &outport.OutportBlock{ShardID: core.MetachainShardId}
-
 	// should fail after maxDelta attempts
 	for i := uint64(0); i < maxDelta; i++ {
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
 	hash := []byte("hash_" + fmt.Sprintf("%d", maxDelta))
 
-	err = blocksPool.PutBlock(hash, outportData, maxDelta)
+	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta, shardID)
 	require.Nil(t, err)
 
 	// should find in storer
@@ -216,7 +212,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	require.NotNil(t, retData)
 
 	hash = []byte("hash_" + fmt.Sprintf("%d", maxDelta+1))
-	err = blocksPool.PutBlock(hash, outportData, maxDelta+1)
+	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.Equal(t, process.ErrFailedToPutBlockDataToPool, err)
 
 	if pruningWindow <= maxDelta {
@@ -229,14 +225,15 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 				core.MetachainShardId: i,
 			},
 		}
-		blocksPool.UpdateMetaState(checkpoint)
+		err = blocksPool.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
 		require.Nil(t, err)
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
@@ -246,14 +243,15 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 				core.MetachainShardId: i,
 			},
 		}
-		blocksPool.UpdateMetaState(checkpoint)
+		err = blocksPool.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
-		err = blocksPool.PutBlock(hash, metaOutportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
 		require.Nil(t, err)
 
-		err = blocksPool.PutBlock(hash, outportData, i)
+		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
 
@@ -262,7 +260,8 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 			core.MetachainShardId: pruningWindow * 2,
 		},
 	}
-	blocksPool.UpdateMetaState(checkpoint)
+	err = blocksPool.UpdateMetaState(checkpoint)
+	require.Nil(t, err)
 
 	recentHash := []byte("hash_" + fmt.Sprintf("%d", pruningWindow*2-1))
 
