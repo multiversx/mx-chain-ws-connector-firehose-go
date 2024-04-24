@@ -56,7 +56,7 @@ func (cr *connectorRunner) Run() error {
 
 	outportBlocksPool, err := process.NewBlocksPool(
 		blocksStorer,
-		ggogoProtoMarshaller,
+		gogoProtoMarshaller,
 		cr.config.DataPool.MaxDelta,
 		cr.config.DataPool.PruningWindow,
 		cr.config.DataPool.FirstCommitableBlock,

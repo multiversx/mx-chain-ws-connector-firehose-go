@@ -169,7 +169,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			100,
 			cleanupInterval,
 			firstCommitableBlock,
@@ -259,7 +259,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 			0,
@@ -289,7 +289,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return []byte{}, nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 			0,
@@ -310,7 +310,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		shardID := uint32(1)
 		startIndex := uint64(123)
 
-		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
+		lastCheckpointData, err := gogoProtoMarshaller.Marshal(&data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
 				shardID:               startIndex,
 				core.MetachainShardId: startIndex - 2,
@@ -334,7 +334,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 			0,
@@ -354,7 +354,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		shardID := uint32(1)
 		startIndex := uint64(123)
 
-		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
+		lastCheckpointData, err := gogoProtoMarshaller.Marshal(&data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
 				shardID:               startIndex,
 				core.MetachainShardId: startIndex - 2,
@@ -378,7 +378,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 			0,
