@@ -9,6 +9,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -20,25 +21,28 @@ var log = logger.GetOrCreate("connectorRunner")
 var ErrNilConfig = errors.New("nil configs provided")
 
 type connectorRunner struct {
-	config *config.Config
-	dbMode string
+	config           *config.Config
+	dbMode           string
+	enableGrpcServer bool
 }
 
 // NewConnectorRunner will create a new connector runner instance
-func NewConnectorRunner(cfg *config.Config, dbMode string) (*connectorRunner, error) {
+func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool) (*connectorRunner, error) {
 	if cfg == nil {
 		return nil, ErrNilConfig
 	}
 
 	return &connectorRunner{
-		config: cfg,
-		dbMode: dbMode,
+		config:           cfg,
+		dbMode:           dbMode,
+		enableGrpcServer: enableGrpcServer,
 	}, nil
 }
 
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
-	protoMarshaller := &marshal.GogoProtoMarshalizer{}
+	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
+	converter := process.NewOutportBlockConverter()
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -52,7 +56,7 @@ func (cr *connectorRunner) Run() error {
 
 	outportBlocksPool, err := process.NewBlocksPool(
 		blocksStorer,
-		protoMarshaller,
+		ggogoProtoMarshaller,
 		cr.config.DataPool.MaxDelta,
 		cr.config.DataPool.PruningWindow,
 		cr.config.DataPool.FirstCommitableBlock,
@@ -61,21 +65,29 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	dataAggregator, err := process.NewDataAggregator(outportBlocksPool)
+	dataAggregator, err := process.NewDataAggregator(outportBlocksPool, converter)
 	if err != nil {
 		return err
 	}
 
-	publisher, err := process.NewFirehosePublisher(
-		os.Stdout,
+	server, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
+	if err != nil {
+		return err
+	}
+
+	publisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
+	if err != nil {
+		return fmt.Errorf("cannot create publisher: %w", err)
+	}
+
+	dataProcessor, err := process.NewDataProcessor(
+		publisher,
+		gogoProtoMarshaller,
+		outportBlocksPool,
+		dataAggregator,
 		blockContainer,
-		protoMarshaller,
+		cr.config.DataPool.FirstCommitableBlock,
 	)
-	if err != nil {
-		return err
-	}
-
-	dataProcessor, err := process.NewDataProcessor(publisher, protoMarshaller, outportBlocksPool, dataAggregator, blockContainer, cr.config.DataPool.FirstCommitableBlock)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
@@ -102,6 +114,10 @@ func (cr *connectorRunner) Run() error {
 	err = wsClient.Close()
 	if err != nil {
 		log.Error(err.Error())
+	}
+
+	if server != nil {
+		server.Close()
 	}
 
 	return err

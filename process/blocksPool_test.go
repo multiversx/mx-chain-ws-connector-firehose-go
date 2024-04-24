@@ -92,7 +92,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			NotarizedHeadersHashes: []string{"hash1", "hash2"},
 			NumberOfShards:         3,
 		}
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+		outportBlockBytes, _ := gogoProtoMarshaller.Marshal(outportBlock)
 
 		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
@@ -100,7 +100,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 					return outportBlockBytes, nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			10,
 			100,
 			0,
@@ -404,7 +404,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 			0,

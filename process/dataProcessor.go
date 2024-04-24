@@ -8,6 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 type dataProcessor struct {
@@ -140,24 +141,16 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 }
 
 // TODO: update to use latest data structures
-func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *data.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
 	checkpoint := &data.BlockCheckpoint{
 		LastRounds: make(map[uint32]uint64),
 	}
 
-	metaBlock, err := dp.getHeader(hyperOutportBlock.MetaOutportBlock)
-	if err != nil {
-		return nil, err
-	}
-
+	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
 	checkpoint.LastRounds[core.MetachainShardId] = metaBlock.GetRound()
 
 	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
-		header, err := dp.getHeader(outportBlockData.OutportBlock)
-		if err != nil {
-			return nil, err
-		}
-
+		header := outportBlockData.OutportBlock.BlockData.Header
 		checkpoint.LastRounds[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
 	}
 
