@@ -97,6 +97,6 @@ func (cr *connectorRunner) Run() error {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
+  
 	return err
 }
