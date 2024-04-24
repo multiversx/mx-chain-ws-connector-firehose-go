@@ -88,7 +88,7 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = outportBlocksPool.Close()
+	err = publisher.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -97,6 +97,11 @@ func (cr *connectorRunner) Run() error {
 	if err != nil {
 		log.Error(err.Error())
 	}
-  
+
+	err = outportBlocksPool.Close()
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	return err
 }

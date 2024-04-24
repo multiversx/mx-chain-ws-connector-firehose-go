@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	defaultConfigPath = "/home/cristu/go/src/github.com/multiversx/mx-chain-ws-connector-firehose-go/cmd/connector/config/config.toml"
+	defaultConfigPath = "config/config.toml"
 )
 
 var (
