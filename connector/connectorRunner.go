@@ -42,7 +42,9 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
 	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
-	converter := process.NewOutportBlockConverter()
+	protoMarshaller := &process.ProtoMarshaller{}
+
+	outportBlockConverter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -54,9 +56,9 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewBlocksPool(
+	baseBlocksPool, err := process.NewBlocksPool(
 		blocksStorer,
-		gogoProtoMarshaller,
+		protoMarshaller,
 		cr.config.DataPool.MaxDelta,
 		cr.config.DataPool.PruningWindow,
 		cr.config.DataPool.FirstCommitableBlock,
@@ -65,7 +67,15 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	dataAggregator, err := process.NewDataAggregator(outportBlocksPool, converter)
+	outportBlocksPool, err := process.NewHyperOutportBlocksPool(
+		baseBlocksPool,
+		protoMarshaller,
+	)
+	if err != nil {
+		return err
+	}
+
+	dataAggregator, err := process.NewDataAggregator(outportBlocksPool)
 	if err != nil {
 		return err
 	}
@@ -85,7 +95,7 @@ func (cr *connectorRunner) Run() error {
 		gogoProtoMarshaller,
 		outportBlocksPool,
 		dataAggregator,
-		blockContainer,
+		outportBlockConverter,
 		cr.config.DataPool.FirstCommitableBlock,
 	)
 	if err != nil {

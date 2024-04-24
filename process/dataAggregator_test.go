@@ -19,7 +19,7 @@ func TestNewDataAggregator(t *testing.T) {
 
 		da, err := process.NewDataAggregator(nil, process.NewOutportBlockConverter())
 		require.Nil(t, da)
-		require.Equal(t, process.ErrNilBlocksPool, err)
+		require.Equal(t, process.ErrNilHyperBlocksPool, err)
 	})
 
 	t.Run("nil outport block converter", func(t *testing.T) {

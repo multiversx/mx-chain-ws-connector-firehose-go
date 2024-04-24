@@ -17,8 +17,8 @@ var ErrNilBlockCreator = errors.New("nil block creator provided")
 // ErrNilPublisher signals that a nil publisher was provided
 var ErrNilPublisher = errors.New("nil publisher provided")
 
-// ErrNilBlocksPool signals that a nil blocks pool was provided
-var ErrNilBlocksPool = errors.New("nil blocks pool provided")
+// ErrNilHyperBlocksPool signals that a nil hyper blocks pool was provided
+var ErrNilHyperBlocksPool = errors.New("nil hyper blocks pool provided")
 
 // ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
 var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter provided")
@@ -52,3 +52,6 @@ var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
 
 // ErrFailedToPutBlockDataToPool signals that it cannot put block data into pool
 var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")
+
+// ErrNilDataPool signals that a nil data pool was provided
+var ErrNilDataPool = errors.New("nil data pool provided")

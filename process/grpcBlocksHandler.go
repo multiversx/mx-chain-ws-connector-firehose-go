@@ -9,18 +9,18 @@ import (
 )
 
 type grpcBlocksHandler struct {
-	outportBlocksPool DataPool
+	outportBlocksPool HyperBlocksPool
 	dataAggregator    DataAggregator
 }
 
 // NewGRPCBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
 // which will then be consumed by the grpc server
 func NewGRPCBlocksHandler(
-	outportBlocksPool DataPool,
+	outportBlocksPool HyperBlocksPool,
 	dataAggregator DataAggregator,
 ) (*grpcBlocksHandler, error) {
 	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilBlocksPool
+		return nil, ErrNilHyperBlocksPool
 	}
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
@@ -34,7 +34,7 @@ func NewGRPCBlocksHandler(
 
 // FetchHyperBlockByHash will fetch hyper block from pool by hash
 func (gb *grpcBlocksHandler) FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error) {
-	metaOutportBlock, err := gb.outportBlocksPool.GetBlock(hash)
+	metaOutportBlock, err := gb.outportBlocksPool.GetMetaBlock(hash)
 	if err != nil {
 		return nil, err
 	}

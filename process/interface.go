@@ -52,7 +52,7 @@ type Publisher interface {
 // DataAggregator defines the behaviour of a component that is able to aggregate outport
 // block data for shards
 type DataAggregator interface {
-	ProcessHyperBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error)
+	ProcessHyperBlock(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error)
 	IsInterfaceNil() bool
 }
 
@@ -60,8 +60,20 @@ type DataAggregator interface {
 type DataPool interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
-	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
-	GetBlock(hash []byte) (*outport.OutportBlock, error)
+	PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error
+	UpdateMetaState(checkpoint *data.BlockCheckpoint)
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// HyperBlocksPool defines the behaviour of a blocks pool handler component that is
+// able to handle meta and shard outport blocks data
+type HyperBlocksPool interface {
+	Get(key []byte) ([]byte, error)
+	PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error
+	PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error
+	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
+	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
 	UpdateMetaState(checkpoint *data.BlockCheckpoint)
 	Close() error
 	IsInterfaceNil() bool

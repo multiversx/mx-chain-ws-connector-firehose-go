@@ -7,7 +7,6 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
 )
@@ -109,14 +108,7 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, newIndex uint64) error {
-	shardID := outportBlock.ShardID
-
-	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
-	if err != nil {
-		return err
-	}
-
+func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID uint32) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
@@ -127,7 +119,7 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 	}
 
 	if previousIndex == initIndex {
-		err := bp.storer.Put(hash, outportBlockBytes)
+		err := bp.storer.Put(hash, value)
 		if err != nil {
 			return err
 		}
@@ -147,7 +139,7 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, 
 		return ErrFailedToPutBlockDataToPool
 	}
 
-	err = bp.storer.Put(hash, outportBlockBytes)
+	err := bp.storer.Put(hash, value)
 	if err != nil {
 		return err
 	}
@@ -164,22 +156,6 @@ func (bp *blocksPool) shouldPutBlockData(index uint64) bool {
 	delta := math.Abs(diff)
 
 	return math.Abs(delta) < float64(bp.maxDelta)
-}
-
-// GetBlock will return outport block data from the pool
-func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
-	marshalledData, err := bp.storer.Get(hash)
-	if err != nil {
-		return nil, err
-	}
-
-	outportBlock := &outport.OutportBlock{}
-	err = bp.marshaller.Unmarshal(outportBlock, marshalledData)
-	if err != nil {
-		return nil, err
-	}
-
-	return outportBlock, nil
 }
 
 func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {

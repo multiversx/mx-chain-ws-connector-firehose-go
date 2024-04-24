@@ -12,7 +12,7 @@ import (
 func CreateGRPCServer(
 	enableGrpcServer bool,
 	cfg config.GRPCConfig,
-	outportBlocksPool process.DataPool,
+	outportBlocksPool process.HyperBlocksPool,
 	dataAggregator process.DataAggregator) (process.GRPCServer, error) {
 	if !enableGrpcServer {
 		return nil, nil
