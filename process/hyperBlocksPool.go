@@ -31,8 +31,8 @@ func NewHyperOutportBlocksPool(
 }
 
 // UpdateMetaState will triiger meta state update from base data pool
-func (bp *hyperOutportBlocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
-	bp.dataPool.UpdateMetaState(checkpoint)
+func (bp *hyperOutportBlocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+	return bp.dataPool.UpdateMetaState(checkpoint)
 }
 
 // Get will trigger data pool get operation

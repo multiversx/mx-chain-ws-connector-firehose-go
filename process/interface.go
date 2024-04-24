@@ -61,7 +61,7 @@ type DataPool interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
 	PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error
-	UpdateMetaState(checkpoint *data.BlockCheckpoint)
+	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -74,7 +74,7 @@ type HyperBlocksPool interface {
 	PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
-	UpdateMetaState(checkpoint *data.BlockCheckpoint)
+	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
 	Close() error
 	IsInterfaceNil() bool
 }

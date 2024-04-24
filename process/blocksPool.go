@@ -80,7 +80,8 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	return bp.storer.Get(key)
 }
 
-func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
+// UpdateMetaState will update internal meta state
+func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	index, ok := checkpoint.LastRounds[core.MetachainShardId]
 	if !ok {
 		index = initIndex
@@ -89,14 +90,16 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) {
 	if index >= bp.firstCommitableBlock {
 		err := bp.setCheckpoint(checkpoint)
 		if err != nil {
-			log.Warn("failed to set checkpoint", "error", err.Error())
+			return fmt.Errorf("%w, failed to set checkpoint", err)
 		}
 	}
 
 	err := bp.pruneStorer(index)
 	if err != nil {
-		log.Warn("failed to prune storer", "error", err.Error())
+		return fmt.Errorf("%w, failed to prune storer", err)
 	}
+
+	return nil
 }
 
 func (bp *blocksPool) pruneStorer(index uint64) error {

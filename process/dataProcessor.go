@@ -83,8 +83,6 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		return ErrNilOutportBlockData
 	}
 
-	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
-
 	if outportBlock.ShardID == core.MetachainShardId {
 		return dp.handleMetaOutportBlock(outportBlock)
 	}
@@ -105,6 +103,11 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	}
 	metaRound := metaOutportBlock.BlockData.Header.GetRound()
 
+	log.Info("saving meta outport block",
+		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
+		"round", metaRound,
+		"shardID", metaOutportBlock.ShardID)
+
 	headerHash := outportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutMetaBlock(headerHash, metaOutportBlock)
 	if err != nil {
@@ -122,7 +125,10 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 				core.MetachainShardId: metaRound,
 			},
 		}
-		dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+		err = dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
@@ -142,9 +148,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return err
 	}
 
-	dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
-
-	return nil
+	return dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 }
 
 // TODO: update to use latest data structures
@@ -175,6 +179,12 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	if shardOutportBlock.BlockData.Header == nil {
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
+	round := shardOutportBlock.BlockData.Header.GetRound()
+
+	log.Info("saving shard outport block",
+		"hash", shardOutportBlock.BlockData.GetHeaderHash(),
+		"round", round,
+		"shardID", shardOutportBlock.ShardID)
 
 	headerHash := outportBlock.BlockData.HeaderHash
 
