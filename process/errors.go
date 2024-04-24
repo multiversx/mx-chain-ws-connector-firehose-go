@@ -20,6 +20,9 @@ var ErrNilPublisher = errors.New("nil publisher provided")
 // ErrNilBlocksPool signals that a nil blocks pool was provided
 var ErrNilBlocksPool = errors.New("nil blocks pool provided")
 
+// ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
+var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter provided")
+
 // ErrNilDataAggregator signals that a nil data aggregator was provided
 var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 
@@ -40,6 +43,9 @@ var ErrNilPruningStorer = errors.New("nil pruning storer")
 
 // ErrNilCacher signals that a nil cacher was provided
 var ErrNilCacher = errors.New("nil cacher")
+
+// ErrNilGRPCBlocksHandler singals that nil blocks handler was provided
+var ErrNilGRPCBlocksHandler = errors.New("nil gRPC blocks handler")
 
 // ErrInvalidOutportBlock signals that an invalid outport block was provided
 var ErrInvalidOutportBlock = errors.New("invalid outport block provided")

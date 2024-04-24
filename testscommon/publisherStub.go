@@ -1,6 +1,6 @@
 package testscommon
 
-import "github.com/multiversx/mx-chain-ws-connector-template-go/data"
+import data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 
 // PublisherStub -
 type PublisherStub struct {

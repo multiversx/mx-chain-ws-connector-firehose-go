@@ -11,8 +11,34 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
+
+type fieldsGetter interface {
+	GetShardID() uint32
+	GetTransactionPool() *data.TransactionPool
+	GetHeaderGasConsumption() *data.HeaderGasConsumption
+	GetAlteredAccounts() map[string]*data.AlteredAccount
+	GetNotarizedHeadersHashes() []string
+	GetNumberOfShards() uint32
+	GetSignersIndexes() []uint64
+	GetHighestFinalBlockNonce() uint64
+	GetHighestFinalBlockHash() []byte
+}
+
+type blockDataGetter interface {
+	GetShardID() uint32
+	GetHeaderType() string
+	GetHeaderHash() []byte
+	GetBody() *data.Body
+	GetIntraShardMiniBlocks() []*data.MiniBlock
+	GetScheduledRootHash() []byte
+	GetScheduledAccumulatedFees() []byte
+	GetScheduledDeveloperFees() []byte
+	GetScheduledGasProvided() uint64
+	GetScheduledGasPenalized() uint64
+	GetScheduledGasRefunded() uint64
+}
 
 const (
 	outportBlockHeaderV1JSONPath  = "../testscommon/testdata/outportBlockHeaderV1.json"
@@ -295,7 +321,7 @@ func checkHeaderMeta(t *testing.T, header *block.MetaBlock, fireOutportBlock *da
 	require.Equal(t, header.Reserved, fireOutportBlock.BlockData.Header.Reserved)
 }
 
-func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock data.FieldsGetter) {
+func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock fieldsGetter) {
 	// Asserting values.
 	require.Equal(t, outportBlock.ShardID, fireOutportBlock.GetShardID())
 	require.Equal(t, outportBlock.NotarizedHeadersHashes, fireOutportBlock.GetNotarizedHeadersHashes())
@@ -485,7 +511,7 @@ func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBl
 	}
 }
 
-func checkBlockData(t *testing.T, blockData *outport.BlockData, getter data.BlockDataGetter) {
+func checkBlockData(t *testing.T, blockData *outport.BlockData, getter blockDataGetter) {
 	require.Equal(t, blockData.ShardID, getter.GetShardID())
 	require.Equal(t, blockData.HeaderType, getter.GetHeaderType())
 	require.Equal(t, blockData.HeaderHash, getter.GetHeaderHash())
