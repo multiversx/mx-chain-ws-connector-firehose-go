@@ -21,8 +21,6 @@ var (
 type grpcServer struct {
 	server *grpc.Server
 	config config.GRPCConfig
-
-	blocksChannel chan *data.HyperOutportBlock
 }
 
 // New instantiates the underlying grpc server handling rpc requests.
