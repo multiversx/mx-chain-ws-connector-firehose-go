@@ -6,18 +6,13 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 )
 
 // ErrNotSupportedDBMode signals that an invalid db mode was provided
 var ErrNotSupportedDBMode = errors.New("not supported db mode")
-
-const (
-	FullPersisterDBMode      = "full-persister"
-	ImportDBMode             = "import-db"
-	OptimizedPersisterDBMode = "optimized-persister"
-)
 
 // CreateBlockContainer will create a new block container component
 func CreateBlockContainer() (process.BlockContainerHandler, error) {
@@ -40,7 +35,7 @@ func CreateBlockContainer() (process.BlockContainerHandler, error) {
 }
 
 // CreateStorer will create a new pruning storer instace
-func CreateStorer(cfg config.Config, dbMode string) (process.PruningStorer, error) {
+func CreateStorer(cfg config.Config, dbMode common.DBMode) (process.PruningStorer, error) {
 	cacheConfig := storageUnit.CacheConfig{
 		Type:        storageUnit.CacheType(cfg.OutportBlocksStorage.Cache.Type),
 		SizeInBytes: cfg.OutportBlocksStorage.Cache.SizeInBytes,
@@ -53,11 +48,11 @@ func CreateStorer(cfg config.Config, dbMode string) (process.PruningStorer, erro
 	}
 
 	switch dbMode {
-	case FullPersisterDBMode:
+	case common.FullPersisterDBMode:
 		return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep, true)
-	case OptimizedPersisterDBMode:
+	case common.OptimizedPersisterDBMode:
 		return process.NewPruningStorer(cfg.OutportBlocksStorage.DB, cacher, cfg.DataPool.NumPersistersToKeep, false)
-	case ImportDBMode:
+	case common.ImportDBMode:
 		return process.NewImportDBStorer(cacher)
 	default:
 		return nil, ErrNotSupportedDBMode

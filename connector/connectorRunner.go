@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
 
+	"github.com/multiversx/mx-chain-ws-connector-template-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
@@ -22,7 +23,7 @@ var ErrNilConfig = errors.New("nil configs provided")
 
 type connectorRunner struct {
 	config           *config.Config
-	dbMode           string
+	dbMode           common.DBMode
 	enableGrpcServer bool
 }
 
@@ -34,7 +35,7 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 
 	return &connectorRunner{
 		config:           cfg,
-		dbMode:           dbMode,
+		dbMode:           common.DBMode(dbMode),
 		enableGrpcServer: enableGrpcServer,
 	}, nil
 }
