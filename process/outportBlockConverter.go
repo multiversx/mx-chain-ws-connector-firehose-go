@@ -168,6 +168,8 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 	}
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
+	metaOutportBlock := &data.MetaOutportBlock{}
+	err = o.protoMarshalizer.Unmarshal(metaOutportBlock, bytes)
 	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
 	err = o.protoMarshaller.Unmarshal(metaOutportBlock, bytes)
 	if err != nil {
