@@ -1,16 +1,16 @@
 package process_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var isFullDBSync = true
@@ -83,7 +83,7 @@ func TestNewPruningStorer(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, ps)
 
-		files, err := ioutil.ReadDir(tmpPath)
+		files, err := os.ReadDir(tmpPath)
 		require.Nil(t, err)
 		require.False(t, ps.IsInterfaceNil())
 

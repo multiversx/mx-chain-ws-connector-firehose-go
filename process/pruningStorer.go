@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/leveldb"
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-storage-go/types"
+
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
 )
 
@@ -133,7 +133,7 @@ func (ps *pruningStorer) getPersisterPaths() ([]string, error) {
 		return nil, err
 	}
 
-	files, err := ioutil.ReadDir(basePath)
+	files, err := os.ReadDir(basePath)
 	if err != nil {
 		return nil, err
 	}

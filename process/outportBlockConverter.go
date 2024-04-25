@@ -30,7 +30,7 @@ func NewOutportBlockConverter() *outportBlockConverter {
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.
-func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error) {
+func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error) {
 	headerType := outportBlock.BlockData.HeaderType
 
 	// check if the header type is supported by this function.
@@ -44,7 +44,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("marshal shard outport block error: %s", err)
 	}
 
-	shardOutportBlock := &data.ShardOutportBlock{}
+	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}
 	// unmarshall into google protobuf. This is the proto that will be later consumed.
 	err = o.protoMarshalizer.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
@@ -65,12 +65,12 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 
 	miniBlockHeaders := make([]*data.MiniBlockHeader, 0, len(header.Header.MiniBlockHeaders))
 	for _, miniBlockHeader := range header.Header.MiniBlockHeaders {
-		mb := &data.MiniBlockHeader{
+		mb := &hyperOutportBlocks.MiniBlockHeader{
 			Hash:            miniBlockHeader.Hash,
 			SenderShardID:   miniBlockHeader.SenderShardID,
 			ReceiverShardID: miniBlockHeader.ReceiverShardID,
 			TxCount:         miniBlockHeader.TxCount,
-			Type:            data.Type(miniBlockHeader.Type),
+			Type:            hyperOutportBlocks.Type(miniBlockHeader.Type),
 			Reserved:        miniBlockHeader.Reserved,
 		}
 		miniBlockHeaders = append(miniBlockHeaders, mb)
@@ -78,7 +78,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 
 	peerChanges := make([]*data.PeerChange, 0, len(header.Header.PeerChanges))
 	for _, peerChange := range header.Header.PeerChanges {
-		pc := &data.PeerChange{
+		pc := &hyperOutportBlocks.PeerChange{
 			PubKey:      peerChange.PubKey,
 			ShardIdDest: peerChange.ShardIdDest,
 		}
@@ -95,7 +95,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("failed to cast developer fees: %w", err)
 	}
 
-	shardOutportBlock.BlockData.Header = &data.Header{
+	shardOutportBlock.BlockData.Header = &hyperOutportBlocks.Header{
 		Nonce:              header.Header.Nonce,
 		PrevHash:           header.Header.PrevHash,
 		PrevRandSeed:       header.Header.PrevRandSeed,
@@ -105,7 +105,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		TimeStamp:          header.Header.TimeStamp,
 		Round:              header.Header.Round,
 		Epoch:              header.Header.Epoch,
-		BlockBodyType:      data.Type(header.Header.BlockBodyType),
+		BlockBodyType:      hyperOutportBlocks.Type(header.Header.BlockBodyType),
 		Signature:          header.Header.Signature,
 		LeaderSignature:    header.Header.LeaderSignature,
 		MiniBlockHeaders:   miniBlockHeaders,
@@ -142,7 +142,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 }
 
 // HandleMetaOutportBlock will convert an outport.OutportBlock to data.MetaOutportBlock.
-func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error) {
+func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error) {
 	headerType := outportBlock.BlockData.HeaderType
 
 	// check if the header type is supported by this function.
@@ -157,7 +157,7 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 	}
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
-	metaOutportBlock := &data.MetaOutportBlock{}
+	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
 	err = o.protoMarshalizer.Unmarshal(metaOutportBlock, bytes)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal metaBlockCaster error: %w", err)
@@ -171,4 +171,9 @@ func (o *outportBlockConverter) castBigInt(i *big.Int) ([]byte, error) {
 	_, err := o.bigIntCaster.MarshalTo(i, buf)
 
 	return buf, err
+}
+
+// IsInterfaceNil returns nil if there is no value under the interface
+func (o *outportBlockConverter) IsInterfaceNil() bool {
+	return o == nil
 }

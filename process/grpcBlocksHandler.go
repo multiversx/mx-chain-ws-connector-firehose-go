@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+
+	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 )
 
 type grpcBlocksHandler struct {
@@ -13,12 +13,10 @@ type grpcBlocksHandler struct {
 	dataAggregator    DataAggregator
 }
 
-// NewGrpcBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
+// NewGRPCBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
 // which will then be consumed by the grpc server
-func NewGrpcBlocksHandler(
+func NewGRPCBlocksHandler(
 	outportBlocksPool DataPool,
-	blockCreator BlockContainerHandler,
-	marshaller marshal.Marshalizer,
 	dataAggregator DataAggregator,
 ) (*grpcBlocksHandler, error) {
 	if check.IfNil(outportBlocksPool) {

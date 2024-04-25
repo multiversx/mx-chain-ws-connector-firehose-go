@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
 )
 
 func TestNewBlocksPool(t *testing.T) {
@@ -85,7 +86,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 			NotarizedHeadersHashes: []string{"hash1", "hash2"},
 			NumberOfShards:         3,
 		}
-		outportBlockBytes, _ := protoMarshaller.Marshal(outportBlock)
+		outportBlockBytes, _ := gogoProtoMarshaller.Marshal(outportBlock)
 
 		bp, _ := process.NewBlocksPool(
 			&testscommon.PruningStorerStub{
@@ -93,7 +94,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 					return outportBlockBytes, nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			10,
 			100,
 		)
@@ -170,7 +171,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 					return nil
 				},
 			},
-			protoMarshaller,
+			gogoProtoMarshaller,
 			maxDelta,
 			100,
 		)

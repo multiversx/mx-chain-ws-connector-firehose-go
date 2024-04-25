@@ -2,7 +2,30 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/data";
+option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks";
+
+message HyperOutportBlock {
+  MetaOutportBlock                        MetaOutportBlock            = 1;
+  repeated NotarizedHeaderOutportData NotarizedHeadersOutportData     = 2;
+}
+
+message NotarizedHeaderOutportData {
+  string       NotarizedHeaderHash = 1;
+  ShardOutportBlock OutportBlock        = 2 ;
+}
+
+message BlockHashRequest {
+  string hash = 1;
+}
+
+message BlockNonceRequest {
+  uint64 nonce = 1;
+}
+
+service HyperOutportBlockService {
+  rpc GetHyperOutportBlockByHash(BlockHashRequest) returns (HyperOutportBlock) {}
+  rpc GetHyperOutportBlockByNonce(BlockNonceRequest) returns (HyperOutportBlock) {}
+}
 
 message MetaOutportBlock {
   uint32                       ShardID                = 1;
