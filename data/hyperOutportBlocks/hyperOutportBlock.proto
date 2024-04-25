@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks";
+option go_package = "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks";
 
 message HyperOutportBlock {
   MetaOutportBlock                        MetaOutportBlock            = 1;
