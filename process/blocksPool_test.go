@@ -147,7 +147,8 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 			},
 		}
 
-		bp.UpdateMetaState(checkpoint)
+		err := bp.UpdateMetaState(checkpoint)
+		require.Nil(t, err)
 	})
 
 	t.Run("should set checkpoint if index if commitable", func(t *testing.T) {
