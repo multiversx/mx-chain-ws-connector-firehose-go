@@ -20,7 +20,7 @@ const (
 	initPrefix     = "INIT"
 
 	protocolReaderVersion = "1.0"
-	protoMessageType      = "type.googleapis.com/proto.OutportBlock"
+	protoMessageType      = "type.googleapis.com/sf.multiversx.type.v1.HyperOutportBlock"
 )
 
 type firehosePublisher struct {
