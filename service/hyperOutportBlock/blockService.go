@@ -14,18 +14,23 @@ import (
 
 // Service returns blocks based on nonce or hash from cache.
 type Service struct {
+	ctx           context.Context
 	blocksHandler process.GRPCBlocksHandler
 	blocksChannel *chan *data.HyperOutportBlock
 	data.UnimplementedHyperOutportBlockServiceServer
 }
 
 // NewService returns a new instance of the hyperOutportBlock service.
-func NewService(blocksHandler process.GRPCBlocksHandler, blocksChannel *chan *data.HyperOutportBlock) (*Service, error) {
+func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler, blocksChannel *chan *data.HyperOutportBlock) (*Service, error) {
 	if check.IfNil(blocksHandler) {
 		return nil, process.ErrNilOutportBlockData
 	}
 
-	return &Service{blocksHandler: blocksHandler, blocksChannel: blocksChannel}, nil
+	if ctx == nil {
+		return nil, process.ErrNilBlockServiceContext
+	}
+
+	return &Service{ctx: ctx, blocksHandler: blocksHandler, blocksChannel: blocksChannel}, nil
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.
@@ -55,8 +60,7 @@ func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.Bl
 func (bs *Service) HyperOutportBlockStream(_ *empty.Empty, stream data.HyperOutportBlockService_HyperOutportBlockStreamServer) error {
 	for {
 		select {
-		// Exit on stream context done.
-		case <-stream.Context().Done():
+		case <-bs.ctx.Done():
 			if len(*bs.blocksChannel) == 0 {
 				return nil
 			}
@@ -69,6 +73,9 @@ func (bs *Service) HyperOutportBlockStream(_ *empty.Empty, stream data.HyperOutp
 					return fmt.Errorf("failed to send hyperOutportBlock: %w", err)
 				}
 			}
+		// Exit on stream context done.
+		case <-stream.Context().Done():
+			return nil
 		default:
 			block := <-*bs.blocksChannel
 

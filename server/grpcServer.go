@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -21,22 +22,27 @@ var (
 type grpcServer struct {
 	server *grpc.Server
 	config config.GRPCConfig
+
+	cancelFunc context.CancelFunc
 }
 
 // New instantiates the underlying grpc server handling rpc requests.
 func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler, blocksChannel *chan *data.HyperOutportBlock) (*grpcServer, error) {
 	s := grpc.NewServer()
 
-	service, err := hyperOutportBlock.NewService(blocksHandler, blocksChannel)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	service, err := hyperOutportBlock.NewService(ctx, blocksHandler, blocksChannel)
 	if err != nil {
+		cancelFunc()
 		return nil, fmt.Errorf("failed to create service: %w", err)
 	}
 	data.RegisterHyperOutportBlockServiceServer(s, service)
 	reflection.Register(s)
 
 	return &grpcServer{
-		server: s,
-		config: config,
+		server:     s,
+		config:     config,
+		cancelFunc: cancelFunc,
 	}, nil
 }
 
@@ -65,5 +71,6 @@ func (s *grpcServer) run() error {
 
 // Close will gracefully stop the grpc server.
 func (s *grpcServer) Close() {
+	s.cancelFunc()
 	s.server.GracefulStop()
 }
