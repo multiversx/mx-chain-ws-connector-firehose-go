@@ -11,7 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type fieldsGetter interface {
