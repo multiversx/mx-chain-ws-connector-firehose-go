@@ -1,6 +1,7 @@
 package integrationtests
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -86,7 +87,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 
 	hash = []byte("hash_" + fmt.Sprintf("%d", maxDelta+1))
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
-	require.Equal(t, process.ErrFailedToPutBlockDataToPool, err)
+	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
 	if pruningWindow <= maxDelta {
 		require.Fail(t, "prunning window should be bigger than delta")
@@ -213,7 +214,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 
 	hash = []byte("hash_" + fmt.Sprintf("%d", maxDelta+1))
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
-	require.Equal(t, process.ErrFailedToPutBlockDataToPool, err)
+	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
 	if pruningWindow <= maxDelta {
 		require.Fail(t, "prunning window should be bigger than delta")

@@ -2,6 +2,7 @@ package process
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -45,7 +46,7 @@ func (da *dataAggregator) ProcessHyperBlock(metaOutportBlock *hyperOutportBlocks
 	for _, notarizedHash := range metaOutportBlock.NotarizedHeadersHashes {
 		hash, err := hex.DecodeString(notarizedHash)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode notarized hash string: %w", err)
 		}
 
 		shardOutportBlock, err := da.blocksPool.GetShardBlock(hash)

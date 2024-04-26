@@ -93,7 +93,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
 	metaOutportBlock, err := dp.outportBlockConverter.HandleMetaOutportBlock(outportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert outportBlock to metaOutportBlock: %w", err)
 	}
 	if metaOutportBlock == nil {
 		return ErrInvalidOutportBlock
@@ -114,7 +114,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	headerHash := outportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutMetaBlock(headerHash, metaOutportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
 	if metaRound < dp.firstCommitableBlock {
@@ -143,18 +143,17 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 
 	lastCheckpoint, err := dp.getLastRoundsData(hyperOutportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get last round data: %w", err)
 	}
 
 	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to publish hyperblock: %w", err)
 	}
 
 	return dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 }
 
-// TODO: update to use latest data structures
 func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
 	if hyperOutportBlock == nil {
 		return nil, ErrNilHyperOutportBlock
@@ -187,7 +186,7 @@ func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
 	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlock(outportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert outportBlock to shardOutportBlock: %w", err)
 	}
 	if shardOutportBlock.BlockData == nil {
 		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)

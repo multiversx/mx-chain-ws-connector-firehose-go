@@ -139,12 +139,13 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shard
 	}
 
 	if !bp.shouldPutBlockData(previousIndex) {
-		return ErrFailedToPutBlockDataToPool
+		return fmt.Errorf("%w: not within required delta, previous index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, previousIndex, newIndex)
 	}
 
 	err := bp.storer.Put(hash, value)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to put into storer: %w", err)
 	}
 
 	bp.previousIndexesMap[shardID] = newIndex
@@ -164,7 +165,7 @@ func (bp *blocksPool) shouldPutBlockData(index uint64) bool {
 func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 	checkpointBytes, err := bp.marshaller.Marshal(checkpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshall checkpoint data: %w", err)
 	}
 
 	log.Debug("setCheckpoint", "checkpoint", checkpoint)
@@ -175,13 +176,13 @@ func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 func (bp *blocksPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
 	checkpointBytes, err := bp.storer.Get([]byte(metaCheckpointKey))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get checkpoint data from storer: %w", err)
 	}
 
 	checkpoint := &data.BlockCheckpoint{}
 	err = bp.marshaller.Unmarshal(checkpoint, checkpointBytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshall checkpoint data: %w", err)
 	}
 
 	return checkpoint, nil
