@@ -124,6 +124,7 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 	return hyperOutportBlock, nil
 }
 
+// TODO: add more unit tests.
 func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
 	// parse the provided pollingInterval
 	timeDuration, err := protoToTimeDuration(pollingInterval)

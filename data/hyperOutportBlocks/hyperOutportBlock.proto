@@ -6,6 +6,8 @@ import "google/protobuf/duration.proto";
 
 option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/api/hyperOutportBlocks";
 
+// TODO: move proto definition file in a shared space.
+
 message HyperOutportBlock {
   MetaOutportBlock                        MetaOutportBlock            = 1;
   repeated NotarizedHeaderOutportData NotarizedHeadersOutportData     = 2;
