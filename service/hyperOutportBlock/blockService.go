@@ -123,7 +123,7 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 }
 
 func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
-	// start polling and retrieve the starting nonce
+	// parse the provided pollingInterval
 	timeDuration, err := protoToTimeDuration(pollingInterval)
 	if err != nil {
 		return fmt.Errorf("invalid polling interval: %w", err)
@@ -141,12 +141,15 @@ func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *dura
 			return stream.Context().Err()
 
 		case <-ticker.C:
+			// fetch the next hyperBlock.
 			hb, fetchErr := bs.blocksHandler.FetchHyperBlockByNonce(nonce)
 			if fetchErr != nil {
+				// if the hyperBlock was not found. try again in the next iteration.
 				log.Error(fmt.Errorf("failed to retrieve hyper block with nonce '%d': %w", nonce, fetchErr).Error())
 				continue
 			}
 
+			// if found, send it on the stream.
 			if sendErr := stream.Send(hb); sendErr != nil {
 				return fmt.Errorf("failed to send hyperOutportBlock: %w", sendErr)
 			}
