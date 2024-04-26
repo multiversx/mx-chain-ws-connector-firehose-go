@@ -2,7 +2,7 @@ package testscommon
 
 import (
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 // OutportBlockConverterStub -

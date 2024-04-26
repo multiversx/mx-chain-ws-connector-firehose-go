@@ -3,9 +3,9 @@ package factory
 import (
 	"fmt"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/server"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/server"
 )
 
 // CreateGRPCServer will create the gRPC server along with the required handlers.

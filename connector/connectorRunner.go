@@ -10,10 +10,10 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/common"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/factory"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 )
 
 var log = logger.GetOrCreate("connectorRunner")

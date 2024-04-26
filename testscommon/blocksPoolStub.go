@@ -1,7 +1,7 @@
 package testscommon
 
 import (
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 )
 
 // BlocksPoolStub -

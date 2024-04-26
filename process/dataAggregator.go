@@ -6,9 +6,9 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type dataAggregator struct {

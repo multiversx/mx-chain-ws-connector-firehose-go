@@ -9,7 +9,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
 
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 var log = logger.GetOrCreate("process")

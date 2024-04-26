@@ -1,7 +1,7 @@
 package process
 
 import (
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type grpcBlockPublisher struct{}

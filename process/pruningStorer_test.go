@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/testscommon"
 )
 
 var isFullDBSync = true

@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/multiversx/mx-chain-core-go/core"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/common"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/factory"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/factory"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 	"github.com/stretchr/testify/require"
 )
 
