@@ -51,4 +51,4 @@
 
 [GRPC]
     URL = "localhost:8000"
-    BufferSize = 1000
+    PollingIntervalSeconds = 1

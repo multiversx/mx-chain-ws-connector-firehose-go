@@ -5,24 +5,20 @@ import (
 )
 
 type grpcBlockPublisher struct {
-	server        GRPCServer
-	blocksChannel *chan *data.HyperOutportBlock
+	server GRPCServer
 }
 
 // NewGRPCBlockPublisher is the publisher set up when serving hyperOutportBlocks via gRPC.
-func NewGRPCBlockPublisher(server GRPCServer, blocksChannel *chan *data.HyperOutportBlock) (*grpcBlockPublisher, error) {
+func NewGRPCBlockPublisher(server GRPCServer) (*grpcBlockPublisher, error) {
 	server.Start()
 
 	return &grpcBlockPublisher{
-		server:        server,
-		blocksChannel: blocksChannel,
+		server: server,
 	}, nil
 }
 
 // PublishHyperBlock will do nothing for now, as they are available via gRPC endpoints.
-func (g *grpcBlockPublisher) PublishHyperBlock(block *data.HyperOutportBlock) error {
-	*g.blocksChannel <- block
-
+func (g *grpcBlockPublisher) PublishHyperBlock(_ *data.HyperOutportBlock) error {
 	return nil
 }
 

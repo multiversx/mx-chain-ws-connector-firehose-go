@@ -53,6 +53,5 @@ type DBConfig struct {
 
 // GRPCConfig will map the gRPC server configuration
 type GRPCConfig struct {
-	URL        string
-	BufferSize int
+	URL string
 }

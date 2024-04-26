@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-template-go/server"
 )
@@ -24,13 +23,12 @@ func CreatePublisher(
 			return nil, fmt.Errorf("failed to create grpc blocks handler: %w", err)
 		}
 
-		blocksChannel := make(chan *data.HyperOutportBlock, cfg.GRPC.BufferSize)
-		s, err := server.New(cfg.GRPC, handler, &blocksChannel)
+		s, err := server.New(cfg.GRPC, handler)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create grpc server: %w", err)
 		}
 
-		return process.NewGRPCBlockPublisher(s, &blocksChannel)
+		return process.NewGRPCBlockPublisher(s)
 	}
 
 	publisher, err := process.NewFirehosePublisher(

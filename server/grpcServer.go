@@ -27,11 +27,11 @@ type grpcServer struct {
 }
 
 // New instantiates the underlying grpc server handling rpc requests.
-func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler, blocksChannel *chan *data.HyperOutportBlock) (*grpcServer, error) {
+func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) (*grpcServer, error) {
 	s := grpc.NewServer()
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	service, err := hyperOutportBlock.NewService(ctx, blocksHandler, blocksChannel)
+	service, err := hyperOutportBlock.NewService(ctx, blocksHandler)
 	if err != nil {
 		cancelFunc()
 		return nil, fmt.Errorf("failed to create service: %w", err)
@@ -73,4 +73,9 @@ func (s *grpcServer) run() error {
 func (s *grpcServer) Close() {
 	s.cancelFunc()
 	s.server.GracefulStop()
+}
+
+// IsInterfaceNil checks if the underlying server is nil.
+func (s *grpcServer) IsInterfaceNil() bool {
+	return s == nil
 }
