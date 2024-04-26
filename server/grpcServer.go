@@ -71,7 +71,9 @@ func (s *grpcServer) run() error {
 
 // Close will gracefully stop the grpc server.
 func (s *grpcServer) Close() {
-	s.cancelFunc()
+	if s.cancelFunc != nil {
+	     s.cancelFunc()
+	}
 	s.server.GracefulStop()
 }
 
