@@ -9,9 +9,9 @@ import (
 	outportcore "github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/stretchr/testify/require"
 
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/testscommon"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/testscommon"
 )
 
 func createOutportBlock() *outportcore.OutportBlock {

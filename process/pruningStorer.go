@@ -14,7 +14,7 @@ import (
 	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-storage-go/types"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 )
 
 const metaCheckpointKey = "lastMetaRound"

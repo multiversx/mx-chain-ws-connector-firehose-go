@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 func recoveredMarshal(obj interface{}) (buf []byte, err error) {

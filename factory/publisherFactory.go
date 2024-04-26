@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 )
 
 // CreatePublisher will return the required Publisher implementation based on whether the hyperOutportBlock are
