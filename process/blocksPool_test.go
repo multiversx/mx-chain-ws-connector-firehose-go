@@ -353,50 +353,6 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		require.True(t, putCalled)
 	})
 
-	t.Run("should fail if no succesive index", func(t *testing.T) {
-		t.Parallel()
-
-		maxDelta := uint64(10)
-
-		shardID := uint32(1)
-		startIndex := uint64(123)
-
-		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				shardID:               startIndex,
-				core.MetachainShardId: startIndex - 2,
-			},
-		})
-		require.Nil(t, err)
-
-		putCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				GetCalled: func(key []byte) ([]byte, error) {
-					if string(key) == process.MetaCheckpointKey {
-						return lastCheckpointData, nil
-					}
-
-					return []byte{}, nil
-				},
-				PutCalled: func(key, data []byte) error {
-					putCalled = true
-
-					return nil
-				},
-			},
-			protoMarshaller,
-			maxDelta,
-			100,
-			0,
-		)
-
-		err = bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
-		require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
-
-		require.False(t, putCalled)
-	})
-
 	t.Run("should fail if max delta is reached", func(t *testing.T) {
 		t.Parallel()
 

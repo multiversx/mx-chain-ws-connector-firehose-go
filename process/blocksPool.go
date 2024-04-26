@@ -132,12 +132,6 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shard
 		return nil
 	}
 
-	isSuccesiveIndex := previousIndex+1 == newIndex
-	if !isSuccesiveIndex {
-		return fmt.Errorf("%w: new index should succesive, previous index %d, new index %d",
-			ErrFailedToPutBlockDataToPool, previousIndex, newIndex)
-	}
-
 	if !bp.shouldPutBlockData(previousIndex) {
 		return fmt.Errorf("%w: not within required delta, previous index %d, new index %d",
 			ErrFailedToPutBlockDataToPool, previousIndex, newIndex)

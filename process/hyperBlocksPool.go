@@ -1,6 +1,8 @@
 package process
 
 import (
+	"fmt"
+
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
@@ -43,27 +45,41 @@ func (bp *hyperOutportBlocksPool) Get(key []byte) ([]byte, error) {
 // PutMetaBlock will put the provided meta outport block data to the pool
 func (bp *hyperOutportBlocksPool) PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error {
 	shardID := outportBlock.ShardID
-	currentRound := outportBlock.BlockData.Header.GetRound()
+	currentIndex := outportBlock.BlockData.Header.GetRound()
+
+	previousIndex := outportBlock.HighestFinalBlockNonce
+	isSuccesiveIndex := currentIndex >= previousIndex
+	if !isSuccesiveIndex {
+		return fmt.Errorf("%w: new meta index should succesive, previous index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
+	}
 
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentRound, shardID)
+	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentIndex, shardID)
 }
 
 // PutShardBlock will put the provided shard outport block data to the pool
 func (bp *hyperOutportBlocksPool) PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error {
 	shardID := outportBlock.ShardID
-	currentRound := outportBlock.BlockData.Header.GetRound()
+	currentIndex := outportBlock.BlockData.Header.GetRound()
+
+	previousIndex := outportBlock.HighestFinalBlockNonce
+	isSuccesiveIndex := currentIndex >= previousIndex
+	if !isSuccesiveIndex {
+		return fmt.Errorf("%w: new shard index should succesive, previous index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
+	}
 
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentRound, shardID)
+	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentIndex, shardID)
 }
 
 // GetMetaBlock will return the meta outport block data from the pool
