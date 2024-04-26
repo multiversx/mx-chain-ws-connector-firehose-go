@@ -10,8 +10,8 @@ import (
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"github.com/multiversx/mx-chain-logger-go/file"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/connector"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/connector"
 
 	"github.com/urfave/cli"
 )

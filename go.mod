@@ -1,8 +1,9 @@
-module github.com/multiversx/mx-chain-ws-connector-template-go
+module github.com/multiversx/mx-chain-ws-connector-firehose-go
 
 go 1.20
 
 require (
+	github.com/gogo/protobuf v1.3.2
 	github.com/multiversx/mx-chain-communication-go v1.0.12
 	github.com/multiversx/mx-chain-core-go v1.2.19
 	github.com/multiversx/mx-chain-logger-go v1.0.14
@@ -17,7 +18,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect

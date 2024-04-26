@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/service/hyperOutportBlock"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/service/hyperOutportBlock"
 )
 
 var (

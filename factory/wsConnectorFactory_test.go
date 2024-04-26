@@ -5,7 +5,7 @@ import (
 
 	"github.com/multiversx/mx-chain-communication-go/websocket"
 	"github.com/multiversx/mx-chain-communication-go/websocket/data"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/config"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 	"github.com/stretchr/testify/require"
 )
 

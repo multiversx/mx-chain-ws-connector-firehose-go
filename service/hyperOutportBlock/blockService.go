@@ -12,8 +12,8 @@ import (
 	logger "github.com/multiversx/mx-chain-logger-go"
 	"google.golang.org/grpc"
 
-	data "github.com/multiversx/mx-chain-ws-connector-template-go/data/hyperOutportBlocks"
-	"github.com/multiversx/mx-chain-ws-connector-template-go/process"
+	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 )
 
 var (
