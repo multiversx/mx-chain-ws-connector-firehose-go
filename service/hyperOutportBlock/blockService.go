@@ -56,6 +56,7 @@ func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.Bl
 	return bs.fetchBlockByNonce(req.Nonce)
 }
 
+// HyperOutportBlockStreamByHash will return a stream on which the incoming hyperBlocks are being sent.
 func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByHashServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByHash(req.Hash)
 	if err != nil {
@@ -78,6 +79,7 @@ func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 	return nil
 }
 
+// HyperOutportBlockStreamByNonce will return a stream on which the incoming hyperBlocks are being sent.
 func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByNonceServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByNonce(req.Nonce)
 	if err != nil {
