@@ -86,18 +86,28 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
+	hyperBlockPublisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
 	if err != nil {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
 
-	dataProcessor, err := process.NewDataProcessor(
-		publisher,
-		gogoProtoMarshaller,
+	retryDurationInMiliseconds := int64(1000)
+	publisherHandler, err := process.NewPublisher(
+		hyperBlockPublisher,
 		outportBlocksPool,
 		dataAggregator,
-		outportBlockConverter,
+		retryDurationInMiliseconds,
 		cr.config.DataPool.FirstCommitableBlock,
+	)
+	if err != nil {
+		return fmt.Errorf("cannot create common publisher: %w", err)
+	}
+
+	dataProcessor, err := process.NewDataProcessor(
+		publisherHandler,
+		gogoProtoMarshaller,
+		outportBlocksPool,
+		outportBlockConverter,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)

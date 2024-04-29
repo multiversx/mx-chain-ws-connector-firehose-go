@@ -27,7 +27,7 @@ func (p *ProtoMarshaller) Unmarshal(obj interface{}, buff []byte) error {
 	return proto.Unmarshal(buff, message)
 }
 
-// IsInterfaceNil returns nil if there is no value under the interface.
+// IsInterfaceNil returns true if there is no value under the interface.
 func (p *ProtoMarshaller) IsInterfaceNil() bool {
 	return p == nil
 }

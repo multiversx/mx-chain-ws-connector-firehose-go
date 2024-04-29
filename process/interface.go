@@ -41,8 +41,15 @@ type Writer interface {
 	Close() error
 }
 
-// Publisher defines the behaviour of an aggregated outport block publisher component
+// Publisher defines the behaviour of a common publisher component
 type Publisher interface {
+	PublishBlock(headerHash []byte)
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// HyperBlockPublisher defines the behaviour of an aggregated outport block publisher component
+type HyperBlockPublisher interface {
 	PublishHyperBlock(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error
 	Close() error
 	IsInterfaceNil() bool

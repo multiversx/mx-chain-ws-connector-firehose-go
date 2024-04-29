@@ -12,7 +12,7 @@ import (
 )
 
 type commonPublisher struct {
-	handler              Publisher
+	handler              HyperBlockPublisher
 	outportBlocksPool    HyperBlocksPool
 	dataAggregator       DataAggregator
 	retryDuration        time.Duration
@@ -25,7 +25,7 @@ type commonPublisher struct {
 
 // NewPublisher creates a new publisher component
 func NewPublisher(
-	handler Publisher,
+	handler HyperBlockPublisher,
 	outportBlocksPool HyperBlocksPool,
 	dataAggregator DataAggregator,
 	retryDurationInMiliseconds int64,
@@ -64,6 +64,14 @@ func (cp *commonPublisher) startListener(ctx context.Context) {
 		case headerHash := <-cp.blocksChan:
 			cp.handlePublishEvent(headerHash)
 		}
+	}
+}
+
+// PublishHyperBlock will push aggregated outport block data to the firehose writer
+func (cp *commonPublisher) PublishBlock(headerHash []byte) {
+	select {
+	case cp.blocksChan <- headerHash:
+	case <-cp.closeChan:
 	}
 }
 
@@ -153,18 +161,13 @@ func (cp *commonPublisher) getLastRoundsData(hyperOutportBlock *hyperOutportBloc
 	return checkpoint, nil
 }
 
-// PublishHyperBlock will push aggregated outport block data to the firehose writer
-func (cp *commonPublisher) PublishBlock(headerHash []byte) error {
-	select {
-	case cp.blocksChan <- headerHash:
-	case <-cp.closeChan:
-	}
-
-	return nil
-}
-
 // Close will close the internal writer
 func (cp *commonPublisher) Close() error {
+	err := cp.handler.Close()
+	if err != nil {
+		return err
+	}
+
 	if cp.cancelFunc != nil {
 		cp.cancelFunc()
 	}

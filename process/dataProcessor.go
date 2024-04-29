@@ -106,6 +106,8 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
+	dp.publisher.PublishBlock(headerHash)
+
 	return nil
 }
 

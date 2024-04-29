@@ -9,7 +9,7 @@ import (
 
 // CreatePublisher will return the required Publisher implementation based on whether the hyperOutportBlock are
 // served via gRPC or stdout.
-func CreatePublisher(enableGRPCServer bool, blockContainer process.BlockContainerHandler) (process.Publisher, error) {
+func CreatePublisher(enableGRPCServer bool, blockContainer process.BlockContainerHandler) (process.HyperBlockPublisher, error) {
 	if enableGRPCServer {
 		return process.NewGRPCBlockPublisher(), nil
 	}
