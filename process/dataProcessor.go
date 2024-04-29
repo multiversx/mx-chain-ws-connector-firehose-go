@@ -7,8 +7,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
-	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type dataProcessor struct {
@@ -16,9 +14,7 @@ type dataProcessor struct {
 	operationHandlers     map[string]func(marshalledData []byte) error
 	publisher             Publisher
 	outportBlocksPool     HyperBlocksPool
-	dataAggregator        DataAggregator
 	outportBlockConverter OutportBlockConverter
-	firstCommitableBlock  uint64
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -26,9 +22,7 @@ func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
 	outportBlocksPool HyperBlocksPool,
-	dataAggregator DataAggregator,
 	outportBlockConverter OutportBlockConverter,
-	firstCommitableBlock uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -39,9 +33,6 @@ func NewDataProcessor(
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
 	}
-	if check.IfNil(dataAggregator) {
-		return nil, ErrNilDataAggregator
-	}
 	if check.IfNil(outportBlockConverter) {
 		return nil, ErrNilOutportBlocksConverter
 	}
@@ -50,9 +41,7 @@ func NewDataProcessor(
 		marshaller:            marshaller,
 		publisher:             publisher,
 		outportBlocksPool:     outportBlocksPool,
-		dataAggregator:        dataAggregator,
 		outportBlockConverter: outportBlockConverter,
-		firstCommitableBlock:  firstCommitableBlock,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -111,76 +100,13 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		"round", metaRound,
 		"shardID", metaOutportBlock.ShardID)
 
-	headerHash := outportBlock.BlockData.HeaderHash
+	headerHash := metaOutportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutMetaBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	if metaRound < dp.firstCommitableBlock {
-		// do not try to aggregate or publish hyper outport block
-		// update only blocks pool state
-
-		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", dp.firstCommitableBlock)
-
-		lastCheckpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: metaRound,
-			},
-		}
-		err = dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	hyperOutportBlock, err := dp.dataAggregator.ProcessHyperBlock(metaOutportBlock)
-	if err != nil {
-		return err
-	}
-
-	lastCheckpoint, err := dp.getLastRoundsData(hyperOutportBlock)
-	if err != nil {
-		return fmt.Errorf("failed to get last round data: %w", err)
-	}
-
-	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
-	if err != nil {
-		return fmt.Errorf("failed to publish hyperblock: %w", err)
-	}
-
-	return dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
-}
-
-func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
-	if hyperOutportBlock == nil {
-		return nil, ErrNilHyperOutportBlock
-	}
-	if hyperOutportBlock.MetaOutportBlock == nil {
-		return nil, fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData == nil {
-		return nil, fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData.Header == nil {
-		return nil, fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
-	}
-
-	checkpoint := &data.BlockCheckpoint{
-		LastRounds: make(map[uint32]uint64),
-	}
-
-	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
-	checkpoint.LastRounds[core.MetachainShardId] = metaBlock.GetRound()
-
-	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
-		header := outportBlockData.OutportBlock.BlockData.Header
-		checkpoint.LastRounds[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
-	}
-
-	return checkpoint, nil
+	return nil
 }
 
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
