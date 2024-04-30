@@ -33,7 +33,6 @@ func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) (*gr
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	service, err := hyperOutportBlock.NewService(ctx, blocksHandler)
 	if err != nil {
-		cancelFunc()
 		return nil, fmt.Errorf("failed to create service: %w", err)
 	}
 	data.RegisterBlockStreamServer(s, service)
