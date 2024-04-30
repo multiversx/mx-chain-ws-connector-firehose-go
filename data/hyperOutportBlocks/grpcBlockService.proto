@@ -26,9 +26,12 @@ message BlockNonceStreamRequest {
   google.protobuf.Duration pollingInterval = 2;
 }
 
-service HyperOutportBlockService {
-  rpc HyperOutportBlockStreamByHash(BlockHashStreamRequest) returns (stream proto.HyperOutportBlock) {}
-  rpc HyperOutportBlockStreamByNonce(BlockNonceStreamRequest) returns (stream proto.HyperOutportBlock) {}
-  rpc GetHyperOutportBlockByHash(BlockHashRequest) returns (HyperOutportBlock) {}
-  rpc GetHyperOutportBlockByNonce(BlockNonceRequest) returns (proto.HyperOutportBlock) {}
+service BlockStream {
+  rpc BlocksByHash(BlockHashStreamRequest) returns (stream proto.HyperOutportBlock) {}
+  rpc BlocksByNonce(BlockNonceStreamRequest) returns (stream proto.HyperOutportBlock) {}
+}
+
+service BlockFetch {
+  rpc GetBlockByHash(BlockHashRequest) returns (HyperOutportBlock) {}
+  rpc GetBlockByNonce(BlockNonceRequest) returns (proto.HyperOutportBlock) {}
 }

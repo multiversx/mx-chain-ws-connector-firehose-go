@@ -29,7 +29,7 @@ type Service struct {
 	ctx           context.Context
 	blocksHandler process.GRPCBlocksHandler
 
-	data.UnimplementedHyperOutportBlockServiceServer
+	data.UnimplementedBlockStreamServer
 }
 
 // NewService returns a new instance of the hyperOutportBlock service.
@@ -58,7 +58,7 @@ func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.Bl
 }
 
 // HyperOutportBlockStreamByHash will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByHashServer) error {
+func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.BlockStream_BlocksByHashServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByHash(req.Hash)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 }
 
 // HyperOutportBlockStreamByNonce will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByNonceServer) error {
+func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.BlockStream_BlocksByNonceServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByNonce(req.Nonce)
 	if err != nil {
 		return err

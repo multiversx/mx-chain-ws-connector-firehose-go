@@ -36,7 +36,7 @@ func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) (*gr
 		cancelFunc()
 		return nil, fmt.Errorf("failed to create service: %w", err)
 	}
-	data.RegisterHyperOutportBlockServiceServer(s, service)
+	data.RegisterBlockStreamServer(s, service)
 	reflection.Register(s)
 
 	return &grpcServer{
@@ -72,7 +72,7 @@ func (s *grpcServer) run() error {
 // Close will gracefully stop the grpc server.
 func (s *grpcServer) Close() {
 	if s.cancelFunc != nil {
-	     s.cancelFunc()
+		s.cancelFunc()
 	}
 	s.server.GracefulStop()
 }

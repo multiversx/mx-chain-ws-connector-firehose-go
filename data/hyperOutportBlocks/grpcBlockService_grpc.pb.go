@@ -18,30 +18,28 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// HyperOutportBlockServiceClient is the client API for HyperOutportBlockService service.
+// BlockStreamClient is the client API for BlockStream service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HyperOutportBlockServiceClient interface {
-	HyperOutportBlockStreamByHash(ctx context.Context, in *BlockHashStreamRequest, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamByHashClient, error)
-	HyperOutportBlockStreamByNonce(ctx context.Context, in *BlockNonceStreamRequest, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamByNonceClient, error)
-	GetHyperOutportBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
-	GetHyperOutportBlockByNonce(ctx context.Context, in *BlockNonceRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
+type BlockStreamClient interface {
+	BlocksByHash(ctx context.Context, in *BlockHashStreamRequest, opts ...grpc.CallOption) (BlockStream_BlocksByHashClient, error)
+	BlocksByNonce(ctx context.Context, in *BlockNonceStreamRequest, opts ...grpc.CallOption) (BlockStream_BlocksByNonceClient, error)
 }
 
-type hyperOutportBlockServiceClient struct {
+type blockStreamClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHyperOutportBlockServiceClient(cc grpc.ClientConnInterface) HyperOutportBlockServiceClient {
-	return &hyperOutportBlockServiceClient{cc}
+func NewBlockStreamClient(cc grpc.ClientConnInterface) BlockStreamClient {
+	return &blockStreamClient{cc}
 }
 
-func (c *hyperOutportBlockServiceClient) HyperOutportBlockStreamByHash(ctx context.Context, in *BlockHashStreamRequest, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamByHashClient, error) {
-	stream, err := c.cc.NewStream(ctx, &HyperOutportBlockService_ServiceDesc.Streams[0], "/proto.HyperOutportBlockService/HyperOutportBlockStreamByHash", opts...)
+func (c *blockStreamClient) BlocksByHash(ctx context.Context, in *BlockHashStreamRequest, opts ...grpc.CallOption) (BlockStream_BlocksByHashClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BlockStream_ServiceDesc.Streams[0], "/proto.BlockStream/BlocksByHash", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hyperOutportBlockServiceHyperOutportBlockStreamByHashClient{stream}
+	x := &blockStreamBlocksByHashClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -51,16 +49,16 @@ func (c *hyperOutportBlockServiceClient) HyperOutportBlockStreamByHash(ctx conte
 	return x, nil
 }
 
-type HyperOutportBlockService_HyperOutportBlockStreamByHashClient interface {
+type BlockStream_BlocksByHashClient interface {
 	Recv() (*HyperOutportBlock, error)
 	grpc.ClientStream
 }
 
-type hyperOutportBlockServiceHyperOutportBlockStreamByHashClient struct {
+type blockStreamBlocksByHashClient struct {
 	grpc.ClientStream
 }
 
-func (x *hyperOutportBlockServiceHyperOutportBlockStreamByHashClient) Recv() (*HyperOutportBlock, error) {
+func (x *blockStreamBlocksByHashClient) Recv() (*HyperOutportBlock, error) {
 	m := new(HyperOutportBlock)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -68,12 +66,12 @@ func (x *hyperOutportBlockServiceHyperOutportBlockStreamByHashClient) Recv() (*H
 	return m, nil
 }
 
-func (c *hyperOutportBlockServiceClient) HyperOutportBlockStreamByNonce(ctx context.Context, in *BlockNonceStreamRequest, opts ...grpc.CallOption) (HyperOutportBlockService_HyperOutportBlockStreamByNonceClient, error) {
-	stream, err := c.cc.NewStream(ctx, &HyperOutportBlockService_ServiceDesc.Streams[1], "/proto.HyperOutportBlockService/HyperOutportBlockStreamByNonce", opts...)
+func (c *blockStreamClient) BlocksByNonce(ctx context.Context, in *BlockNonceStreamRequest, opts ...grpc.CallOption) (BlockStream_BlocksByNonceClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BlockStream_ServiceDesc.Streams[1], "/proto.BlockStream/BlocksByNonce", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &hyperOutportBlockServiceHyperOutportBlockStreamByNonceClient{stream}
+	x := &blockStreamBlocksByNonceClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -83,16 +81,16 @@ func (c *hyperOutportBlockServiceClient) HyperOutportBlockStreamByNonce(ctx cont
 	return x, nil
 }
 
-type HyperOutportBlockService_HyperOutportBlockStreamByNonceClient interface {
+type BlockStream_BlocksByNonceClient interface {
 	Recv() (*HyperOutportBlock, error)
 	grpc.ClientStream
 }
 
-type hyperOutportBlockServiceHyperOutportBlockStreamByNonceClient struct {
+type blockStreamBlocksByNonceClient struct {
 	grpc.ClientStream
 }
 
-func (x *hyperOutportBlockServiceHyperOutportBlockStreamByNonceClient) Recv() (*HyperOutportBlock, error) {
+func (x *blockStreamBlocksByNonceClient) Recv() (*HyperOutportBlock, error) {
 	m := new(HyperOutportBlock)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -100,170 +98,220 @@ func (x *hyperOutportBlockServiceHyperOutportBlockStreamByNonceClient) Recv() (*
 	return m, nil
 }
 
-func (c *hyperOutportBlockServiceClient) GetHyperOutportBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error) {
-	out := new(HyperOutportBlock)
-	err := c.cc.Invoke(ctx, "/proto.HyperOutportBlockService/GetHyperOutportBlockByHash", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hyperOutportBlockServiceClient) GetHyperOutportBlockByNonce(ctx context.Context, in *BlockNonceRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error) {
-	out := new(HyperOutportBlock)
-	err := c.cc.Invoke(ctx, "/proto.HyperOutportBlockService/GetHyperOutportBlockByNonce", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// HyperOutportBlockServiceServer is the server API for HyperOutportBlockService service.
-// All implementations must embed UnimplementedHyperOutportBlockServiceServer
+// BlockStreamServer is the server API for BlockStream service.
+// All implementations must embed UnimplementedBlockStreamServer
 // for forward compatibility
-type HyperOutportBlockServiceServer interface {
-	HyperOutportBlockStreamByHash(*BlockHashStreamRequest, HyperOutportBlockService_HyperOutportBlockStreamByHashServer) error
-	HyperOutportBlockStreamByNonce(*BlockNonceStreamRequest, HyperOutportBlockService_HyperOutportBlockStreamByNonceServer) error
-	GetHyperOutportBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error)
-	GetHyperOutportBlockByNonce(context.Context, *BlockNonceRequest) (*HyperOutportBlock, error)
-	mustEmbedUnimplementedHyperOutportBlockServiceServer()
+type BlockStreamServer interface {
+	BlocksByHash(*BlockHashStreamRequest, BlockStream_BlocksByHashServer) error
+	BlocksByNonce(*BlockNonceStreamRequest, BlockStream_BlocksByNonceServer) error
+	mustEmbedUnimplementedBlockStreamServer()
 }
 
-// UnimplementedHyperOutportBlockServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedHyperOutportBlockServiceServer struct {
+// UnimplementedBlockStreamServer must be embedded to have forward compatible implementations.
+type UnimplementedBlockStreamServer struct {
 }
 
-func (UnimplementedHyperOutportBlockServiceServer) HyperOutportBlockStreamByHash(*BlockHashStreamRequest, HyperOutportBlockService_HyperOutportBlockStreamByHashServer) error {
-	return status.Errorf(codes.Unimplemented, "method HyperOutportBlockStreamByHash not implemented")
+func (UnimplementedBlockStreamServer) BlocksByHash(*BlockHashStreamRequest, BlockStream_BlocksByHashServer) error {
+	return status.Errorf(codes.Unimplemented, "method BlocksByHash not implemented")
 }
-func (UnimplementedHyperOutportBlockServiceServer) HyperOutportBlockStreamByNonce(*BlockNonceStreamRequest, HyperOutportBlockService_HyperOutportBlockStreamByNonceServer) error {
-	return status.Errorf(codes.Unimplemented, "method HyperOutportBlockStreamByNonce not implemented")
+func (UnimplementedBlockStreamServer) BlocksByNonce(*BlockNonceStreamRequest, BlockStream_BlocksByNonceServer) error {
+	return status.Errorf(codes.Unimplemented, "method BlocksByNonce not implemented")
 }
-func (UnimplementedHyperOutportBlockServiceServer) GetHyperOutportBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetHyperOutportBlockByHash not implemented")
-}
-func (UnimplementedHyperOutportBlockServiceServer) GetHyperOutportBlockByNonce(context.Context, *BlockNonceRequest) (*HyperOutportBlock, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetHyperOutportBlockByNonce not implemented")
-}
-func (UnimplementedHyperOutportBlockServiceServer) mustEmbedUnimplementedHyperOutportBlockServiceServer() {
-}
+func (UnimplementedBlockStreamServer) mustEmbedUnimplementedBlockStreamServer() {}
 
-// UnsafeHyperOutportBlockServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HyperOutportBlockServiceServer will
+// UnsafeBlockStreamServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to BlockStreamServer will
 // result in compilation errors.
-type UnsafeHyperOutportBlockServiceServer interface {
-	mustEmbedUnimplementedHyperOutportBlockServiceServer()
+type UnsafeBlockStreamServer interface {
+	mustEmbedUnimplementedBlockStreamServer()
 }
 
-func RegisterHyperOutportBlockServiceServer(s grpc.ServiceRegistrar, srv HyperOutportBlockServiceServer) {
-	s.RegisterService(&HyperOutportBlockService_ServiceDesc, srv)
+func RegisterBlockStreamServer(s grpc.ServiceRegistrar, srv BlockStreamServer) {
+	s.RegisterService(&BlockStream_ServiceDesc, srv)
 }
 
-func _HyperOutportBlockService_HyperOutportBlockStreamByHash_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _BlockStream_BlocksByHash_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(BlockHashStreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(HyperOutportBlockServiceServer).HyperOutportBlockStreamByHash(m, &hyperOutportBlockServiceHyperOutportBlockStreamByHashServer{stream})
+	return srv.(BlockStreamServer).BlocksByHash(m, &blockStreamBlocksByHashServer{stream})
 }
 
-type HyperOutportBlockService_HyperOutportBlockStreamByHashServer interface {
+type BlockStream_BlocksByHashServer interface {
 	Send(*HyperOutportBlock) error
 	grpc.ServerStream
 }
 
-type hyperOutportBlockServiceHyperOutportBlockStreamByHashServer struct {
+type blockStreamBlocksByHashServer struct {
 	grpc.ServerStream
 }
 
-func (x *hyperOutportBlockServiceHyperOutportBlockStreamByHashServer) Send(m *HyperOutportBlock) error {
+func (x *blockStreamBlocksByHashServer) Send(m *HyperOutportBlock) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _HyperOutportBlockService_HyperOutportBlockStreamByNonce_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _BlockStream_BlocksByNonce_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(BlockNonceStreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(HyperOutportBlockServiceServer).HyperOutportBlockStreamByNonce(m, &hyperOutportBlockServiceHyperOutportBlockStreamByNonceServer{stream})
+	return srv.(BlockStreamServer).BlocksByNonce(m, &blockStreamBlocksByNonceServer{stream})
 }
 
-type HyperOutportBlockService_HyperOutportBlockStreamByNonceServer interface {
+type BlockStream_BlocksByNonceServer interface {
 	Send(*HyperOutportBlock) error
 	grpc.ServerStream
 }
 
-type hyperOutportBlockServiceHyperOutportBlockStreamByNonceServer struct {
+type blockStreamBlocksByNonceServer struct {
 	grpc.ServerStream
 }
 
-func (x *hyperOutportBlockServiceHyperOutportBlockStreamByNonceServer) Send(m *HyperOutportBlock) error {
+func (x *blockStreamBlocksByNonceServer) Send(m *HyperOutportBlock) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _HyperOutportBlockService_GetHyperOutportBlockByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+// BlockStream_ServiceDesc is the grpc.ServiceDesc for BlockStream service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var BlockStream_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.BlockStream",
+	HandlerType: (*BlockStreamServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "BlocksByHash",
+			Handler:       _BlockStream_BlocksByHash_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "BlocksByNonce",
+			Handler:       _BlockStream_BlocksByNonce_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "data/hyperOutportBlocks/grpcBlockService.proto",
+}
+
+// BlockFetchClient is the client API for BlockFetch service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type BlockFetchClient interface {
+	GetBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
+	GetBlockByNonce(ctx context.Context, in *BlockNonceRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error)
+}
+
+type blockFetchClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewBlockFetchClient(cc grpc.ClientConnInterface) BlockFetchClient {
+	return &blockFetchClient{cc}
+}
+
+func (c *blockFetchClient) GetBlockByHash(ctx context.Context, in *BlockHashRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error) {
+	out := new(HyperOutportBlock)
+	err := c.cc.Invoke(ctx, "/proto.BlockFetch/GetBlockByHash", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *blockFetchClient) GetBlockByNonce(ctx context.Context, in *BlockNonceRequest, opts ...grpc.CallOption) (*HyperOutportBlock, error) {
+	out := new(HyperOutportBlock)
+	err := c.cc.Invoke(ctx, "/proto.BlockFetch/GetBlockByNonce", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BlockFetchServer is the server API for BlockFetch service.
+// All implementations must embed UnimplementedBlockFetchServer
+// for forward compatibility
+type BlockFetchServer interface {
+	GetBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error)
+	GetBlockByNonce(context.Context, *BlockNonceRequest) (*HyperOutportBlock, error)
+	mustEmbedUnimplementedBlockFetchServer()
+}
+
+// UnimplementedBlockFetchServer must be embedded to have forward compatible implementations.
+type UnimplementedBlockFetchServer struct {
+}
+
+func (UnimplementedBlockFetchServer) GetBlockByHash(context.Context, *BlockHashRequest) (*HyperOutportBlock, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockByHash not implemented")
+}
+func (UnimplementedBlockFetchServer) GetBlockByNonce(context.Context, *BlockNonceRequest) (*HyperOutportBlock, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockByNonce not implemented")
+}
+func (UnimplementedBlockFetchServer) mustEmbedUnimplementedBlockFetchServer() {}
+
+// UnsafeBlockFetchServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to BlockFetchServer will
+// result in compilation errors.
+type UnsafeBlockFetchServer interface {
+	mustEmbedUnimplementedBlockFetchServer()
+}
+
+func RegisterBlockFetchServer(s grpc.ServiceRegistrar, srv BlockFetchServer) {
+	s.RegisterService(&BlockFetch_ServiceDesc, srv)
+}
+
+func _BlockFetch_GetBlockByHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BlockHashRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HyperOutportBlockServiceServer).GetHyperOutportBlockByHash(ctx, in)
+		return srv.(BlockFetchServer).GetBlockByHash(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.HyperOutportBlockService/GetHyperOutportBlockByHash",
+		FullMethod: "/proto.BlockFetch/GetBlockByHash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HyperOutportBlockServiceServer).GetHyperOutportBlockByHash(ctx, req.(*BlockHashRequest))
+		return srv.(BlockFetchServer).GetBlockByHash(ctx, req.(*BlockHashRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HyperOutportBlockService_GetHyperOutportBlockByNonce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BlockFetch_GetBlockByNonce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BlockNonceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HyperOutportBlockServiceServer).GetHyperOutportBlockByNonce(ctx, in)
+		return srv.(BlockFetchServer).GetBlockByNonce(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.HyperOutportBlockService/GetHyperOutportBlockByNonce",
+		FullMethod: "/proto.BlockFetch/GetBlockByNonce",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HyperOutportBlockServiceServer).GetHyperOutportBlockByNonce(ctx, req.(*BlockNonceRequest))
+		return srv.(BlockFetchServer).GetBlockByNonce(ctx, req.(*BlockNonceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// HyperOutportBlockService_ServiceDesc is the grpc.ServiceDesc for HyperOutportBlockService service.
+// BlockFetch_ServiceDesc is the grpc.ServiceDesc for BlockFetch service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var HyperOutportBlockService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.HyperOutportBlockService",
-	HandlerType: (*HyperOutportBlockServiceServer)(nil),
+var BlockFetch_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.BlockFetch",
+	HandlerType: (*BlockFetchServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetHyperOutportBlockByHash",
-			Handler:    _HyperOutportBlockService_GetHyperOutportBlockByHash_Handler,
+			MethodName: "GetBlockByHash",
+			Handler:    _BlockFetch_GetBlockByHash_Handler,
 		},
 		{
-			MethodName: "GetHyperOutportBlockByNonce",
-			Handler:    _HyperOutportBlockService_GetHyperOutportBlockByNonce_Handler,
+			MethodName: "GetBlockByNonce",
+			Handler:    _BlockFetch_GetBlockByNonce_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "HyperOutportBlockStreamByHash",
-			Handler:       _HyperOutportBlockService_HyperOutportBlockStreamByHash_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "HyperOutportBlockStreamByNonce",
-			Handler:       _HyperOutportBlockService_HyperOutportBlockStreamByNonce_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "data/hyperOutportBlocks/grpcBlockService.proto",
 }

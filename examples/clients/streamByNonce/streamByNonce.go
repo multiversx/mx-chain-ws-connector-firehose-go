@@ -29,10 +29,10 @@ func main() {
 	defer cc.Close()
 
 	// create the client
-	client := data.NewHyperOutportBlockServiceClient(cc)
+	client := data.NewBlockStreamClient(cc)
 
 	// initiate streaming.
-	stream, err := client.HyperOutportBlockStreamByNonce(context.Background(), &data.BlockNonceStreamRequest{
+	stream, err := client.BlocksByNonce(context.Background(), &data.BlockNonceStreamRequest{
 		Nonce:           0,
 		PollingInterval: durationpb.New(time.Second),
 	})
