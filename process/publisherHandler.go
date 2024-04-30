@@ -82,7 +82,6 @@ func (ph *publisherHandler) PublishBlock(headerHash []byte) error {
 }
 
 func (ph *publisherHandler) handlePublishEvent(headerHash []byte) {
-	// TODO: evaluate max retries and exit failure
 	for {
 		err := ph.handlerHyperOutportBlock(headerHash)
 		if err == nil {
@@ -99,6 +98,7 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	if err != nil {
 		return err
 	}
+
 	err = checkMetaOutportBlockHeader(metaOutportBlock)
 	if err != nil {
 		return err
