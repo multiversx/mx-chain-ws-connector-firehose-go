@@ -92,7 +92,7 @@ func (cr *connectorRunner) Run() error {
 	}
 
 	retryDurationInMiliseconds := int64(1000)
-	publisherHandler, err := process.NewPublisher(
+	publisherHandler, err := process.NewPublisherHandler(
 		hyperBlockPublisher,
 		outportBlocksPool,
 		dataAggregator,

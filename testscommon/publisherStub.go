@@ -1,17 +1,15 @@
 package testscommon
 
-import data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
-
 // PublisherStub -
 type PublisherStub struct {
-	PublishHyperBlockCalled func(hyperOutportBlock *data.HyperOutportBlock) error
-	CloseCalled             func() error
+	PublishBlockCalled func(headerHash []byte) error
+	CloseCalled        func() error
 }
 
-// PublishHyperBlock -
-func (p *PublisherStub) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
-	if p.PublishHyperBlockCalled != nil {
-		return p.PublishHyperBlockCalled(hyperOutportBlock)
+// PublishBlock -
+func (p *PublisherStub) PublishBlock(headerHash []byte) error {
+	if p.PublishBlockCalled != nil {
+		return p.PublishBlockCalled(headerHash)
 	}
 
 	return nil

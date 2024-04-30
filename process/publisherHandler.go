@@ -11,7 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-type commonPublisher struct {
+type publisherHandler struct {
 	handler              HyperBlockPublisher
 	outportBlocksPool    HyperBlocksPool
 	dataAggregator       DataAggregator
@@ -23,93 +23,101 @@ type commonPublisher struct {
 	closeChan  chan struct{}
 }
 
-// NewPublisher creates a new publisher component
-func NewPublisher(
+// NewPublisherHandler creates a new publisher handler component
+func NewPublisherHandler(
 	handler HyperBlockPublisher,
 	outportBlocksPool HyperBlocksPool,
 	dataAggregator DataAggregator,
 	retryDurationInMiliseconds int64,
 	firstCommitableBlock uint64,
-) (*commonPublisher, error) {
-	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilHyperBlocksPool
-	}
+) (*publisherHandler, error) {
 	if check.IfNil(handler) {
 		return nil, ErrNilPublisher
+	}
+	if check.IfNil(outportBlocksPool) {
+		return nil, ErrNilHyperBlocksPool
 	}
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
 
-	cp := &commonPublisher{
+	ph := &publisherHandler{
 		handler:              handler,
+		outportBlocksPool:    outportBlocksPool,
+		dataAggregator:       dataAggregator,
 		retryDuration:        time.Duration(retryDurationInMiliseconds) * time.Millisecond,
 		firstCommitableBlock: firstCommitableBlock,
+		blocksChan:           make(chan []byte),
+		closeChan:            make(chan struct{}),
 	}
 
 	var ctx context.Context
-	ctx, cp.cancelFunc = context.WithCancel(context.Background())
+	ctx, ph.cancelFunc = context.WithCancel(context.Background())
 
-	go cp.startListener(ctx)
+	go ph.startListener(ctx)
 
-	return cp, nil
+	return ph, nil
 }
 
-func (cp *commonPublisher) startListener(ctx context.Context) {
+func (ph *publisherHandler) startListener(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Debug("closing commonPublisher listener")
 			return
-		case headerHash := <-cp.blocksChan:
-			cp.handlePublishEvent(headerHash)
+		case headerHash := <-ph.blocksChan:
+			ph.handlePublishEvent(headerHash)
 		}
 	}
 }
 
 // PublishHyperBlock will push aggregated outport block data to the firehose writer
-func (cp *commonPublisher) PublishBlock(headerHash []byte) error {
+func (ph *publisherHandler) PublishBlock(headerHash []byte) error {
 	select {
-	case cp.blocksChan <- headerHash:
-	case <-cp.closeChan:
+	case ph.blocksChan <- headerHash:
+	case <-ph.closeChan:
 	}
 
 	return nil
 }
 
-func (cp *commonPublisher) handlePublishEvent(headerHash []byte) {
+func (ph *publisherHandler) handlePublishEvent(headerHash []byte) {
 	// TODO: evaluate max retries and exit failure
 	for {
-		err := cp.handlerHyperOutportBlock(headerHash)
+		err := ph.handlerHyperOutportBlock(headerHash)
 		if err == nil {
 			return
 		}
 
 		log.Error("failed to publish hyper block event", "error", err)
-		time.Sleep(cp.retryDuration)
+		time.Sleep(ph.retryDuration)
 	}
 }
 
-func (cp *commonPublisher) handlerHyperOutportBlock(headerHash []byte) error {
-	metaOutportBlock, err := cp.outportBlocksPool.GetMetaBlock(headerHash)
+func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
+	metaOutportBlock, err := ph.outportBlocksPool.GetMetaBlock(headerHash)
 	if err != nil {
-		return nil
+		return err
+	}
+	err = checkMetaOutportBlockHeader(metaOutportBlock)
+	if err != nil {
+		return err
 	}
 
 	metaRound := metaOutportBlock.BlockData.Header.GetRound()
 
-	if metaRound < cp.firstCommitableBlock {
+	if metaRound < ph.firstCommitableBlock {
 		// do not try to aggregate or publish hyper outport block
 		// update only blocks pool state
 
-		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", cp.firstCommitableBlock)
+		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", ph.firstCommitableBlock)
 
 		lastCheckpoint := &data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
 				core.MetachainShardId: metaRound,
 			},
 		}
-		err := cp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+		err := ph.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 		if err != nil {
 			return err
 		}
@@ -117,36 +125,31 @@ func (cp *commonPublisher) handlerHyperOutportBlock(headerHash []byte) error {
 		return nil
 	}
 
-	hyperOutportBlock, err := cp.dataAggregator.ProcessHyperBlock(metaOutportBlock)
+	hyperOutportBlock, err := ph.dataAggregator.ProcessHyperBlock(metaOutportBlock)
 	if err != nil {
 		return err
 	}
 
-	lastCheckpoint, err := cp.getLastRoundsData(hyperOutportBlock)
+	lastCheckpoint, err := ph.getLastRoundsData(hyperOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to get last round data: %w", err)
 	}
 
-	err = cp.handler.PublishHyperBlock(hyperOutportBlock)
+	err = ph.handler.PublishHyperBlock(hyperOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to publish hyperblock: %w", err)
 	}
 
-	return cp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+	return ph.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 }
 
-func (cp *commonPublisher) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+func (ph *publisherHandler) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
 	if hyperOutportBlock == nil {
 		return nil, ErrNilHyperOutportBlock
 	}
-	if hyperOutportBlock.MetaOutportBlock == nil {
-		return nil, fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData == nil {
-		return nil, fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData.Header == nil {
-		return nil, fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
+	err := checkMetaOutportBlockHeader(hyperOutportBlock.MetaOutportBlock)
+	if err != nil {
+		return nil, err
 	}
 
 	checkpoint := &data.BlockCheckpoint{
@@ -164,23 +167,37 @@ func (cp *commonPublisher) getLastRoundsData(hyperOutportBlock *hyperOutportBloc
 	return checkpoint, nil
 }
 
+func checkMetaOutportBlockHeader(metaOutportBlock *hyperOutportBlocks.MetaOutportBlock) error {
+	if metaOutportBlock == nil {
+		return fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
+	}
+	if metaOutportBlock.BlockData == nil {
+		return fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
+	}
+	if metaOutportBlock.BlockData.Header == nil {
+		return fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
+	}
+
+	return nil
+}
+
 // Close will close the internal writer
-func (cp *commonPublisher) Close() error {
-	err := cp.handler.Close()
+func (ph *publisherHandler) Close() error {
+	err := ph.handler.Close()
 	if err != nil {
 		return err
 	}
 
-	if cp.cancelFunc != nil {
-		cp.cancelFunc()
+	if ph.cancelFunc != nil {
+		ph.cancelFunc()
 	}
 
-	close(cp.closeChan)
+	close(ph.closeChan)
 
 	return nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface
-func (cp *commonPublisher) IsInterfaceNil() bool {
-	return cp == nil
+func (ph *publisherHandler) IsInterfaceNil() bool {
+	return ph == nil
 }
