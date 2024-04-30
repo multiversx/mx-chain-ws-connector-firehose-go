@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -36,14 +35,16 @@ type Service struct {
 // NewService returns a new instance of the hyperOutportBlock service.
 func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*Service, error) {
 	if check.IfNil(blocksHandler) {
-		return nil, process.ErrNilOutportBlockData
+		return nil, process.ErrNilGRPCBlocksHandler
 	}
-
 	if ctx == nil {
 		return nil, process.ErrNilBlockServiceContext
 	}
 
-	return &Service{ctx: ctx, blocksHandler: blocksHandler}, nil
+	return &Service{
+		ctx:           ctx,
+		blocksHandler: blocksHandler,
+	}, nil
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.
@@ -126,11 +127,7 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 
 // TODO: add more unit tests.
 func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
-	// parse the provided pollingInterval
-	timeDuration, err := protoToTimeDuration(pollingInterval)
-	if err != nil {
-		return fmt.Errorf("invalid polling interval: %w", err)
-	}
+	timeDuration := pollingInterval.AsDuration()
 	ticker := time.NewTicker(timeDuration)
 
 	for {
@@ -160,10 +157,4 @@ func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *dura
 			nonce++
 		}
 	}
-}
-
-func protoToTimeDuration(protoDur *duration.Duration) (time.Duration, error) {
-	seconds := strconv.FormatInt(protoDur.GetSeconds(), 10)    // Convert int64 to string
-	nanos := strconv.FormatInt(int64(protoDur.GetNanos()), 10) // Convert int32 to string
-	return time.ParseDuration(seconds + "s" + nanos + "ns")
 }
