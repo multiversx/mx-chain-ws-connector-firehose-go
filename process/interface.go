@@ -43,7 +43,7 @@ type Writer interface {
 
 // Publisher defines the behaviour of a common publisher component
 type Publisher interface {
-	PublishBlock(headerHash []byte)
+	PublishBlock(headerHash []byte) error
 	Close() error
 	IsInterfaceNil() bool
 }

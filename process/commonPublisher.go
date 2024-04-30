@@ -68,14 +68,17 @@ func (cp *commonPublisher) startListener(ctx context.Context) {
 }
 
 // PublishHyperBlock will push aggregated outport block data to the firehose writer
-func (cp *commonPublisher) PublishBlock(headerHash []byte) {
+func (cp *commonPublisher) PublishBlock(headerHash []byte) error {
 	select {
 	case cp.blocksChan <- headerHash:
 	case <-cp.closeChan:
 	}
+
+	return nil
 }
 
 func (cp *commonPublisher) handlePublishEvent(headerHash []byte) {
+	// TODO: evaluate max retries and exit failure
 	for {
 		err := cp.handlerHyperOutportBlock(headerHash)
 		if err == nil {

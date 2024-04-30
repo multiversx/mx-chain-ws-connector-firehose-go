@@ -88,9 +88,7 @@ func TestNewDataProcessor(t *testing.T) {
 			nil,
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilPublisher, err)
@@ -103,9 +101,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.PublisherStub{},
 			nil,
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilMarshaller, err)
@@ -118,27 +114,10 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
 			nil,
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilHyperBlocksPool, err)
-	})
-
-	t.Run("nil data aggregator", func(t *testing.T) {
-		t.Parallel()
-
-		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
-			&testscommon.MarshallerStub{},
-			&testscommon.HyperBlocksPoolStub{},
-			nil,
-			&testscommon.OutportBlockConverterStub{},
-			0,
-		)
-		require.Nil(t, dp)
-		require.Equal(t, process.ErrNilDataAggregator, err)
 	})
 
 	t.Run("nil block converter", func(t *testing.T) {
@@ -148,9 +127,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			nil,
-			0,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilOutportBlocksConverter, err)
@@ -163,9 +140,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.PublisherStub{},
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 		require.Nil(t, err)
 		require.False(t, dp.IsInterfaceNil())
@@ -179,9 +154,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 		&testscommon.PublisherStub{},
 		&testscommon.MarshallerStub{},
 		&testscommon.HyperBlocksPoolStub{},
-		&testscommon.DataAggregatorStub{},
 		&testscommon.OutportBlockConverterStub{},
-		0,
 	)
 
 	require.Nil(t, dp.ProcessPayload([]byte("payload"), "random topic", 1))
@@ -204,9 +177,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.PublisherStub{},
 			gogoProtoMarshaller,
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 
 		err := dp.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
@@ -227,9 +198,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			&testscommon.PublisherStub{},
 			protoMarshaller,
 			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
 			&testscommon.OutportBlockConverterStub{},
-			0,
 		)
 
 		err := dp.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
@@ -252,9 +221,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 					return nil
 				},
 			},
-			&testscommon.DataAggregatorStub{},
 			outportBlockConverter,
-			0,
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -276,22 +243,20 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		publishWasCalled := false
 		dp, _ := process.NewDataProcessor(
 			&testscommon.PublisherStub{
-				PublishHyperBlockCalled: func(hyperOutportBlock *data.HyperOutportBlock) error {
+				PublishBlockCalled: func(headerHash []byte) error {
 					publishWasCalled = true
 					return nil
 				},
 			},
 			gogoProtoMarshaller,
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{
-				ProcessHyperBlockCalled: func(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
-					return &data.HyperOutportBlock{
-						MetaOutportBlock: metaOutportBlock,
-					}, nil
+			&testscommon.HyperBlocksPoolStub{
+				PutMetaBlockCalled: func(hash []byte, outportBlock *data.MetaOutportBlock) error {
+					require.Equal(t, metaOutportBlock, outportBlock)
+
+					return nil
 				},
 			},
 			outportBlockConverter,
-			0,
 		)
 
 		err = dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -314,9 +279,7 @@ func TestDataProcessor_Close(t *testing.T) {
 		},
 		&testscommon.MarshallerStub{},
 		&testscommon.HyperBlocksPoolStub{},
-		&testscommon.DataAggregatorStub{},
 		&testscommon.OutportBlockConverterStub{},
-		0,
 	)
 	require.Nil(t, err)
 
