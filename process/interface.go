@@ -107,4 +107,5 @@ type GRPCBlocksHandler interface {
 type GRPCServer interface {
 	Start()
 	Close()
+	IsInterfaceNil() bool
 }

@@ -58,3 +58,6 @@ var ErrNilDataPool = errors.New("nil data pool provided")
 
 // ErrNilHyperOutportBlock signals that a nil hyper outport block  was provided
 var ErrNilHyperOutportBlock = errors.New("nil hyper outport block provided")
+
+// ErrNilBlockServiceContext signal that the context provided for the block service is nil.
+var ErrNilBlockServiceContext = errors.New("nil block service context")
