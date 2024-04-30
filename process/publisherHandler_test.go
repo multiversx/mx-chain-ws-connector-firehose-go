@@ -1,6 +1,7 @@
 package process_test
 
 import (
+	"sync/atomic"
 	"testing"
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
@@ -88,7 +89,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		hyperOutportBlock := createHyperOutportBlock()
 		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
-		updateMetaStateCalled := false
+		updateMetaStateCalled := uint32(0)
 		ph, err := process.NewPublisherHandler(
 			&testscommon.HyperBlockPublisherStub{},
 			&testscommon.HyperBlocksPoolStub{
@@ -96,7 +97,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 					return metaOutportBlock, nil
 				},
 				UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
-					updateMetaStateCalled = true
+					atomic.AddUint32(&updateMetaStateCalled, 1)
 					return nil
 				},
 			},
@@ -114,7 +115,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		err = ph.PublishBlock([]byte("headerHash"))
 		require.Nil(t, err)
 
-		require.True(t, updateMetaStateCalled)
+		require.GreaterOrEqual(t, atomic.LoadUint32(&updateMetaStateCalled), uint32(1))
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -127,7 +128,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		hyperOutportBlock := createHyperOutportBlock()
 		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
-		updateMetaStateCalled := false
+		updateMetaStateCalled := uint32(0)
 		ph, err := process.NewPublisherHandler(
 			&testscommon.HyperBlockPublisherStub{},
 			&testscommon.HyperBlocksPoolStub{
@@ -135,7 +136,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 					return metaOutportBlock, nil
 				},
 				UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
-					updateMetaStateCalled = true
+					atomic.AddUint32(&updateMetaStateCalled, 1)
 					return nil
 				},
 			},
@@ -152,7 +153,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		err = ph.PublishBlock([]byte("headerHash"))
 		require.Nil(t, err)
 
-		require.True(t, updateMetaStateCalled)
+		require.GreaterOrEqual(t, atomic.LoadUint32(&updateMetaStateCalled), uint32(1))
 	})
 }
 
