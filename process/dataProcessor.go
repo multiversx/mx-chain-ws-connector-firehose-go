@@ -107,7 +107,10 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	dp.publisher.PublishBlock(headerHash)
+	err = dp.publisher.PublishBlock(headerHash)
+	if err != nil {
+		return fmt.Errorf("failed to publish block: %w", err)
+	}
 
 	return nil
 }
@@ -142,11 +145,10 @@ func (dp *dataProcessor) revertBlock(marshalledData []byte) error {
 		return err
 	}
 
-	if blockData == nil {
-		return fmt.Errorf("nil block data")
+	err = dp.publisher.PublishBlock(blockData.HeaderHash)
+	if err != nil {
+		return fmt.Errorf("failed to publish block: %w", err)
 	}
-
-	dp.publisher.PublishBlock(blockData.HeaderHash)
 
 	return nil
 }
