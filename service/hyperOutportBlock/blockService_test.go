@@ -24,7 +24,7 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 			}, nil
 		},
 	}
-	bs, err := NewService(&handler)
+	bs, err := NewService(context.TODO(), &handler)
 	require.NoError(t, err)
 	hash := "437a88d24178dea0060afd74f1282c23b34947cf96adcf71cdfa0f3f7bdcdc73"
 	expectedHash, _ := hex.DecodeString(hash)
@@ -46,7 +46,7 @@ func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 			}, nil
 		},
 	}
-	bs, err := NewService(&handler)
+	bs, err := NewService(context.TODO(), &handler)
 	require.NoError(t, err)
 	nonce := uint64(1)
 	outportBlock, err := bs.GetHyperOutportBlockByNonce(context.Background(), &data.BlockNonceRequest{Nonce: nonce})

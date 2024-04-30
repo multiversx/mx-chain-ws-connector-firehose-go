@@ -52,3 +52,6 @@ var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
 
 // ErrFailedToPutBlockDataToPool signals that it cannot put block data into pool
 var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")
+
+// ErrNilBlockServiceContext signal that the context provided for the block service is nil.
+var ErrNilBlockServiceContext = errors.New("nil block service context")

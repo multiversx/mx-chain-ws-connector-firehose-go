@@ -41,14 +41,14 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 	// marshal with gogo, since the outportBlock is gogo protobuf (coming from the node).
 	bytes, err := o.gogoProtoMarshalizer.Marshal(outportBlock)
 	if err != nil {
-		return nil, fmt.Errorf("marshal shard outport block error: %s", err)
+		return nil, fmt.Errorf("marshal shard outport block error: %w", err)
 	}
 
 	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}
 	// unmarshall into google protobuf. This is the proto that will be later consumed.
 	err = o.protoMarshalizer.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal shard outport block error: %s", err)
+		return nil, fmt.Errorf("unmarshal shard outport block error: %w", err)
 	}
 
 	// ShardHeaderV1 marshals 1 to 1 into *data.ShardOutportBlock.

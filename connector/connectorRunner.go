@@ -64,12 +64,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	server, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
-	if err != nil {
-		return err
-	}
-
-	publisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
+	publisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, outportBlocksPool, dataAggregator)
 	if err != nil {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
@@ -93,7 +88,7 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = outportBlocksPool.Close()
+	err = publisher.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -103,8 +98,9 @@ func (cr *connectorRunner) Run() error {
 		log.Error(err.Error())
 	}
 
-	if server != nil {
-		server.Close()
+	err = outportBlocksPool.Close()
+	if err != nil {
+		log.Error(err.Error())
 	}
 
 	return err

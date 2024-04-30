@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	defaultConfigPath = "./config/config.toml"
+	defaultConfigPath = "config/config.toml"
 )
 
 var (
