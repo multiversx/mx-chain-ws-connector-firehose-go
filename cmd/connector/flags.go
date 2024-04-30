@@ -38,7 +38,7 @@ var (
 	dbMode = cli.StringFlag{
 		Name:  "db-mode",
 		Usage: "Option for specifying db mode. Available options: `full-persister`, `import-db`, `optimized-persister`",
-		Value: "full-persister",
+		Value: "optimized-persister",
 	}
 
 	enableGrpcServer = cli.BoolFlag{

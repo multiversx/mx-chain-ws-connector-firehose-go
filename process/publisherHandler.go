@@ -28,7 +28,7 @@ func NewPublisherHandler(
 	handler HyperBlockPublisher,
 	outportBlocksPool HyperBlocksPool,
 	dataAggregator DataAggregator,
-	retryDurationInMiliseconds int64,
+	retryDurationInMiliseconds uint64,
 	firstCommitableBlock uint64,
 ) (*publisherHandler, error) {
 	if check.IfNil(handler) {

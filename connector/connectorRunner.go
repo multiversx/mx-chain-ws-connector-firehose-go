@@ -91,12 +91,11 @@ func (cr *connectorRunner) Run() error {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
 
-	retryDurationInMiliseconds := int64(1000)
 	publisherHandler, err := process.NewPublisherHandler(
 		hyperBlockPublisher,
 		outportBlocksPool,
 		dataAggregator,
-		retryDurationInMiliseconds,
+		cr.config.Publisher.RetryDurationInMiliseconds,
 		cr.config.DataPool.FirstCommitableBlock,
 	)
 	if err != nil {
