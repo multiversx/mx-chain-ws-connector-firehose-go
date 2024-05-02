@@ -125,7 +125,6 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 	return hyperOutportBlock, nil
 }
 
-// TODO: add more unit tests.
 func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
 	timeDuration := pollingInterval.AsDuration()
 	ticker := time.NewTicker(timeDuration)
@@ -134,23 +133,21 @@ func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *dura
 		select {
 		case <-bs.ctx.Done():
 			ticker.Stop()
-			return bs.ctx.Err()
+			return nil
 
 		case <-stream.Context().Done():
 			ticker.Stop()
-			return stream.Context().Err()
+			return nil
 
 		case <-ticker.C:
-			// fetch the next hyperBlock.
 			hb, fetchErr := bs.blocksHandler.FetchHyperBlockByNonce(nonce)
 			if fetchErr != nil {
-				// if the hyperBlock was not found. try again in the next iteration.
 				log.Error(fmt.Errorf("failed to retrieve hyper block with nonce '%d': %w", nonce, fetchErr).Error())
 				continue
 			}
 
-			// if found, send it on the stream.
-			if sendErr := stream.Send(hb); sendErr != nil {
+			sendErr := stream.Send(hb)
+			if sendErr != nil {
 				return fmt.Errorf("failed to send hyperOutportBlock: %w", sendErr)
 			}
 
