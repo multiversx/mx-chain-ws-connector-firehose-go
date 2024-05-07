@@ -29,14 +29,6 @@ func TestNewService(t *testing.T) {
 		require.Equal(t, process.ErrNilGRPCBlocksHandler, err)
 	})
 
-	t.Run("nil context", func(t *testing.T) {
-		t.Parallel()
-
-		bs, err := hyperOutportBlock.NewService(nil, &testscommon.GRPCBlocksHandlerStub{})
-		require.Nil(t, bs)
-		require.Equal(t, process.ErrNilBlockServiceContext, err)
-	})
-
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
