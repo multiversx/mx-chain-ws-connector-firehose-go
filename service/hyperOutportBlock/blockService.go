@@ -24,8 +24,8 @@ type serverStream interface {
 	Send(*data.HyperOutportBlock) error
 }
 
-// Service returns blocks based on nonce or hash from cache.
-type Service struct {
+// service returns blocks based on nonce or hash from cache.
+type service struct {
 	ctx           context.Context
 	blocksHandler process.GRPCBlocksHandler
 
@@ -33,7 +33,7 @@ type Service struct {
 }
 
 // NewService returns a new instance of the hyperOutportBlock service.
-func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*Service, error) {
+func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*service, error) {
 	if check.IfNil(blocksHandler) {
 		return nil, process.ErrNilGRPCBlocksHandler
 	}
@@ -41,24 +41,24 @@ func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*
 		return nil, process.ErrNilBlockServiceContext
 	}
 
-	return &Service{
+	return &service{
 		ctx:           ctx,
 		blocksHandler: blocksHandler,
 	}, nil
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.
-func (bs *Service) GetHyperOutportBlockByHash(ctx context.Context, req *data.BlockHashRequest) (*data.HyperOutportBlock, error) {
+func (bs *service) GetHyperOutportBlockByHash(ctx context.Context, req *data.BlockHashRequest) (*data.HyperOutportBlock, error) {
 	return bs.fetchBlockByHash(req.Hash)
 }
 
 // GetHyperOutportBlockByNonce retrieve a block from the nonce.
-func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.BlockNonceRequest) (*data.HyperOutportBlock, error) {
+func (bs *service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.BlockNonceRequest) (*data.HyperOutportBlock, error) {
 	return bs.fetchBlockByNonce(req.Nonce)
 }
 
 // HyperOutportBlockStreamByHash will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.BlockStream_BlocksByHashServer) error {
+func (bs *service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.BlockStream_BlocksByHashServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByHash(req.Hash)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 }
 
 // HyperOutportBlockStreamByNonce will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.BlockStream_BlocksByNonceServer) error {
+func (bs *service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.BlockStream_BlocksByNonceServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByNonce(req.Nonce)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequ
 	return nil
 }
 
-func (bs *Service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
+func (bs *service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
 	hyperOutportBlock, err := bs.blocksHandler.FetchHyperBlockByNonce(nonce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve hyperOutportBlock with nonce '%d': %w", nonce, err)
@@ -112,7 +112,7 @@ func (bs *Service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, err
 	return hyperOutportBlock, nil
 }
 
-func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error) {
+func (bs *service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error) {
 	decodeString, err := hex.DecodeString(hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode hex string: %w", err)
@@ -125,7 +125,7 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 	return hyperOutportBlock, nil
 }
 
-func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
+func (bs *service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
 	timeDuration := pollingInterval.AsDuration()
 	ticker := time.NewTicker(timeDuration)
 
