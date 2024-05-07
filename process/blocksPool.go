@@ -63,7 +63,7 @@ func (bp *blocksPool) initIndexesMap() {
 
 	log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
 
-	indexesMap := make(map[uint32]uint64)
+	indexesMap := make(map[uint32]uint64, len(lastCheckpoint.LastRounds))
 	for shardID, round := range lastCheckpoint.LastRounds {
 		indexesMap[shardID] = round
 	}
