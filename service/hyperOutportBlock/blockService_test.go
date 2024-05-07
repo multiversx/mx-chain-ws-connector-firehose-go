@@ -62,8 +62,10 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 	}
 	bs, err := hyperOutportBlock.NewService(context.TODO(), &handler)
 	require.NoError(t, err)
+
 	hash := "437a88d24178dea0060afd74f1282c23b34947cf96adcf71cdfa0f3f7bdcdc73"
 	expectedHash, _ := hex.DecodeString(hash)
+
 	outportBlock, err := bs.GetHyperOutportBlockByHash(context.Background(), &data.BlockHashRequest{Hash: hash})
 	require.NoError(t, err, "couldn't get block by hash")
 	require.Equal(t, expectedHash, outportBlock.MetaOutportBlock.BlockData.HeaderHash)
@@ -85,6 +87,7 @@ func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 	}
 	bs, err := hyperOutportBlock.NewService(context.TODO(), &handler)
 	require.NoError(t, err)
+
 	nonce := uint64(1)
 	outportBlock, err := bs.GetHyperOutportBlockByNonce(context.Background(), &data.BlockNonceRequest{Nonce: nonce})
 	require.NoError(t, err, "couldn't get block by nonce")
@@ -181,4 +184,117 @@ func TestService_Poll(t *testing.T) {
 
 		require.GreaterOrEqual(t, atomic.LoadUint32(&sendBlockCalled), uint32(1))
 	})
+}
+
+func TestService_HyperOutportBlocksStreamByHash(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	handler := testscommon.GRPCBlocksHandlerStub{
+		FetchHyperBlockByHashCalled: func(hash []byte) (*data.HyperOutportBlock, error) {
+			return &data.HyperOutportBlock{
+				MetaOutportBlock: &data.MetaOutportBlock{
+					BlockData: &data.MetaBlockData{
+						HeaderHash: hash,
+						Header:     &data.MetaHeader{},
+					},
+				},
+			}, nil
+		},
+	}
+	bs, err := hyperOutportBlock.NewService(ctx, &handler)
+	require.NoError(t, err)
+
+	streamRequest := &data.BlockHashStreamRequest{
+		Hash: hex.EncodeToString([]byte("hash1")),
+		PollingInterval: &durationpb.Duration{
+			Seconds: 1,
+		},
+	}
+
+	wasCalled := uint32(0)
+	stream := &testscommon.GRPCServerStreamStub{
+		SendCalled: func(block *data.HyperOutportBlock) error {
+			atomic.AddUint32(&wasCalled, 1)
+			return nil
+		},
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		err = bs.HyperOutportBlockStreamByHash(streamRequest, stream)
+		require.Nil(t, err)
+
+		wg.Done()
+	}()
+
+	time.Sleep(1100 * time.Millisecond)
+
+	cancel()
+
+	wg.Wait()
+
+	require.GreaterOrEqual(t, atomic.LoadUint32(&wasCalled), uint32(2))
+}
+
+func TestService_HyperOutportBlocksStreamByNonce(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	nonce := uint64(10)
+
+	handler := testscommon.GRPCBlocksHandlerStub{
+		FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
+			return &data.HyperOutportBlock{
+				MetaOutportBlock: &data.MetaOutportBlock{
+					BlockData: &data.MetaBlockData{
+						Header: &data.MetaHeader{
+							Nonce: nonce,
+						},
+					},
+				},
+			}, nil
+		},
+	}
+	bs, err := hyperOutportBlock.NewService(ctx, &handler)
+	require.NoError(t, err)
+
+	streamRequest := &data.BlockNonceStreamRequest{
+		Nonce: nonce,
+		PollingInterval: &durationpb.Duration{
+			Seconds: 1,
+		},
+	}
+
+	wasCalled := uint32(0)
+	stream := &testscommon.GRPCServerStreamStub{
+		SendCalled: func(block *data.HyperOutportBlock) error {
+			atomic.AddUint32(&wasCalled, 1)
+			return nil
+		},
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		err = bs.HyperOutportBlockStreamByNonce(streamRequest, stream)
+		require.Nil(t, err)
+
+		wg.Done()
+	}()
+
+	time.Sleep(1100 * time.Millisecond)
+
+	cancel()
+
+	wg.Wait()
+
+	require.GreaterOrEqual(t, atomic.LoadUint32(&wasCalled), uint32(2))
 }

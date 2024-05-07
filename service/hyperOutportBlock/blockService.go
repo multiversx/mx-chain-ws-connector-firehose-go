@@ -70,7 +70,7 @@ func (bs *service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 		return fmt.Errorf("failed to send stream to hyperOutportBlock: %w", err)
 	}
 
-	// start polling and retrieve the starting nonce
+	// TODO: handle nil checks (already handled in another PR)
 	nonce := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Nonce + 1
 	err = bs.poll(nonce, stream, req.PollingInterval)
 	if err != nil {
@@ -93,7 +93,7 @@ func (bs *service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequ
 		return fmt.Errorf("failed to send stream to hyperOutportBlock: %w", err)
 	}
 
-	// start polling and retrieve the starting nonce
+	// TODO: handle nil checks (already handled in another PR)
 	nonce := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Nonce + 1
 	err = bs.poll(nonce, stream, req.PollingInterval)
 	if err != nil {
@@ -127,6 +127,9 @@ func (bs *service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 
 func (bs *service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
 	timeDuration := pollingInterval.AsDuration()
+	if timeDuration <= 0 {
+		return fmt.Errorf("block nonce stream request: invalid polling interval provided")
+	}
 	ticker := time.NewTicker(timeDuration)
 
 	for {
