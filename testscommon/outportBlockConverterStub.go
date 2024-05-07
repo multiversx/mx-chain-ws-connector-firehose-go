@@ -5,14 +5,14 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-// OutportBlockConverterStub -
-type OutportBlockConverterStub struct {
+// OutportBlockConverterMock -
+type OutportBlockConverterMock struct {
 	HandleShardOutportBlockCalled func(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error)
 	HandleMetaOutportBlockCalled  func(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error)
 }
 
 // HandleShardOutportBlock -
-func (o *OutportBlockConverterStub) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error) {
+func (o *OutportBlockConverterMock) HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error) {
 	if o.HandleShardOutportBlockCalled != nil {
 		return o.HandleShardOutportBlockCalled(outportBlock)
 	}
@@ -21,7 +21,7 @@ func (o *OutportBlockConverterStub) HandleShardOutportBlock(outportBlock *outpor
 }
 
 // HandleMetaOutportBlock -
-func (o *OutportBlockConverterStub) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error) {
+func (o *OutportBlockConverterMock) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error) {
 	if o.HandleMetaOutportBlockCalled != nil {
 		return o.HandleMetaOutportBlockCalled(outportBlock)
 	}
@@ -30,6 +30,6 @@ func (o *OutportBlockConverterStub) HandleMetaOutportBlock(outportBlock *outport
 }
 
 // IsInterfaceNil -
-func (o *OutportBlockConverterStub) IsInterfaceNil() bool {
+func (o *OutportBlockConverterMock) IsInterfaceNil() bool {
 	return o == nil
 }

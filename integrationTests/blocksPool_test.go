@@ -59,7 +59,14 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	blocksPool, err := process.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow, cfg.DataPool.FirstCommitableBlock)
+	argsBlocksPool := process.BlocksPoolArgs{
+		Storer:               blocksStorer,
+		Marshaller:           marshaller,
+		MaxDelta:             cfg.DataPool.MaxDelta,
+		CleanupInterval:      cfg.DataPool.PruningWindow,
+		FirstCommitableBlock: cfg.DataPool.FirstCommitableBlock,
+	}
+	blocksPool, err := process.NewBlocksPool(argsBlocksPool)
 	require.Nil(t, err)
 
 	shardID := uint32(2)
@@ -89,9 +96,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
-	if pruningWindow <= maxDelta {
-		require.Fail(t, "prunning window should be bigger than delta")
-	}
+	require.True(t, pruningWindow > maxDelta, "prunning window should be bigger than delta")
 
 	for i := maxDelta + 1; i < pruningWindow; i++ {
 		checkpoint := &data.BlockCheckpoint{
@@ -187,7 +192,14 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	blocksPool, err := process.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow, cfg.DataPool.FirstCommitableBlock)
+	argsBlocksPool := process.BlocksPoolArgs{
+		Storer:               blocksStorer,
+		Marshaller:           marshaller,
+		MaxDelta:             cfg.DataPool.MaxDelta,
+		CleanupInterval:      cfg.DataPool.PruningWindow,
+		FirstCommitableBlock: cfg.DataPool.FirstCommitableBlock,
+	}
+	blocksPool, err := process.NewBlocksPool(argsBlocksPool)
 	require.Nil(t, err)
 
 	shardID := uint32(2)
@@ -216,9 +228,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
-	if pruningWindow <= maxDelta {
-		require.Fail(t, "prunning window should be bigger than delta")
-	}
+	require.True(t, pruningWindow > maxDelta, "prunning window should be bigger than delta")
 
 	for i := maxDelta + 1; i < pruningWindow; i++ {
 		checkpoint := &data.BlockCheckpoint{

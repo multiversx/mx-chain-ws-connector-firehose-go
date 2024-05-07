@@ -25,7 +25,7 @@ func TestNewDataAggregator(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolStub{})
+		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolMock{})
 		require.Nil(t, err)
 		require.False(t, da.IsInterfaceNil())
 	})
@@ -37,7 +37,7 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 	t.Run("invalid outport block provided", func(t *testing.T) {
 		t.Parallel()
 
-		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolStub{})
+		da, err := process.NewDataAggregator(&testscommon.HyperBlocksPoolMock{})
 		require.Nil(t, err)
 
 		invalidOutportBlock := createMetaOutportBlock()
@@ -56,7 +56,7 @@ func TestDataAggregator_ProcessHyperBlock(t *testing.T) {
 		shardOutportBlock := createShardOutportBlock()
 		shardOutportBlock.BlockData.HeaderHash = headerHash
 
-		blocksPoolStub := &testscommon.HyperBlocksPoolStub{
+		blocksPoolStub := &testscommon.HyperBlocksPoolMock{
 			GetShardBlockCalled: func(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
 				return shardOutportBlock, nil
 			},

@@ -4,8 +4,8 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 )
 
-// BlocksPoolStub -
-type BlocksPoolStub struct {
+// BlocksPoolMock -
+type BlocksPoolMock struct {
 	PutCalled             func(hash []byte, data []byte) error
 	GetCalled             func(hash []byte) ([]byte, error)
 	PutBlockCalled        func(hash []byte, value []byte, round uint64, shardID uint32) error
@@ -14,7 +14,7 @@ type BlocksPoolStub struct {
 }
 
 // Put -
-func (b *BlocksPoolStub) Put(hash []byte, data []byte) error {
+func (b *BlocksPoolMock) Put(hash []byte, data []byte) error {
 	if b.PutCalled != nil {
 		return b.PutCalled(hash, data)
 	}
@@ -23,7 +23,7 @@ func (b *BlocksPoolStub) Put(hash []byte, data []byte) error {
 }
 
 // Get -
-func (b *BlocksPoolStub) Get(hash []byte) ([]byte, error) {
+func (b *BlocksPoolMock) Get(hash []byte) ([]byte, error) {
 	if b.GetCalled != nil {
 		return b.GetCalled(hash)
 	}
@@ -32,7 +32,7 @@ func (b *BlocksPoolStub) Get(hash []byte) ([]byte, error) {
 }
 
 // PutBlock -
-func (b *BlocksPoolStub) PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error {
+func (b *BlocksPoolMock) PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error {
 	if b.PutBlockCalled != nil {
 		return b.PutBlockCalled(hash, value, round, shardID)
 	}
@@ -41,7 +41,7 @@ func (b *BlocksPoolStub) PutBlock(hash []byte, value []byte, round uint64, shard
 }
 
 // UpdateMetaState -
-func (b *BlocksPoolStub) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+func (b *BlocksPoolMock) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	if b.UpdateMetaStateCalled != nil {
 		return b.UpdateMetaStateCalled(checkpoint)
 	}
@@ -50,7 +50,7 @@ func (b *BlocksPoolStub) UpdateMetaState(checkpoint *data.BlockCheckpoint) error
 }
 
 // Close -
-func (b *BlocksPoolStub) Close() error {
+func (b *BlocksPoolMock) Close() error {
 	if b.CloseCalled != nil {
 		return b.CloseCalled()
 	}
@@ -59,6 +59,6 @@ func (b *BlocksPoolStub) Close() error {
 }
 
 // IsInterfaceNil -
-func (b *BlocksPoolStub) IsInterfaceNil() bool {
+func (b *BlocksPoolMock) IsInterfaceNil() bool {
 	return b == nil
 }

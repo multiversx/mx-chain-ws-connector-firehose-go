@@ -7,8 +7,13 @@ import (
 )
 
 const (
-	FirehosePrefix    = firehosePrefix
-	BlockPrefix       = blockPrefix
+	// FirehosePrefix -
+	FirehosePrefix = firehosePrefix
+
+	// BlockPrefix -
+	BlockPrefix = blockPrefix
+
+	// MetaCheckpointKey -
 	MetaCheckpointKey = metaCheckpointKey
 )
 

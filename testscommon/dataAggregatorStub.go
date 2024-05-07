@@ -4,13 +4,13 @@ import (
 	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-// DataAggregatorStub -
-type DataAggregatorStub struct {
+// DataAggregatorMock -
+type DataAggregatorMock struct {
 	ProcessHyperBlockCalled func(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error)
 }
 
 // ProcessHyperBlock -
-func (d *DataAggregatorStub) ProcessHyperBlock(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
+func (d *DataAggregatorMock) ProcessHyperBlock(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
 	if d.ProcessHyperBlockCalled != nil {
 		return d.ProcessHyperBlockCalled(outportBlock)
 	}
@@ -19,6 +19,6 @@ func (d *DataAggregatorStub) ProcessHyperBlock(outportBlock *data.MetaOutportBlo
 }
 
 // IsInterfaceNil -
-func (d *DataAggregatorStub) IsInterfaceNil() bool {
+func (d *DataAggregatorMock) IsInterfaceNil() bool {
 	return d == nil
 }

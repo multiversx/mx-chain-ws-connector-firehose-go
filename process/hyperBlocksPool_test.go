@@ -24,11 +24,11 @@ func TestNewHyperBlocksPool(t *testing.T) {
 		require.Equal(t, process.ErrNilDataPool, err)
 	})
 
-	t.Run("should work", func(t *testing.T) {
+	t.Run("nil marshaller", func(t *testing.T) {
 		t.Parallel()
 
 		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
+			&testscommon.BlocksPoolMock{},
 			nil,
 		)
 		require.Nil(t, hbp)
@@ -39,7 +39,7 @@ func TestNewHyperBlocksPool(t *testing.T) {
 		t.Parallel()
 
 		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
+			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
 		require.Nil(t, err)
@@ -47,14 +47,14 @@ func TestNewHyperBlocksPool(t *testing.T) {
 	})
 }
 
-func TestHyperOutportBlocksPool_PutMetaBlock(t *testing.T) {
+func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should fail if no succesive index", func(t *testing.T) {
 		t.Parallel()
 
 		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
+			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
 		require.Nil(t, err)
@@ -71,15 +71,15 @@ func TestHyperOutportBlocksPool_PutMetaBlock(t *testing.T) {
 			HighestFinalBlockNonce: currentIndex + 1,
 		}
 
-		err = hbp.PutMetaBlock([]byte("hash1"), outportBlock)
+		err = hbp.PutBlock([]byte("hash1"), outportBlock)
 		require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 	})
 
-	t.Run("should work", func(t *testing.T) {
+	t.Run("should work for meta block", func(t *testing.T) {
 		t.Parallel()
 
 		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
+			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
 		require.Nil(t, err)
@@ -96,61 +96,98 @@ func TestHyperOutportBlocksPool_PutMetaBlock(t *testing.T) {
 			HighestFinalBlockNonce: currentIndex - 1,
 		}
 
-		err = hbp.PutMetaBlock([]byte("hash1"), outportBlock)
+		err = hbp.PutBlock([]byte("hash1"), outportBlock)
+		require.Nil(t, err)
+	})
+
+	t.Run("should work for shard block", func(t *testing.T) {
+		t.Parallel()
+
+		hbp, err := process.NewHyperOutportBlocksPool(
+			&testscommon.BlocksPoolMock{},
+			&testscommon.MarshallerMock{},
+		)
+		require.Nil(t, err)
+
+		currentIndex := uint64(10)
+
+		outportBlock := &hyperOutportBlocks.ShardOutportBlock{
+			ShardID: 1,
+			BlockData: &hyperOutportBlocks.BlockData{
+				Header: &hyperOutportBlocks.Header{
+					Round: currentIndex,
+				},
+			},
+			HighestFinalBlockNonce: currentIndex - 1,
+		}
+
+		err = hbp.PutBlock([]byte("hash1"), outportBlock)
 		require.Nil(t, err)
 	})
 }
 
-func TestHyperOutportBlocksPool_PutShardBlock(t *testing.T) {
+func TestHyperOutportBlocksPool_GetMetaBlock(t *testing.T) {
 	t.Parallel()
 
-	t.Run("should fail if no succesive index", func(t *testing.T) {
-		t.Parallel()
+	marshaller := &testscommon.MarshallerMock{}
 
-		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
-			&testscommon.MarshallerMock{},
-		)
-		require.Nil(t, err)
+	currentIndex := uint64(10)
 
-		currentIndex := uint64(10)
-
-		outportBlock := &hyperOutportBlocks.ShardOutportBlock{
-			ShardID: 1,
-			BlockData: &hyperOutportBlocks.BlockData{
-				Header: &hyperOutportBlocks.Header{
-					Round: currentIndex,
-				},
+	outportBlock := &hyperOutportBlocks.MetaOutportBlock{
+		ShardID: 1,
+		BlockData: &hyperOutportBlocks.MetaBlockData{
+			Header: &hyperOutportBlocks.MetaHeader{
+				Round: currentIndex,
 			},
-			HighestFinalBlockNonce: currentIndex + 1,
-		}
+		},
+		HighestFinalBlockNonce: currentIndex - 1,
+	}
+	outportBlockBytes, _ := marshaller.Marshal(outportBlock)
 
-		err = hbp.PutShardBlock([]byte("hash1"), outportBlock)
-		require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
-	})
-
-	t.Run("should work", func(t *testing.T) {
-		t.Parallel()
-
-		hbp, err := process.NewHyperOutportBlocksPool(
-			&testscommon.BlocksPoolStub{},
-			&testscommon.MarshallerMock{},
-		)
-		require.Nil(t, err)
-
-		currentIndex := uint64(10)
-
-		outportBlock := &hyperOutportBlocks.ShardOutportBlock{
-			ShardID: 1,
-			BlockData: &hyperOutportBlocks.BlockData{
-				Header: &hyperOutportBlocks.Header{
-					Round: currentIndex,
-				},
+	hbp, err := process.NewHyperOutportBlocksPool(
+		&testscommon.BlocksPoolMock{
+			GetCalled: func(hash []byte) ([]byte, error) {
+				return outportBlockBytes, nil
 			},
-			HighestFinalBlockNonce: currentIndex - 1,
-		}
+		},
+		marshaller,
+	)
+	require.Nil(t, err)
 
-		err = hbp.PutShardBlock([]byte("hash1"), outportBlock)
-		require.Nil(t, err)
-	})
+	ret, err := hbp.GetMetaBlock([]byte("hash1"))
+	require.Nil(t, err)
+	require.Equal(t, outportBlock, ret)
+}
+
+func TestHyperOutportBlocksPool_GetShardBlock(t *testing.T) {
+	t.Parallel()
+
+	marshaller := &testscommon.MarshallerMock{}
+
+	currentIndex := uint64(10)
+
+	outportBlock := &hyperOutportBlocks.ShardOutportBlock{
+		ShardID: 1,
+		BlockData: &hyperOutportBlocks.BlockData{
+			Header: &hyperOutportBlocks.Header{
+				Round: currentIndex,
+			},
+		},
+		HighestFinalBlockNonce: currentIndex - 1,
+	}
+	outportBlockBytes, _ := marshaller.Marshal(outportBlock)
+
+	hbp, err := process.NewHyperOutportBlocksPool(
+		&testscommon.BlocksPoolMock{
+			GetCalled: func(hash []byte) ([]byte, error) {
+				return outportBlockBytes, nil
+			},
+		},
+		marshaller,
+	)
+	require.Nil(t, err)
+
+	ret, err := hbp.GetShardBlock([]byte("hash1"))
+	require.Nil(t, err)
+	require.Equal(t, outportBlock, ret)
 }

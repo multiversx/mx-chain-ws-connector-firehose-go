@@ -45,7 +45,10 @@ func (cr *connectorRunner) Run() error {
 	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
 	protoMarshaller := &process.ProtoMarshaller{}
 
-	outportBlockConverter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	outportBlockConverter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	if err != nil {
+		return err
+	}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -57,13 +60,14 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	baseBlocksPool, err := process.NewBlocksPool(
-		blocksStorer,
-		protoMarshaller,
-		cr.config.DataPool.MaxDelta,
-		cr.config.DataPool.PruningWindow,
-		cr.config.DataPool.FirstCommitableBlock,
-	)
+	argsBlocksPool := process.BlocksPoolArgs{
+		Storer:               blocksStorer,
+		Marshaller:           protoMarshaller,
+		MaxDelta:             cr.config.DataPool.MaxDelta,
+		CleanupInterval:      cr.config.DataPool.PruningWindow,
+		FirstCommitableBlock: cr.config.DataPool.FirstCommitableBlock,
+	}
+	baseBlocksPool, err := process.NewBlocksPool(argsBlocksPool)
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 	t.Parallel()
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByHashCalled: func(hash []byte) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{
@@ -35,7 +35,7 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 
 func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 	t.Parallel()
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{

@@ -25,27 +25,29 @@ type blocksPool struct {
 	mutMap             sync.RWMutex
 }
 
+type BlocksPoolArgs struct {
+	Storer               PruningStorer
+	Marshaller           marshal.Marshalizer
+	MaxDelta             uint64
+	CleanupInterval      uint64
+	FirstCommitableBlock uint64
+}
+
 // NewBlocksPool will create a new blocks pool instance
-func NewBlocksPool(
-	storer PruningStorer,
-	marshaller marshal.Marshalizer,
-	maxDelta uint64,
-	cleanupInterval uint64,
-	firstCommitableBlock uint64,
-) (*blocksPool, error) {
-	if check.IfNil(storer) {
+func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
+	if check.IfNil(args.Storer) {
 		return nil, ErrNilPruningStorer
 	}
-	if check.IfNil(marshaller) {
+	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshaller
 	}
 
 	bp := &blocksPool{
-		storer:               storer,
-		marshaller:           marshaller,
-		maxDelta:             maxDelta,
-		cleanupInterval:      cleanupInterval,
-		firstCommitableBlock: firstCommitableBlock,
+		storer:               args.Storer,
+		marshaller:           args.Marshaller,
+		maxDelta:             args.MaxDelta,
+		cleanupInterval:      args.CleanupInterval,
+		firstCommitableBlock: args.FirstCommitableBlock,
 	}
 
 	bp.initIndexesMap()
@@ -118,10 +120,7 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shard
 	previousIndex, ok := bp.previousIndexesMap[shardID]
 	if !ok {
 		bp.previousIndexesMap[shardID] = initIndex
-		previousIndex = initIndex
-	}
 
-	if previousIndex == initIndex {
 		err := bp.storer.Put(hash, value)
 		if err != nil {
 			return err

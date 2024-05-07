@@ -87,9 +87,9 @@ func TestNewDataProcessor(t *testing.T) {
 		dp, err := process.NewDataProcessor(
 			nil,
 			&testscommon.MarshallerStub{},
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -100,11 +100,11 @@ func TestNewDataProcessor(t *testing.T) {
 		t.Parallel()
 
 		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			nil,
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -115,11 +115,11 @@ func TestNewDataProcessor(t *testing.T) {
 		t.Parallel()
 
 		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
-			&testscommon.MarshallerStub{},
+			&testscommon.PublisherMock{},
+			&testscommon.MarshallerMock{},
 			nil,
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -130,11 +130,11 @@ func TestNewDataProcessor(t *testing.T) {
 		t.Parallel()
 
 		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			&testscommon.MarshallerStub{},
-			&testscommon.HyperBlocksPoolStub{},
+			&testscommon.HyperBlocksPoolMock{},
 			nil,
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 		require.Nil(t, dp)
@@ -145,10 +145,10 @@ func TestNewDataProcessor(t *testing.T) {
 		t.Parallel()
 
 		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			&testscommon.MarshallerStub{},
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
 			nil,
 			0,
 		)
@@ -160,11 +160,11 @@ func TestNewDataProcessor(t *testing.T) {
 		t.Parallel()
 
 		dp, err := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			&testscommon.MarshallerStub{},
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 		require.Nil(t, err)
@@ -176,11 +176,11 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 	t.Parallel()
 
 	dp, _ := process.NewDataProcessor(
-		&testscommon.PublisherStub{},
+		&testscommon.PublisherMock{},
 		&testscommon.MarshallerStub{},
-		&testscommon.HyperBlocksPoolStub{},
-		&testscommon.DataAggregatorStub{},
-		&testscommon.OutportBlockConverterStub{},
+		&testscommon.HyperBlocksPoolMock{},
+		&testscommon.DataAggregatorMock{},
+		&testscommon.OutportBlockConverterMock{},
 		0,
 	)
 
@@ -195,17 +195,18 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 func TestDataProcessor_ProcessPayload(t *testing.T) {
 	t.Parallel()
 
-	outportBlockConverter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	outportBlockConverter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
 
 	t.Run("nil outport block data, should return error", func(t *testing.T) {
 		t.Parallel()
 
 		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			gogoProtoMarshaller,
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 
@@ -224,11 +225,11 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		t.Parallel()
 
 		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			protoMarshaller,
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{},
-			&testscommon.OutportBlockConverterStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{},
+			&testscommon.OutportBlockConverterMock{},
 			0,
 		)
 
@@ -244,15 +245,15 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 
 		putBlockWasCalled := false
 		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{},
+			&testscommon.PublisherMock{},
 			gogoProtoMarshaller,
-			&testscommon.HyperBlocksPoolStub{
-				PutShardBlockCalled: func(hash []byte, outportBlock *data.ShardOutportBlock) error {
+			&testscommon.HyperBlocksPoolMock{
+				PutBlockCalled: func(hash []byte, outportBlock process.OutportBlockHandler) error {
 					putBlockWasCalled = true
 					return nil
 				},
 			},
-			&testscommon.DataAggregatorStub{},
+			&testscommon.DataAggregatorMock{},
 			outportBlockConverter,
 			0,
 		)
@@ -275,15 +276,15 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 
 		publishWasCalled := false
 		dp, _ := process.NewDataProcessor(
-			&testscommon.PublisherStub{
+			&testscommon.PublisherMock{
 				PublishHyperBlockCalled: func(hyperOutportBlock *data.HyperOutportBlock) error {
 					publishWasCalled = true
 					return nil
 				},
 			},
 			gogoProtoMarshaller,
-			&testscommon.HyperBlocksPoolStub{},
-			&testscommon.DataAggregatorStub{
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.DataAggregatorMock{
 				ProcessHyperBlockCalled: func(outportBlock *data.MetaOutportBlock) (*data.HyperOutportBlock, error) {
 					return &data.HyperOutportBlock{
 						MetaOutportBlock: metaOutportBlock,
@@ -307,15 +308,15 @@ func TestDataProcessor_Close(t *testing.T) {
 	expectedErr := errors.New("expected error")
 
 	dp, err := process.NewDataProcessor(
-		&testscommon.PublisherStub{
+		&testscommon.PublisherMock{
 			CloseCalled: func() error {
 				return expectedErr
 			},
 		},
 		&testscommon.MarshallerStub{},
-		&testscommon.HyperBlocksPoolStub{},
-		&testscommon.DataAggregatorStub{},
-		&testscommon.OutportBlockConverterStub{},
+		&testscommon.HyperBlocksPoolMock{},
+		&testscommon.DataAggregatorMock{},
+		&testscommon.OutportBlockConverterMock{},
 		0,
 	)
 	require.Nil(t, err)

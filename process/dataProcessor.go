@@ -93,7 +93,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
 	metaOutportBlock, err := dp.outportBlockConverter.HandleMetaOutportBlock(outportBlock)
 	if err != nil {
-		return fmt.Errorf("failed to convert outportBlock to metaOutportBlock: %w", err)
+		return fmt.Errorf("failed to handle metaOutportBlock: %w", err)
 	}
 	if metaOutportBlock == nil {
 		return ErrInvalidOutportBlock
@@ -112,7 +112,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		"shardID", metaOutportBlock.ShardID)
 
 	headerHash := outportBlock.BlockData.HeaderHash
-	err = dp.outportBlocksPool.PutMetaBlock(headerHash, metaOutportBlock)
+	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
@@ -186,7 +186,7 @@ func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
 	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlock(outportBlock)
 	if err != nil {
-		return fmt.Errorf("failed to convert outportBlock to shardOutportBlock: %w", err)
+		return fmt.Errorf("failed to handle shardOutportBlock: %w", err)
 	}
 	if shardOutportBlock.BlockData == nil {
 		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)
@@ -203,7 +203,7 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 
 	headerHash := outportBlock.BlockData.HeaderHash
 
-	return dp.outportBlocksPool.PutShardBlock(headerHash, shardOutportBlock)
+	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
 }
 
 // Close will close the internal writer

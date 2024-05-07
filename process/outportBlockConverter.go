@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	coreData "github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
@@ -24,12 +25,19 @@ type outportBlockConverter struct {
 func NewOutportBlockConverter(
 	gogoMarshaller marshal.Marshalizer,
 	protoMarshaller marshal.Marshalizer,
-) *outportBlockConverter {
+) (*outportBlockConverter, error) {
+	if check.IfNil(gogoMarshaller) {
+		return nil, fmt.Errorf("%w: for gogo proto marshaller", ErrNilMarshaller)
+	}
+	if check.IfNil(protoMarshaller) {
+		return nil, fmt.Errorf("%w: for proto marshaller", ErrNilMarshaller)
+	}
+
 	return &outportBlockConverter{
 		gogoProtoMarshaller: gogoMarshaller,
 		protoMarshaller:     protoMarshaller,
 		bigIntCaster:        coreData.BigIntCaster{},
-	}
+	}, nil
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.

@@ -54,10 +54,10 @@ var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
 var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")
 
 // ErrNilDataPool signals that a nil data pool was provided
-var ErrNilDataPool = errors.New("nil data pool provided")
+var ErrNilDataPool = errors.New("nil data pool")
 
-// ErrNilHyperOutportBlock signals that a nil hyper outport block  was provided
-var ErrNilHyperOutportBlock = errors.New("nil hyper outport block provided")
+// ErrNilHyperOutportBlock signals that a nil hyper outport block was provided
+var ErrNilHyperOutportBlock = errors.New("nil hyper outport block")
 
 // ErrNilBlockServiceContext signal that the context provided for the block service is nil.
 var ErrNilBlockServiceContext = errors.New("nil block service context")

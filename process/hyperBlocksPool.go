@@ -32,7 +32,7 @@ func NewHyperOutportBlocksPool(
 	}, nil
 }
 
-// UpdateMetaState will triiger meta state update from base data pool
+// UpdateMetaState will triger meta state update from base data pool
 func (bp *hyperOutportBlocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	return bp.dataPool.UpdateMetaState(checkpoint)
 }
@@ -42,35 +42,18 @@ func (bp *hyperOutportBlocksPool) Get(key []byte) ([]byte, error) {
 	return bp.dataPool.Get(key)
 }
 
-// PutMetaBlock will put the provided meta outport block data to the pool
-func (bp *hyperOutportBlocksPool) PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error {
-	shardID := outportBlock.ShardID
-	currentIndex := outportBlock.BlockData.Header.GetRound()
-
-	previousIndex := outportBlock.HighestFinalBlockNonce
-	isSuccesiveIndex := currentIndex >= previousIndex
-	if !isSuccesiveIndex {
-		return fmt.Errorf("%w: new meta index should succesive, previous index %d, new index %d",
-			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
-	}
-
-	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
+// PutBlock will put the provided outport block data to the pool
+func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
+	shardID := outportBlock.GetShardID()
+	currentIndex, err := outportBlock.GetHeaderRound()
 	if err != nil {
 		return err
 	}
 
-	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentIndex, shardID)
-}
-
-// PutShardBlock will put the provided shard outport block data to the pool
-func (bp *hyperOutportBlocksPool) PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error {
-	shardID := outportBlock.ShardID
-	currentIndex := outportBlock.BlockData.Header.GetRound()
-
-	previousIndex := outportBlock.HighestFinalBlockNonce
-	isSuccesiveIndex := currentIndex >= previousIndex
-	if !isSuccesiveIndex {
-		return fmt.Errorf("%w: new shard index should succesive, previous index %d, new index %d",
+	previousIndex := outportBlock.GetHighestFinalBlockNonce()
+	isHigherIndex := currentIndex >= previousIndex
+	if !isHigherIndex {
+		return fmt.Errorf("%w: new meta index should be higher than previous, previous index %d, new index %d",
 			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
 	}
 

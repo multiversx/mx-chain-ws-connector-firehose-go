@@ -69,8 +69,7 @@ type DataPool interface {
 // able to handle meta and shard outport blocks data
 type HyperBlocksPool interface {
 	Get(key []byte) ([]byte, error)
-	PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error
-	PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error
+	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
 	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
@@ -108,4 +107,11 @@ type GRPCServer interface {
 	Start()
 	Close()
 	IsInterfaceNil() bool
+}
+
+// OutportBlockHandler defines the behaviour of an outport block component used in blocks pool
+type OutportBlockHandler interface {
+	GetHeaderRound() (uint64, error)
+	GetHighestFinalBlockNonce() uint64
+	GetShardID() uint32
 }

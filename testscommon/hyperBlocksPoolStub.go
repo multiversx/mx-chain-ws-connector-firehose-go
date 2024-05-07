@@ -3,13 +3,13 @@ package testscommon
 import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 )
 
-// HyperBlocksPoolStub -
-type HyperBlocksPoolStub struct {
+// HyperBlocksPoolMock -
+type HyperBlocksPoolMock struct {
 	GetCalled             func(hash []byte) ([]byte, error)
-	PutMetaBlockCalled    func(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error
-	PutShardBlockCalled   func(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error
+	PutBlockCalled        func(hash []byte, outportBlock process.OutportBlockHandler) error
 	GetMetaBlockCalled    func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlockCalled   func(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
 	UpdateMetaStateCalled func(checkpoint *data.BlockCheckpoint) error
@@ -17,7 +17,7 @@ type HyperBlocksPoolStub struct {
 }
 
 // Get -
-func (b *HyperBlocksPoolStub) Get(hash []byte) ([]byte, error) {
+func (b *HyperBlocksPoolMock) Get(hash []byte) ([]byte, error) {
 	if b.GetCalled != nil {
 		return b.GetCalled(hash)
 	}
@@ -25,26 +25,17 @@ func (b *HyperBlocksPoolStub) Get(hash []byte) ([]byte, error) {
 	return []byte{}, nil
 }
 
-// PutMetaBlock -
-func (b *HyperBlocksPoolStub) PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error {
-	if b.PutMetaBlockCalled != nil {
-		return b.PutMetaBlockCalled(hash, outportBlock)
-	}
-
-	return nil
-}
-
-// PutShardBlock -
-func (b *HyperBlocksPoolStub) PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error {
-	if b.PutShardBlockCalled != nil {
-		return b.PutShardBlockCalled(hash, outportBlock)
+// PutBlock -
+func (b *HyperBlocksPoolMock) PutBlock(hash []byte, outportBlock process.OutportBlockHandler) error {
+	if b.PutBlockCalled != nil {
+		return b.PutBlockCalled(hash, outportBlock)
 	}
 
 	return nil
 }
 
 // GetMetaBlock -
-func (b *HyperBlocksPoolStub) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+func (b *HyperBlocksPoolMock) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
 	if b.GetMetaBlockCalled != nil {
 		return b.GetMetaBlockCalled(hash)
 	}
@@ -53,7 +44,7 @@ func (b *HyperBlocksPoolStub) GetMetaBlock(hash []byte) (*hyperOutportBlocks.Met
 }
 
 // GetShardBlock -
-func (b *HyperBlocksPoolStub) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
+func (b *HyperBlocksPoolMock) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
 	if b.GetShardBlockCalled != nil {
 		return b.GetShardBlockCalled(hash)
 	}
@@ -62,7 +53,7 @@ func (b *HyperBlocksPoolStub) GetShardBlock(hash []byte) (*hyperOutportBlocks.Sh
 }
 
 // UpdateMetaState -
-func (b *HyperBlocksPoolStub) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+func (b *HyperBlocksPoolMock) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	if b.UpdateMetaStateCalled != nil {
 		return b.UpdateMetaStateCalled(checkpoint)
 	}
@@ -71,7 +62,7 @@ func (b *HyperBlocksPoolStub) UpdateMetaState(checkpoint *data.BlockCheckpoint) 
 }
 
 // Close -
-func (b *HyperBlocksPoolStub) Close() error {
+func (b *HyperBlocksPoolMock) Close() error {
 	if b.CloseCalled != nil {
 		return b.CloseCalled()
 	}
@@ -80,6 +71,6 @@ func (b *HyperBlocksPoolStub) Close() error {
 }
 
 // IsInterfaceNil -
-func (b *HyperBlocksPoolStub) IsInterfaceNil() bool {
+func (b *HyperBlocksPoolMock) IsInterfaceNil() bool {
 	return b == nil
 }

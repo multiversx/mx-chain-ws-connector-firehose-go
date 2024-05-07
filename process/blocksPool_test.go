@@ -15,19 +15,25 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/testscommon"
 )
 
+func createDefaultBlocksPoolArgs() process.BlocksPoolArgs {
+	return process.BlocksPoolArgs{
+		Storer:               &testscommon.PruningStorerMock{},
+		Marshaller:           gogoProtoMarshaller,
+		MaxDelta:             10,
+		CleanupInterval:      100,
+		FirstCommitableBlock: 0,
+	}
+}
+
 func TestNewBlocksPool(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil pruning storer", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
-			nil,
-			&testscommon.MarshallerMock{},
-			10,
-			100,
-			0,
-		)
+		args := createDefaultBlocksPoolArgs()
+		args.Storer = nil
+		bp, err := process.NewBlocksPool(args)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilPruningStorer, err)
 	})
@@ -35,13 +41,9 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("nil marshaller", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{},
-			nil,
-			10,
-			100,
-			0,
-		)
+		args := createDefaultBlocksPoolArgs()
+		args.Marshaller = nil
+		bp, err := process.NewBlocksPool(args)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilMarshaller, err)
 	})
@@ -49,13 +51,8 @@ func TestNewBlocksPool(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		bp, err := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{},
-			&testscommon.MarshallerMock{},
-			10,
-			100,
-			0,
-		)
+		args := createDefaultBlocksPoolArgs()
+		bp, err := process.NewBlocksPool(args)
 		require.Nil(t, err)
 		require.False(t, bp.IsInterfaceNil())
 	})
@@ -68,17 +65,14 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		t.Parallel()
 
 		expectedErr := errors.New("expected error")
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				GetCalled: func(key []byte) ([]byte, error) {
-					return nil, expectedErr
-				},
+
+		args := createDefaultBlocksPoolArgs()
+		args.Storer = &testscommon.PruningStorerMock{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return nil, expectedErr
 			},
-			protoMarshaller,
-			10,
-			100,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, ret)
@@ -95,17 +89,13 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 		}
 		outportBlockBytes, _ := gogoProtoMarshaller.Marshal(outportBlock)
 
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				GetCalled: func(key []byte) ([]byte, error) {
-					return outportBlockBytes, nil
-				},
+		args := createDefaultBlocksPoolArgs()
+		args.Storer = &testscommon.PruningStorerMock{
+			GetCalled: func(key []byte) ([]byte, error) {
+				return outportBlockBytes, nil
 			},
-			gogoProtoMarshaller,
-			10,
-			100,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, err)
@@ -123,24 +113,23 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 
 		firstCommitableBlock := uint64(10)
 
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PutCalled: func(key, data []byte) error {
-					assert.Fail(t, "should have not been called")
+		args := createDefaultBlocksPoolArgs()
+		args.CleanupInterval = cleanupInterval
+		args.FirstCommitableBlock = firstCommitableBlock
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			PutCalled: func(key, data []byte) error {
+				assert.Fail(t, "should have not been called")
 
-					return nil
-				},
-				PruneCalled: func(index uint64) error {
-					assert.Fail(t, "should have not been called")
-
-					return nil
-				},
+				return nil
 			},
-			protoMarshaller,
-			100,
-			cleanupInterval,
-			firstCommitableBlock,
-		)
+			PruneCalled: func(index uint64) error {
+				assert.Fail(t, "should have not been called")
+
+				return nil
+			},
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
@@ -158,24 +147,23 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		firstCommitableBlock := uint64(10)
 
 		putCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PutCalled: func(key, data []byte) error {
-					putCalled = true
+		args := createDefaultBlocksPoolArgs()
+		args.CleanupInterval = cleanupInterval
+		args.FirstCommitableBlock = firstCommitableBlock
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			PutCalled: func(key, data []byte) error {
+				putCalled = true
 
-					return nil
-				},
-				PruneCalled: func(index uint64) error {
-					assert.Fail(t, "should have not been called")
-
-					return nil
-				},
+				return nil
 			},
-			protoMarshaller,
-			100,
-			cleanupInterval,
-			firstCommitableBlock,
-		)
+			PruneCalled: func(index uint64) error {
+				assert.Fail(t, "should have not been called")
+
+				return nil
+			},
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
@@ -192,19 +180,16 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 	t.Run("should not trigger prune if not cleanup interval", func(t *testing.T) {
 		t.Parallel()
 
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PruneCalled: func(index uint64) error {
-					assert.Fail(t, "should have not been called")
+		args := createDefaultBlocksPoolArgs()
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			PruneCalled: func(index uint64) error {
+				assert.Fail(t, "should have not been called")
 
-					return nil
-				},
+				return nil
 			},
-			protoMarshaller,
-			100,
-			cleanupInterval,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
@@ -220,19 +205,17 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		t.Parallel()
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PruneCalled: func(index uint64) error {
-					wasCalled = true
+		args := createDefaultBlocksPoolArgs()
+		args.CleanupInterval = cleanupInterval
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			PruneCalled: func(index uint64) error {
+				wasCalled = true
 
-					return nil
-				},
+				return nil
 			},
-			protoMarshaller,
-			100,
-			cleanupInterval,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastRounds: map[uint32]uint64{
@@ -258,19 +241,16 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		maxDelta := uint64(10)
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PutCalled: func(key, data []byte) error {
-					wasCalled = true
+		args := createDefaultBlocksPoolArgs()
+		args.MaxDelta = maxDelta
+		args.Storer = &testscommon.PruningStorerMock{
+			PutCalled: func(key, data []byte) error {
+				wasCalled = true
 
-					return nil
-				},
+				return nil
 			},
-			gogoProtoMarshaller,
-			maxDelta,
-			100,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		startIndex := uint64(0)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -285,22 +265,21 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		maxDelta := uint64(10)
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				GetCalled: func(key []byte) ([]byte, error) {
-					if string(key) == process.MetaCheckpointKey {
-						wasCalled = true
-						return nil, fmt.Errorf("no checkpoint key found")
-					}
 
-					return []byte{}, nil
-				},
+		args := createDefaultBlocksPoolArgs()
+		args.MaxDelta = maxDelta
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			GetCalled: func(key []byte) ([]byte, error) {
+				if string(key) == process.MetaCheckpointKey {
+					wasCalled = true
+					return nil, fmt.Errorf("no checkpoint key found")
+				}
+
+				return []byte{}, nil
 			},
-			gogoProtoMarshaller,
-			maxDelta,
-			100,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		startIndex := uint64(123)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -326,26 +305,24 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		require.Nil(t, err)
 
 		putCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				GetCalled: func(key []byte) ([]byte, error) {
-					if string(key) == process.MetaCheckpointKey {
-						return lastCheckpointData, nil
-					}
 
-					return []byte{}, nil
-				},
-				PutCalled: func(key, data []byte) error {
-					putCalled = true
+		args := createDefaultBlocksPoolArgs()
+		args.MaxDelta = maxDelta
+		args.Storer = &testscommon.PruningStorerMock{
+			GetCalled: func(key []byte) ([]byte, error) {
+				if string(key) == process.MetaCheckpointKey {
+					return lastCheckpointData, nil
+				}
 
-					return nil
-				},
+				return []byte{}, nil
 			},
-			gogoProtoMarshaller,
-			maxDelta,
-			100,
-			0,
-		)
+			PutCalled: func(key, data []byte) error {
+				putCalled = true
+
+				return nil
+			},
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		err = bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex+1, shardID)
 		require.Nil(t, err)
@@ -359,19 +336,18 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		maxDelta := uint64(10)
 
 		wasCalled := false
-		bp, _ := process.NewBlocksPool(
-			&testscommon.PruningStorerStub{
-				PutCalled: func(key, data []byte) error {
-					wasCalled = true
 
-					return nil
-				},
+		args := createDefaultBlocksPoolArgs()
+		args.MaxDelta = maxDelta
+		args.Marshaller = protoMarshaller
+		args.Storer = &testscommon.PruningStorerMock{
+			PutCalled: func(key, data []byte) error {
+				wasCalled = true
+
+				return nil
 			},
-			protoMarshaller,
-			maxDelta,
-			100,
-			0,
-		)
+		}
+		bp, _ := process.NewBlocksPool(args)
 
 		startIndex := uint64(2)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -405,19 +381,15 @@ func TestBlocksPool_Close(t *testing.T) {
 	t.Parallel()
 
 	wasCalled := false
-	bp, _ := process.NewBlocksPool(
-		&testscommon.PruningStorerStub{
-			CloseCalled: func() error {
-				wasCalled = true
+	args := createDefaultBlocksPoolArgs()
+	args.Storer = &testscommon.PruningStorerMock{
+		CloseCalled: func() error {
+			wasCalled = true
 
-				return nil
-			},
+			return nil
 		},
-		protoMarshaller,
-		10,
-		100,
-		0,
-	)
+	}
+	bp, _ := process.NewBlocksPool(args)
 
 	err := bp.Close()
 	require.Nil(t, err)
