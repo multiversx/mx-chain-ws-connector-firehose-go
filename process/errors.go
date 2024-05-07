@@ -12,16 +12,16 @@ var ErrNilOutportBlockData = errors.New("nil outport block data")
 var ErrNilWriter = errors.New("nil writer provided")
 
 // ErrNilBlockCreator signals that a nil block creator was provided
-var ErrNilBlockCreator = errors.New("nil block creator provided")
+var ErrNilBlockCreator = errors.New("nil block creator")
 
 // ErrNilPublisher signals that a nil publisher was provided
-var ErrNilPublisher = errors.New("nil publisher provided")
+var ErrNilPublisher = errors.New("nil publisher")
 
 // ErrNilHyperBlocksPool signals that a nil hyper blocks pool was provided
-var ErrNilHyperBlocksPool = errors.New("nil hyper blocks pool provided")
+var ErrNilHyperBlocksPool = errors.New("nil hyper blocks pool")
 
 // ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
-var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter provided")
+var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter")
 
 // ErrNilDataAggregator signals that a nil data aggregator was provided
 var ErrNilDataAggregator = errors.New("nil data aggregator provided")
@@ -61,3 +61,6 @@ var ErrNilHyperOutportBlock = errors.New("nil hyper outport block")
 
 // ErrNilBlockServiceContext signal that the context provided for the block service is nil.
 var ErrNilBlockServiceContext = errors.New("nil block service context")
+
+// ErrInvalidValue signals that an invalid value was provded
+var ErrInvalidValue = errors.New("invalid value provided")

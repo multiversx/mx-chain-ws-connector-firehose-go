@@ -11,8 +11,11 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 )
 
-const initIndex = 0
-const metaCheckpointKey = "lastMetaRound"
+const (
+	initIndex         = 0
+	metaCheckpointKey = "lastMetaRound"
+	minDelta          = 3
+)
 
 type blocksPool struct {
 	storer               PruningStorer
@@ -25,6 +28,7 @@ type blocksPool struct {
 	mutMap             sync.RWMutex
 }
 
+// BlocksPoolArgs defines the arguments needed to create the blocks pool component
 type BlocksPoolArgs struct {
 	Storer               PruningStorer
 	Marshaller           marshal.Marshalizer
@@ -40,6 +44,12 @@ func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
 	}
 	if check.IfNil(args.Marshaller) {
 		return nil, ErrNilMarshaller
+	}
+	if args.MaxDelta < minDelta {
+		return nil, fmt.Errorf("%w for max delta, provided %d, min required %d", ErrInvalidValue, args.MaxDelta, minDelta)
+	}
+	if args.CleanupInterval <= args.MaxDelta {
+		return nil, fmt.Errorf("%w for cleanup interval, provided %d, min required %d", ErrInvalidValue, args.MaxDelta, args.MaxDelta)
 	}
 
 	bp := &blocksPool{
