@@ -90,7 +90,7 @@ func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 			ShardID: 1,
 			BlockData: &hyperOutportBlocks.MetaBlockData{
 				Header: &hyperOutportBlocks.MetaHeader{
-					Round: currentIndex,
+					Nonce: currentIndex,
 				},
 			},
 			HighestFinalBlockNonce: currentIndex - 1,
@@ -115,7 +115,7 @@ func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 			ShardID: 1,
 			BlockData: &hyperOutportBlocks.BlockData{
 				Header: &hyperOutportBlocks.Header{
-					Round: currentIndex,
+					Nonce: currentIndex,
 				},
 			},
 			HighestFinalBlockNonce: currentIndex - 1,

@@ -67,7 +67,7 @@ func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
 
 func (bp *blocksPool) initIndexesMap() {
 	lastCheckpoint, err := bp.getLastCheckpoint()
-	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastRounds == nil {
+	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastNonces == nil {
 		indexesMap := make(map[uint32]uint64)
 		bp.previousIndexesMap = indexesMap
 		return
@@ -75,8 +75,8 @@ func (bp *blocksPool) initIndexesMap() {
 
 	log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
 
-	indexesMap := make(map[uint32]uint64, len(lastCheckpoint.LastRounds))
-	for shardID, round := range lastCheckpoint.LastRounds {
+	indexesMap := make(map[uint32]uint64, len(lastCheckpoint.LastNonces))
+	for shardID, round := range lastCheckpoint.LastNonces {
 		indexesMap[shardID] = round
 	}
 	bp.previousIndexesMap = indexesMap
@@ -94,7 +94,7 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 
 // UpdateMetaState will update internal meta state
 func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
-	index, ok := checkpoint.LastRounds[core.MetachainShardId]
+	index, ok := checkpoint.LastNonces[core.MetachainShardId]
 	if !ok {
 		index = initIndex
 	}
@@ -122,28 +122,37 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 	return bp.storer.Prune(index)
 }
 
+func (bp *blocksPool) getLastIndex(shardID uint32) uint64 {
+	lastCheckpoint, err := bp.getLastCheckpoint()
+	if err == nil {
+		baseIndex, ok := lastCheckpoint.LastNonces[shardID]
+		if ok {
+			return baseIndex
+		}
+	}
+
+	lastIndex, ok := bp.previousIndexesMap[shardID]
+	if !ok {
+		return initIndex
+	}
+
+	return lastIndex
+}
+
 // PutBlock will put the provided outport block data to the pool
 func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID uint32) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
-	previousIndex, ok := bp.previousIndexesMap[shardID]
-	if !ok {
-		bp.previousIndexesMap[shardID] = initIndex
-
-		err := bp.storer.Put(hash, value)
-		if err != nil {
-			return err
-		}
-
+	lastIndex := bp.getLastIndex(shardID)
+	if lastIndex == initIndex {
 		bp.previousIndexesMap[shardID] = newIndex
-
-		return nil
+		return bp.storer.Put(hash, value)
 	}
 
-	if !bp.shouldPutBlockData(previousIndex) {
-		return fmt.Errorf("%w: not within required delta, previous index %d, new index %d",
-			ErrFailedToPutBlockDataToPool, previousIndex, newIndex)
+	if !bp.shouldPutBlockData(newIndex, lastIndex) {
+		return fmt.Errorf("%w: not within required delta, last index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, lastIndex, newIndex)
 	}
 
 	err := bp.storer.Put(hash, value)
@@ -156,9 +165,7 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shard
 	return nil
 }
 
-func (bp *blocksPool) shouldPutBlockData(index uint64) bool {
-	baseIndex := bp.previousIndexesMap[core.MetachainShardId]
-
+func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 
@@ -186,6 +193,10 @@ func (bp *blocksPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
 	err = bp.marshaller.Unmarshal(checkpoint, checkpointBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshall checkpoint data: %w", err)
+	}
+
+	if checkpoint == nil || checkpoint.LastNonces == nil {
+		return nil, fmt.Errorf("nil checkpoint data has been provided")
 	}
 
 	return checkpoint, nil

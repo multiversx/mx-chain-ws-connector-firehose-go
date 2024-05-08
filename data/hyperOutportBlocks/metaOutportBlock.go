@@ -2,8 +2,8 @@ package hyperOutportBlocks
 
 import "fmt"
 
-// GetHeaderRound will return header round
-func (x *MetaOutportBlock) GetHeaderRound() (uint64, error) {
+// GetHeaderNonce will return header nonce
+func (x *MetaOutportBlock) GetHeaderNonce() (uint64, error) {
 	if x.BlockData == nil {
 		return 0, fmt.Errorf("meta outport block: nil block data")
 	}
@@ -11,5 +11,5 @@ func (x *MetaOutportBlock) GetHeaderRound() (uint64, error) {
 		return 0, fmt.Errorf("meta outport block: nil header")
 	}
 
-	return x.BlockData.Header.Round, nil
+	return x.BlockData.Header.Nonce, nil
 }

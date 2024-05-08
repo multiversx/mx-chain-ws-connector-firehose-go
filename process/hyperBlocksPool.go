@@ -39,13 +39,18 @@ func (bp *hyperOutportBlocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoi
 
 // Get will trigger data pool get operation
 func (bp *hyperOutportBlocksPool) Get(key []byte) ([]byte, error) {
-	return bp.dataPool.Get(key)
+	data, err := bp.dataPool.Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get from data pool: %w", err)
+	}
+
+	return data, nil
 }
 
 // PutBlock will put the provided outport block data to the pool
 func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
 	shardID := outportBlock.GetShardID()
-	currentIndex, err := outportBlock.GetHeaderRound()
+	currentIndex, err := outportBlock.GetHeaderNonce()
 	if err != nil {
 		return err
 	}
@@ -69,7 +74,7 @@ func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock OutportBloc
 func (bp *hyperOutportBlocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
 	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get meta block from pool: %w", err)
 	}
 
 	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
@@ -85,7 +90,7 @@ func (bp *hyperOutportBlocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks
 func (bp *hyperOutportBlocksPool) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
 	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get shard block from pool: %w", err)
 	}
 
 	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}

@@ -132,7 +132,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
+			LastNonces: map[uint32]uint64{
 				core.MetachainShardId: firstCommitableBlock - 1,
 			},
 		}
@@ -166,7 +166,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
+			LastNonces: map[uint32]uint64{
 				core.MetachainShardId: firstCommitableBlock,
 			},
 		}
@@ -192,7 +192,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
+			LastNonces: map[uint32]uint64{
 				core.MetachainShardId: 2,
 			},
 		}
@@ -218,7 +218,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 		bp, _ := process.NewBlocksPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
+			LastNonces: map[uint32]uint64{
 				core.MetachainShardId: 100,
 			},
 		}
@@ -297,7 +297,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 		startIndex := uint64(123)
 
 		lastCheckpointData, err := protoMarshaller.Marshal(&data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
+			LastNonces: map[uint32]uint64{
 				shardID:               startIndex,
 				core.MetachainShardId: startIndex - 2,
 			},
@@ -337,6 +337,14 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 
 		wasCalled := false
 
+		checkpoint := &data.BlockCheckpoint{
+			LastNonces: map[uint32]uint64{
+				core.MetachainShardId: 2,
+				shardID:               2,
+			},
+		}
+		checkpointBytes, _ := protoMarshaller.Marshal(checkpoint)
+
 		args := createDefaultBlocksPoolArgs()
 		args.MaxDelta = maxDelta
 		args.Marshaller = protoMarshaller
@@ -345,6 +353,9 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				wasCalled = true
 
 				return nil
+			},
+			GetCalled: func(key []byte) ([]byte, error) {
+				return checkpointBytes, nil
 			},
 		}
 		bp, _ := process.NewBlocksPool(args)
@@ -355,24 +366,18 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 
 		require.True(t, wasCalled)
 
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: 2,
-			},
-		}
-
 		err = bp.UpdateMetaState(checkpoint)
 		require.Nil(t, err)
 
-		err = bp.PutBlock([]byte("hash2"), []byte("data1"), startIndex, core.MetachainShardId)
+		err = bp.PutBlock([]byte("hash2"), []byte("data1"), startIndex, shardID)
 		require.Nil(t, err)
 
-		for i := uint64(1); i <= maxDelta; i++ {
+		for i := uint64(1); i < maxDelta; i++ {
 			err = bp.PutBlock([]byte("hash2"), []byte("data1"), startIndex+i, shardID)
 			require.Nil(t, err)
 		}
 
-		err = bp.PutBlock([]byte("hash3"), []byte("data1"), startIndex+maxDelta+1, shardID)
+		err = bp.PutBlock([]byte("hash3"), []byte("data1"), startIndex+maxDelta, shardID)
 		require.Error(t, err)
 	})
 }

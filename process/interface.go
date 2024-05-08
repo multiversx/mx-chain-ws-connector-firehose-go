@@ -111,7 +111,7 @@ type GRPCServer interface {
 
 // OutportBlockHandler defines the behaviour of an outport block component used in blocks pool
 type OutportBlockHandler interface {
-	GetHeaderRound() (uint64, error)
+	GetHeaderNonce() (uint64, error)
 	GetHighestFinalBlockNonce() uint64
 	GetShardID() uint32
 }

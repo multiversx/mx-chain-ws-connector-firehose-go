@@ -104,11 +104,11 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	if metaOutportBlock.BlockData.Header == nil {
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
-	metaRound := metaOutportBlock.BlockData.Header.GetRound()
+	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
 
 	log.Info("saving meta outport block",
 		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
-		"round", metaRound,
+		"round", metaNonce,
 		"shardID", metaOutportBlock.ShardID)
 
 	headerHash := outportBlock.BlockData.HeaderHash
@@ -117,15 +117,15 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	if metaRound < dp.firstCommitableBlock {
+	if metaNonce < dp.firstCommitableBlock {
 		// do not try to aggregate or publish hyper outport block
 		// update only blocks pool state
 
-		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", dp.firstCommitableBlock)
+		log.Trace("do not commit block", "currentRound", metaNonce, "firstCommitableRound", dp.firstCommitableBlock)
 
 		lastCheckpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: metaRound,
+			LastNonces: map[uint32]uint64{
+				core.MetachainShardId: metaNonce,
 			},
 		}
 		err = dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
@@ -169,15 +169,15 @@ func (dp *dataProcessor) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks
 	}
 
 	checkpoint := &data.BlockCheckpoint{
-		LastRounds: make(map[uint32]uint64),
+		LastNonces: make(map[uint32]uint64),
 	}
 
 	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
-	checkpoint.LastRounds[core.MetachainShardId] = metaBlock.GetRound()
+	checkpoint.LastNonces[core.MetachainShardId] = metaBlock.GetNonce()
 
 	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
 		header := outportBlockData.OutportBlock.BlockData.Header
-		checkpoint.LastRounds[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
+		checkpoint.LastNonces[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
 	}
 
 	return checkpoint, nil
