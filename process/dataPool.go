@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	initIndex         = 0
-	metaCheckpointKey = "lastMetaRound"
-	minDelta          = 3
+	// MetaCheckpointKey defines the meta checkpoint key
+	MetaCheckpointKey = "lastMetaIndex"
+
+	initIndex = 0
+	minDelta  = 3
 )
 
 type dataPool struct {
@@ -66,7 +68,7 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 }
 
 func (bp *dataPool) initIndexesMap() {
-	lastCheckpoint, err := bp.getLastCheckpoint()
+	lastCheckpoint, err := bp.GetLastCheckpoint()
 	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastNonces == nil {
 		indexesMap := make(map[uint32]uint64)
 		bp.previousIndexesMap = indexesMap
@@ -76,8 +78,8 @@ func (bp *dataPool) initIndexesMap() {
 	log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
 
 	indexesMap := make(map[uint32]uint64, len(lastCheckpoint.LastNonces))
-	for shardID, round := range lastCheckpoint.LastNonces {
-		indexesMap[shardID] = round
+	for shardID, nonce := range lastCheckpoint.LastNonces {
+		indexesMap[shardID] = nonce
 	}
 	bp.previousIndexesMap = indexesMap
 }
@@ -106,6 +108,7 @@ func (bp *dataPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 		}
 	}
 
+	// TODO: prune storer based on epoch change
 	err := bp.pruneStorer(index)
 	if err != nil {
 		return fmt.Errorf("%w, failed to prune storer", err)
@@ -123,7 +126,7 @@ func (bp *dataPool) pruneStorer(index uint64) error {
 }
 
 func (bp *dataPool) getLastIndex(shardID uint32) uint64 {
-	lastCheckpoint, err := bp.getLastCheckpoint()
+	lastCheckpoint, err := bp.GetLastCheckpoint()
 	if err == nil {
 		baseIndex, ok := lastCheckpoint.LastNonces[shardID]
 		if ok {
@@ -180,11 +183,12 @@ func (bp *dataPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 
 	log.Debug("setCheckpoint", "checkpoint", checkpoint)
 
-	return bp.storer.Put([]byte(metaCheckpointKey), checkpointBytes)
+	return bp.storer.Put([]byte(MetaCheckpointKey), checkpointBytes)
 }
 
-func (bp *dataPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
-	checkpointBytes, err := bp.storer.Get([]byte(metaCheckpointKey))
+// GetLastCheckpoint returns last checkpoint data
+func (bp *dataPool) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
+	checkpointBytes, err := bp.storer.Get([]byte(MetaCheckpointKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get checkpoint data from storer: %w", err)
 	}

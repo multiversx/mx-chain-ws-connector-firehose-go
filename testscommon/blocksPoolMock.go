@@ -6,11 +6,12 @@ import (
 
 // BlocksPoolMock -
 type BlocksPoolMock struct {
-	PutCalled             func(hash []byte, data []byte) error
-	GetCalled             func(hash []byte) ([]byte, error)
-	PutBlockCalled        func(hash []byte, value []byte, round uint64, shardID uint32) error
-	UpdateMetaStateCalled func(checkpoint *data.BlockCheckpoint) error
-	CloseCalled           func() error
+	PutCalled               func(hash []byte, data []byte) error
+	GetCalled               func(hash []byte) ([]byte, error)
+	PutBlockCalled          func(hash []byte, value []byte, round uint64, shardID uint32) error
+	UpdateMetaStateCalled   func(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpointCalled func() (*data.BlockCheckpoint, error)
+	CloseCalled             func() error
 }
 
 // Put -
@@ -47,6 +48,17 @@ func (b *BlocksPoolMock) UpdateMetaState(checkpoint *data.BlockCheckpoint) error
 	}
 
 	return nil
+}
+
+// GetLastCheckpoint -
+func (b *BlocksPoolMock) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
+	if b.GetLastCheckpointCalled != nil {
+		return b.GetLastCheckpointCalled()
+	}
+
+	return &data.BlockCheckpoint{
+		LastNonces: make(map[uint32]uint64),
+	}, nil
 }
 
 // Close -

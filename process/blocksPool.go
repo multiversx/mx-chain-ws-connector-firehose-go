@@ -37,6 +37,11 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	return bp.dataPool.UpdateMetaState(checkpoint)
 }
 
+// GetLastCheckpoint returns last checkpoint data
+func (bp *blocksPool) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
+	return bp.dataPool.GetLastCheckpoint()
+}
+
 // Get will trigger data pool get operation
 func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	data, err := bp.dataPool.Get(key)

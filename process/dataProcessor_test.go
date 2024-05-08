@@ -123,7 +123,7 @@ func TestNewDataProcessor(t *testing.T) {
 			0,
 		)
 		require.Nil(t, dp)
-		require.Equal(t, process.ErrNilHyperBlocksPool, err)
+		require.Equal(t, process.ErrNilBlocksPool, err)
 	})
 
 	t.Run("nil data aggregator", func(t *testing.T) {

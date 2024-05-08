@@ -19,7 +19,7 @@ func TestNewDataAggregator(t *testing.T) {
 
 		da, err := process.NewDataAggregator(nil)
 		require.Nil(t, da)
-		require.Equal(t, process.ErrNilHyperBlocksPool, err)
+		require.Equal(t, process.ErrNilBlocksPool, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {

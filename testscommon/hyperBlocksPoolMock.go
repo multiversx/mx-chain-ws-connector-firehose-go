@@ -8,12 +8,13 @@ import (
 
 // HyperBlocksPoolMock -
 type HyperBlocksPoolMock struct {
-	GetCalled             func(hash []byte) ([]byte, error)
-	PutBlockCalled        func(hash []byte, outportBlock process.OutportBlockHandler) error
-	GetMetaBlockCalled    func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
-	GetShardBlockCalled   func(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
-	UpdateMetaStateCalled func(checkpoint *data.BlockCheckpoint) error
-	CloseCalled           func() error
+	GetCalled               func(hash []byte) ([]byte, error)
+	PutBlockCalled          func(hash []byte, outportBlock process.OutportBlockHandler) error
+	GetMetaBlockCalled      func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
+	GetShardBlockCalled     func(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
+	UpdateMetaStateCalled   func(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpointCalled func() (*data.BlockCheckpoint, error)
+	CloseCalled             func() error
 }
 
 // Get -
@@ -59,6 +60,17 @@ func (b *HyperBlocksPoolMock) UpdateMetaState(checkpoint *data.BlockCheckpoint) 
 	}
 
 	return nil
+}
+
+// GetLastCheckpoint -
+func (b *HyperBlocksPoolMock) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
+	if b.GetLastCheckpointCalled != nil {
+		return b.GetLastCheckpointCalled()
+	}
+
+	return &data.BlockCheckpoint{
+		LastNonces: make(map[uint32]uint64),
+	}, nil
 }
 
 // Close -

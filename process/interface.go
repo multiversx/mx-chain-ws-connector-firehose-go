@@ -59,8 +59,9 @@ type DataAggregator interface {
 type DataPool interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
-	PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error
+	PutBlock(hash []byte, value []byte, index uint64, shardID uint32) error
 	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -73,6 +74,7 @@ type BlocksPool interface {
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
 	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
 	Close() error
 	IsInterfaceNil() bool
 }

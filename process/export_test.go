@@ -12,9 +12,6 @@ const (
 
 	// BlockPrefix -
 	BlockPrefix = blockPrefix
-
-	// MetaCheckpointKey -
-	MetaCheckpointKey = metaCheckpointKey
 )
 
 // GetActivePersisters -
