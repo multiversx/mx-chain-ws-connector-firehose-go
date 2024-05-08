@@ -65,9 +65,9 @@ type DataPool interface {
 	IsInterfaceNil() bool
 }
 
-// HyperBlocksPool defines the behaviour of a blocks pool handler component that is
+// BlocksPool defines the behaviour of a blocks pool handler component that is
 // able to handle meta and shard outport blocks data
-type HyperBlocksPool interface {
+type BlocksPool interface {
 	Get(key []byte) ([]byte, error)
 	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)

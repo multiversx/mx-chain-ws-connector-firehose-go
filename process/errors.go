@@ -17,8 +17,8 @@ var ErrNilBlockCreator = errors.New("nil block creator")
 // ErrNilPublisher signals that a nil publisher was provided
 var ErrNilPublisher = errors.New("nil publisher")
 
-// ErrNilHyperBlocksPool signals that a nil hyper blocks pool was provided
-var ErrNilHyperBlocksPool = errors.New("nil hyper blocks pool")
+// ErrNilBlocksPool signals that a nil blocks pool was provided
+var ErrNilBlocksPool = errors.New("nil blocks pool")
 
 // ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
 var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter")

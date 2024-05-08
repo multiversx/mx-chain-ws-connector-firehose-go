@@ -59,7 +59,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	argsBlocksPool := process.BlocksPoolArgs{
+	argsBlocksPool := process.DataPoolArgs{
 		Storer:               blocksStorer,
 		Marshaller:           marshaller,
 		MaxDelta:             cfg.DataPool.MaxDelta,
@@ -205,7 +205,7 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	argsBlocksPool := process.BlocksPoolArgs{
+	argsBlocksPool := process.DataPoolArgs{
 		Storer:               blocksStorer,
 		Marshaller:           marshaller,
 		MaxDelta:             cfg.DataPool.MaxDelta,

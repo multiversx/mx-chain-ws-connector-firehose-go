@@ -10,25 +10,25 @@ import (
 )
 
 type grpcBlocksHandler struct {
-	outportBlocksPool HyperBlocksPool
+	outportBlocksPool BlocksPool
 	dataAggregator    DataAggregator
 }
 
 // NewGRPCBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
 // which will then be consumed by the grpc server
 func NewGRPCBlocksHandler(
-	outportBlocksPool HyperBlocksPool,
+	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
 ) (*grpcBlocksHandler, error) {
-	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilHyperBlocksPool
+	if check.IfNil(blocksPool) {
+		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
 
 	return &grpcBlocksHandler{
-		outportBlocksPool: outportBlocksPool,
+		outportBlocksPool: blocksPool,
 		dataAggregator:    dataAggregator,
 	}, nil
 }

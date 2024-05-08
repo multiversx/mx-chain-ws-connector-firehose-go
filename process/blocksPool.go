@@ -17,7 +17,7 @@ const (
 	minDelta          = 3
 )
 
-type blocksPool struct {
+type dataPool struct {
 	storer               PruningStorer
 	marshaller           marshal.Marshalizer
 	maxDelta             uint64
@@ -28,8 +28,8 @@ type blocksPool struct {
 	mutMap             sync.RWMutex
 }
 
-// BlocksPoolArgs defines the arguments needed to create the blocks pool component
-type BlocksPoolArgs struct {
+// DataPoolArgs defines the arguments needed to create the blocks pool component
+type DataPoolArgs struct {
 	Storer               PruningStorer
 	Marshaller           marshal.Marshalizer
 	MaxDelta             uint64
@@ -37,8 +37,8 @@ type BlocksPoolArgs struct {
 	FirstCommitableBlock uint64
 }
 
-// NewBlocksPool will create a new blocks pool instance
-func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
+// NewDataPool will create a new data pool instance
+func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 	if check.IfNil(args.Storer) {
 		return nil, ErrNilPruningStorer
 	}
@@ -52,7 +52,7 @@ func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
 		return nil, fmt.Errorf("%w for cleanup interval, provided %d, min required %d", ErrInvalidValue, args.MaxDelta, args.MaxDelta)
 	}
 
-	bp := &blocksPool{
+	bp := &dataPool{
 		storer:               args.Storer,
 		marshaller:           args.Marshaller,
 		maxDelta:             args.MaxDelta,
@@ -65,7 +65,7 @@ func NewBlocksPool(args BlocksPoolArgs) (*blocksPool, error) {
 	return bp, nil
 }
 
-func (bp *blocksPool) initIndexesMap() {
+func (bp *dataPool) initIndexesMap() {
 	lastCheckpoint, err := bp.getLastCheckpoint()
 	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastNonces == nil {
 		indexesMap := make(map[uint32]uint64)
@@ -83,17 +83,17 @@ func (bp *blocksPool) initIndexesMap() {
 }
 
 // Put will put value into storer
-func (bp *blocksPool) Put(key []byte, value []byte) error {
+func (bp *dataPool) Put(key []byte, value []byte) error {
 	return bp.storer.Put(key, value)
 }
 
 // Get will get value from storer
-func (bp *blocksPool) Get(key []byte) ([]byte, error) {
+func (bp *dataPool) Get(key []byte) ([]byte, error) {
 	return bp.storer.Get(key)
 }
 
 // UpdateMetaState will update internal meta state
-func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+func (bp *dataPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	index, ok := checkpoint.LastNonces[core.MetachainShardId]
 	if !ok {
 		index = initIndex
@@ -114,7 +114,7 @@ func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	return nil
 }
 
-func (bp *blocksPool) pruneStorer(index uint64) error {
+func (bp *dataPool) pruneStorer(index uint64) error {
 	if index%bp.cleanupInterval != 0 {
 		return nil
 	}
@@ -122,7 +122,7 @@ func (bp *blocksPool) pruneStorer(index uint64) error {
 	return bp.storer.Prune(index)
 }
 
-func (bp *blocksPool) getLastIndex(shardID uint32) uint64 {
+func (bp *dataPool) getLastIndex(shardID uint32) uint64 {
 	lastCheckpoint, err := bp.getLastCheckpoint()
 	if err == nil {
 		baseIndex, ok := lastCheckpoint.LastNonces[shardID]
@@ -140,7 +140,7 @@ func (bp *blocksPool) getLastIndex(shardID uint32) uint64 {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID uint32) error {
+func (bp *dataPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID uint32) error {
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
@@ -165,14 +165,14 @@ func (bp *blocksPool) PutBlock(hash []byte, value []byte, newIndex uint64, shard
 	return nil
 }
 
-func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
+func (bp *dataPool) shouldPutBlockData(index, baseIndex uint64) bool {
 	diff := float64(int64(index) - int64(baseIndex))
 	delta := math.Abs(diff)
 
 	return math.Abs(delta) < float64(bp.maxDelta)
 }
 
-func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
+func (bp *dataPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 	checkpointBytes, err := bp.marshaller.Marshal(checkpoint)
 	if err != nil {
 		return fmt.Errorf("failed to marshall checkpoint data: %w", err)
@@ -183,7 +183,7 @@ func (bp *blocksPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 	return bp.storer.Put([]byte(metaCheckpointKey), checkpointBytes)
 }
 
-func (bp *blocksPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
+func (bp *dataPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
 	checkpointBytes, err := bp.storer.Get([]byte(metaCheckpointKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get checkpoint data from storer: %w", err)
@@ -203,7 +203,7 @@ func (bp *blocksPool) getLastCheckpoint() (*data.BlockCheckpoint, error) {
 }
 
 // Close will trigger close on blocks pool component
-func (bp *blocksPool) Close() error {
+func (bp *dataPool) Close() error {
 	err := bp.storer.Close()
 	if err != nil {
 		return err
@@ -213,6 +213,6 @@ func (bp *blocksPool) Close() error {
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface
-func (bp *blocksPool) IsInterfaceNil() bool {
+func (bp *dataPool) IsInterfaceNil() bool {
 	return bp == nil
 }

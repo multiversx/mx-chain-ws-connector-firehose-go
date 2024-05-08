@@ -15,7 +15,7 @@ type dataProcessor struct {
 	marshaller            marshal.Marshalizer
 	operationHandlers     map[string]func(marshalledData []byte) error
 	publisher             Publisher
-	outportBlocksPool     HyperBlocksPool
+	outportBlocksPool     BlocksPool
 	dataAggregator        DataAggregator
 	outportBlockConverter OutportBlockConverter
 	firstCommitableBlock  uint64
@@ -25,7 +25,7 @@ type dataProcessor struct {
 func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
-	outportBlocksPool HyperBlocksPool,
+	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
 	outportBlockConverter OutportBlockConverter,
 	firstCommitableBlock uint64,
@@ -33,8 +33,8 @@ func NewDataProcessor(
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
 	}
-	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilHyperBlocksPool
+	if check.IfNil(blocksPool) {
+		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
@@ -49,7 +49,7 @@ func NewDataProcessor(
 	dp := &dataProcessor{
 		marshaller:            marshaller,
 		publisher:             publisher,
-		outportBlocksPool:     outportBlocksPool,
+		outportBlocksPool:     blocksPool,
 		dataAggregator:        dataAggregator,
 		outportBlockConverter: outportBlockConverter,
 		firstCommitableBlock:  firstCommitableBlock,

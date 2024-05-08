@@ -60,7 +60,7 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	argsBlocksPool := process.BlocksPoolArgs{
+	argsBlocksPool := process.DataPoolArgs{
 		Storer:               blocksStorer,
 		Marshaller:           protoMarshaller,
 		MaxDelta:             cr.config.DataPool.MaxDelta,

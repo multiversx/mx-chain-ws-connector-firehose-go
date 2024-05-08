@@ -15,8 +15,8 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/testscommon"
 )
 
-func createDefaultBlocksPoolArgs() process.BlocksPoolArgs {
-	return process.BlocksPoolArgs{
+func createDefaultBlocksPoolArgs() process.DataPoolArgs {
+	return process.DataPoolArgs{
 		Storer:               &testscommon.PruningStorerMock{},
 		Marshaller:           gogoProtoMarshaller,
 		MaxDelta:             10,
@@ -25,7 +25,7 @@ func createDefaultBlocksPoolArgs() process.BlocksPoolArgs {
 	}
 }
 
-func TestNewBlocksPool(t *testing.T) {
+func TestNewDataPool(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil pruning storer", func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNewBlocksPool(t *testing.T) {
 
 		args := createDefaultBlocksPoolArgs()
 		args.Storer = nil
-		bp, err := process.NewBlocksPool(args)
+		bp, err := process.NewDataPool(args)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilPruningStorer, err)
 	})
@@ -43,7 +43,7 @@ func TestNewBlocksPool(t *testing.T) {
 
 		args := createDefaultBlocksPoolArgs()
 		args.Marshaller = nil
-		bp, err := process.NewBlocksPool(args)
+		bp, err := process.NewDataPool(args)
 		require.Nil(t, bp)
 		require.Equal(t, process.ErrNilMarshaller, err)
 	})
@@ -52,13 +52,13 @@ func TestNewBlocksPool(t *testing.T) {
 		t.Parallel()
 
 		args := createDefaultBlocksPoolArgs()
-		bp, err := process.NewBlocksPool(args)
+		bp, err := process.NewDataPool(args)
 		require.Nil(t, err)
 		require.False(t, bp.IsInterfaceNil())
 	})
 }
 
-func TestBlocksPool_GetBlock(t *testing.T) {
+func TestDataPool_GetBlock(t *testing.T) {
 	t.Parallel()
 
 	t.Run("failed to get data from storer", func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 				return nil, expectedErr
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, ret)
@@ -95,7 +95,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 				return outportBlockBytes, nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		ret, err := bp.Get([]byte("hash1"))
 		require.Nil(t, err)
@@ -103,7 +103,7 @@ func TestBlocksPool_GetBlock(t *testing.T) {
 	})
 }
 
-func TestBlocksPool_UpdateMetaState(t *testing.T) {
+func TestDataPool_UpdateMetaState(t *testing.T) {
 	t.Parallel()
 
 	cleanupInterval := uint64(100)
@@ -129,7 +129,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastNonces: map[uint32]uint64{
@@ -163,7 +163,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastNonces: map[uint32]uint64{
@@ -189,7 +189,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastNonces: map[uint32]uint64{
@@ -215,7 +215,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		checkpoint := &data.BlockCheckpoint{
 			LastNonces: map[uint32]uint64{
@@ -230,7 +230,7 @@ func TestBlocksPool_UpdateMetaState(t *testing.T) {
 	})
 }
 
-func TestBlocksPool_PutBlock(t *testing.T) {
+func TestDataPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
 	shardID := uint32(2)
@@ -250,7 +250,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		startIndex := uint64(0)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -279,7 +279,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				return []byte{}, nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		startIndex := uint64(123)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -322,7 +322,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				return nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		err = bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex+1, shardID)
 		require.Nil(t, err)
@@ -358,7 +358,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 				return checkpointBytes, nil
 			},
 		}
-		bp, _ := process.NewBlocksPool(args)
+		bp, _ := process.NewDataPool(args)
 
 		startIndex := uint64(2)
 		err := bp.PutBlock([]byte("hash1"), []byte("data1"), startIndex, shardID)
@@ -382,7 +382,7 @@ func TestBlocksPool_PutBlock(t *testing.T) {
 	})
 }
 
-func TestBlocksPool_Close(t *testing.T) {
+func TestDataPool_Close(t *testing.T) {
 	t.Parallel()
 
 	wasCalled := false
@@ -394,7 +394,7 @@ func TestBlocksPool_Close(t *testing.T) {
 			return nil
 		},
 	}
-	bp, _ := process.NewBlocksPool(args)
+	bp, _ := process.NewDataPool(args)
 
 	err := bp.Close()
 	require.Nil(t, err)

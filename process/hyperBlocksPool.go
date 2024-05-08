@@ -9,16 +9,16 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-type hyperOutportBlocksPool struct {
+type blocksPool struct {
 	marshaller marshal.Marshalizer
 	dataPool   DataPool
 }
 
-// NewHyperOutportBlocksPool will create a new instance of hyper outport blocks pool
-func NewHyperOutportBlocksPool(
+// NewBlocksPool will create a new instance of hyper outport blocks pool
+func NewBlocksPool(
 	dataPool DataPool,
 	marshaller marshal.Marshalizer,
-) (*hyperOutportBlocksPool, error) {
+) (*blocksPool, error) {
 	if check.IfNil(dataPool) {
 		return nil, ErrNilDataPool
 	}
@@ -26,19 +26,19 @@ func NewHyperOutportBlocksPool(
 		return nil, ErrNilMarshaller
 	}
 
-	return &hyperOutportBlocksPool{
+	return &blocksPool{
 		dataPool:   dataPool,
 		marshaller: marshaller,
 	}, nil
 }
 
 // UpdateMetaState will triger meta state update from base data pool
-func (bp *hyperOutportBlocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 	return bp.dataPool.UpdateMetaState(checkpoint)
 }
 
 // Get will trigger data pool get operation
-func (bp *hyperOutportBlocksPool) Get(key []byte) ([]byte, error) {
+func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	data, err := bp.dataPool.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get from data pool: %w", err)
@@ -48,7 +48,7 @@ func (bp *hyperOutportBlocksPool) Get(key []byte) ([]byte, error) {
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
 	shardID := outportBlock.GetShardID()
 	currentIndex, err := outportBlock.GetHeaderNonce()
 	if err != nil {
@@ -71,7 +71,7 @@ func (bp *hyperOutportBlocksPool) PutBlock(hash []byte, outportBlock OutportBloc
 }
 
 // GetMetaBlock will return the meta outport block data from the pool
-func (bp *hyperOutportBlocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+func (bp *blocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
 	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get meta block from pool: %w", err)
@@ -87,7 +87,7 @@ func (bp *hyperOutportBlocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks
 }
 
 // GetShardBlock will return the shard outport block data from the pool
-func (bp *hyperOutportBlocksPool) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
+func (bp *blocksPool) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
 	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get shard block from pool: %w", err)
@@ -103,11 +103,11 @@ func (bp *hyperOutportBlocksPool) GetShardBlock(hash []byte) (*hyperOutportBlock
 }
 
 // Close will trigger close on data pool component
-func (bp *hyperOutportBlocksPool) Close() error {
+func (bp *blocksPool) Close() error {
 	return bp.dataPool.Close()
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface
-func (bp *hyperOutportBlocksPool) IsInterfaceNil() bool {
+func (bp *blocksPool) IsInterfaceNil() bool {
 	return bp == nil
 }

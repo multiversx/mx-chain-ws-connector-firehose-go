@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewHyperBlocksPool(t *testing.T) {
+func TestBlocksPool(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil data pool", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			nil,
 			&testscommon.MarshallerMock{},
 		)
@@ -27,7 +27,7 @@ func TestNewHyperBlocksPool(t *testing.T) {
 	t.Run("nil marshaller", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			&testscommon.BlocksPoolMock{},
 			nil,
 		)
@@ -38,7 +38,7 @@ func TestNewHyperBlocksPool(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
@@ -47,13 +47,13 @@ func TestNewHyperBlocksPool(t *testing.T) {
 	})
 }
 
-func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
+func TestBlocksPool_PutBlock(t *testing.T) {
 	t.Parallel()
 
 	t.Run("should fail if no succesive index", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
@@ -78,7 +78,7 @@ func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 	t.Run("should work for meta block", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
@@ -103,7 +103,7 @@ func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 	t.Run("should work for shard block", func(t *testing.T) {
 		t.Parallel()
 
-		hbp, err := process.NewHyperOutportBlocksPool(
+		hbp, err := process.NewBlocksPool(
 			&testscommon.BlocksPoolMock{},
 			&testscommon.MarshallerMock{},
 		)
@@ -126,7 +126,7 @@ func TestHyperOutportBlocksPool_PutBlock(t *testing.T) {
 	})
 }
 
-func TestHyperOutportBlocksPool_GetMetaBlock(t *testing.T) {
+func TestBlocksPool_GetMetaBlock(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &testscommon.MarshallerMock{}
@@ -144,7 +144,7 @@ func TestHyperOutportBlocksPool_GetMetaBlock(t *testing.T) {
 	}
 	outportBlockBytes, _ := marshaller.Marshal(outportBlock)
 
-	hbp, err := process.NewHyperOutportBlocksPool(
+	hbp, err := process.NewBlocksPool(
 		&testscommon.BlocksPoolMock{
 			GetCalled: func(hash []byte) ([]byte, error) {
 				return outportBlockBytes, nil
@@ -159,7 +159,7 @@ func TestHyperOutportBlocksPool_GetMetaBlock(t *testing.T) {
 	require.Equal(t, outportBlock, ret)
 }
 
-func TestHyperOutportBlocksPool_GetShardBlock(t *testing.T) {
+func TestBlocksPool_GetShardBlock(t *testing.T) {
 	t.Parallel()
 
 	marshaller := &testscommon.MarshallerMock{}
@@ -177,7 +177,7 @@ func TestHyperOutportBlocksPool_GetShardBlock(t *testing.T) {
 	}
 	outportBlockBytes, _ := marshaller.Marshal(outportBlock)
 
-	hbp, err := process.NewHyperOutportBlocksPool(
+	hbp, err := process.NewBlocksPool(
 		&testscommon.BlocksPoolMock{
 			GetCalled: func(hash []byte) ([]byte, error) {
 				return outportBlockBytes, nil

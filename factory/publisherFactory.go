@@ -15,7 +15,7 @@ func CreatePublisher(
 	cfg *config.Config,
 	enableGRPCServer bool,
 	blockContainer process.BlockContainerHandler,
-	outportBlocksPool process.HyperBlocksPool,
+	outportBlocksPool process.BlocksPool,
 	dataAggregator process.DataAggregator) (process.Publisher, error) {
 	if enableGRPCServer {
 		handler, err := process.NewGRPCBlocksHandler(outportBlocksPool, dataAggregator)
