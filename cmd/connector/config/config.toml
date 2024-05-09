@@ -36,12 +36,14 @@
     # Defines the number of active persisters to keep open
     NumPersistersToKeep = 2
 
-    # Defines the first commitable blocks per shard
+    # Defines the first commitable blocks per shard.
+    # The nonces have to be setup based on metachain shard, they can be fetched by interogating
+    # this gateway endpoint `https://gateway.multiversx.com/block/4294967295/by-nonce/<metachain nonce here>`
     FirstCommitableBlocks = [
-        { ShardID = "metachain", Nonce = 19831900 },
-        { ShardID = "0", Nonce = 19846832 },
-        { ShardID = "1", Nonce = 19838462 },
-        { ShardID = "2", Nonce = 19846838 }
+        { ShardID = "metachain", Nonce = 0 },
+        { ShardID = "0", Nonce = 0 },
+        { ShardID = "1", Nonce = 0 },
+        { ShardID = "2", Nonce = 0 }
     ]
 
 [OutportBlocksStorage]
