@@ -23,7 +23,7 @@ const (
 
 // ConvertFirstCommitableBlocks will convert first commitable blocks map
 func ConvertFirstCommitableBlocks(blocks []config.FirstCommitableBlock) (map[uint32]uint64, error) {
-	newBlocks := make(map[uint32]uint64)
+	newBlocks := make(map[uint32]uint64, len(blocks))
 
 	for _, firstCommitableBlock := range blocks {
 		shardID, err := core.ConvertShardIDToUint32(firstCommitableBlock.ShardID)
