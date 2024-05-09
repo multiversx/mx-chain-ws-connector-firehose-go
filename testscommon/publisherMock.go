@@ -2,14 +2,14 @@ package testscommon
 
 import data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 
-// PublisherStub -
-type PublisherStub struct {
+// PublisherMock -
+type PublisherMock struct {
 	PublishHyperBlockCalled func(hyperOutportBlock *data.HyperOutportBlock) error
 	CloseCalled             func() error
 }
 
 // PublishHyperBlock -
-func (p *PublisherStub) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
+func (p *PublisherMock) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error {
 	if p.PublishHyperBlockCalled != nil {
 		return p.PublishHyperBlockCalled(hyperOutportBlock)
 	}
@@ -18,7 +18,7 @@ func (p *PublisherStub) PublishHyperBlock(hyperOutportBlock *data.HyperOutportBl
 }
 
 // Close -
-func (p *PublisherStub) Close() error {
+func (p *PublisherMock) Close() error {
 	if p.CloseCalled != nil {
 		return p.CloseCalled()
 	}
@@ -27,6 +27,6 @@ func (p *PublisherStub) Close() error {
 }
 
 // IsInterfaceNil -
-func (p *PublisherStub) IsInterfaceNil() bool {
+func (p *PublisherMock) IsInterfaceNil() bool {
 	return p == nil
 }

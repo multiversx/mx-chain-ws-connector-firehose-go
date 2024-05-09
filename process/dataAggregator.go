@@ -6,74 +6,59 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 
 	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type dataAggregator struct {
-	blocksPool DataPool
-	converter  OutportBlockConverter
+	blocksPool BlocksPool
 }
 
 // NewDataAggregator will create a new data aggregator instance
 func NewDataAggregator(
-	blocksPool DataPool,
-	converter OutportBlockConverter,
+	blocksPool BlocksPool,
 ) (*dataAggregator, error) {
 	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool
 	}
-	if check.IfNil(converter) {
-		return nil, ErrNilOutportBlocksConverter
-	}
 
 	return &dataAggregator{
 		blocksPool: blocksPool,
-		converter:  converter,
 	}, nil
 }
 
 // ProcessHyperBlock will process meta outport block. It will try to fetch and aggregate
 // notarized shards data
-func (da *dataAggregator) ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error) {
-	if outportBlock.ShardID != core.MetachainShardId {
+func (da *dataAggregator) ProcessHyperBlock(metaOutportBlock *hyperOutportBlocks.MetaOutportBlock) (*data.HyperOutportBlock, error) {
+	if metaOutportBlock.ShardID != core.MetachainShardId {
 		return nil, ErrInvalidOutportBlock
 	}
 
 	hyperOutportBlock := &data.HyperOutportBlock{}
-	metaOutportBlock, err := da.converter.HandleMetaOutportBlock(outportBlock)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't process meta outportBlock: %w", err)
-	}
 	hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
 	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0)
 
-	log.Info("dataAggregator: notarizedHashes", "block hash", outportBlock.BlockData.HeaderHash,
-		"num notarizedHashes", len(outportBlock.NotarizedHeadersHashes))
+	log.Info("dataAggregator: notarizedHashes", "block hash", metaOutportBlock.BlockData.HeaderHash,
+		"num notarizedHashes", len(metaOutportBlock.NotarizedHeadersHashes))
 
-	for _, notarizedHash := range outportBlock.NotarizedHeadersHashes {
+	for _, notarizedHash := range metaOutportBlock.NotarizedHeadersHashes {
 		hash, err := hex.DecodeString(notarizedHash)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode notarized hash string: %w", err)
 		}
 
-		outportBlockShard, err := da.blocksPool.GetBlock(hash)
+		shardOutportBlock, err := da.blocksPool.GetShardBlock(hash)
 		if err != nil {
 			return nil, err
 		}
 
 		log.Info("dataAggregator: get block", "hash", hash)
 
-		shardBlock, err := da.converter.HandleShardOutportBlock(outportBlockShard)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't process shard outportBlock: %w", err)
-		}
-
 		notarizedShardOutportBlock := &data.NotarizedHeaderOutportData{
 			NotarizedHeaderHash: notarizedHash,
-			OutportBlock:        shardBlock,
+			OutportBlock:        shardOutportBlock,
 		}
 
 		notarizedShardOutportBlocks = append(notarizedShardOutportBlocks, notarizedShardOutportBlock)

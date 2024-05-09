@@ -2,6 +2,7 @@ package process
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
 
@@ -9,17 +10,17 @@ import (
 )
 
 type grpcBlocksHandler struct {
-	outportBlocksPool DataPool
+	outportBlocksPool BlocksPool
 	dataAggregator    DataAggregator
 }
 
 // NewGRPCBlocksHandler will create a new grpc blocks handler component able to fetch hyper outport blocks data to blocks pool
 // which will then be consumed by the grpc server
 func NewGRPCBlocksHandler(
-	outportBlocksPool DataPool,
+	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
 ) (*grpcBlocksHandler, error) {
-	if check.IfNil(outportBlocksPool) {
+	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(dataAggregator) {
@@ -27,16 +28,16 @@ func NewGRPCBlocksHandler(
 	}
 
 	return &grpcBlocksHandler{
-		outportBlocksPool: outportBlocksPool,
+		outportBlocksPool: blocksPool,
 		dataAggregator:    dataAggregator,
 	}, nil
 }
 
 // FetchHyperBlockByHash will fetch hyper block from pool by hash
 func (gb *grpcBlocksHandler) FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error) {
-	metaOutportBlock, err := gb.outportBlocksPool.GetBlock(hash)
+	metaOutportBlock, err := gb.outportBlocksPool.GetMetaBlock(hash)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve meta outport block: %w", err)
 	}
 
 	hyperOutportBlock, err := gb.dataAggregator.ProcessHyperBlock(metaOutportBlock)

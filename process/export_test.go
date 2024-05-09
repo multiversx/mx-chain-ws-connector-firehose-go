@@ -1,10 +1,17 @@
 package process
 
-import "github.com/multiversx/mx-chain-storage-go/types"
+import (
+	"math/big"
+
+	"github.com/multiversx/mx-chain-storage-go/types"
+)
 
 const (
+	// FirehosePrefix -
 	FirehosePrefix = firehosePrefix
-	BlockPrefix    = blockPrefix
+
+	// BlockPrefix -
+	BlockPrefix = blockPrefix
 )
 
 // GetActivePersisters -
@@ -26,4 +33,9 @@ func (ps *pruningStorer) GetActivePersister(index int) types.Persister {
 // GetPersisterPaths -
 func (ps *pruningStorer) GetPersisterPaths() ([]string, error) {
 	return ps.getPersisterPaths()
+}
+
+// CastBigInt -
+func (o *outportBlockConverter) CastBigInt(i *big.Int) ([]byte, error) {
+	return o.castBigInt(i)
 }

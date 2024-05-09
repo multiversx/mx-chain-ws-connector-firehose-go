@@ -1,170 +1,117 @@
 package process
 
 import (
-	"math"
-	"sync"
+	"fmt"
 
-	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-const initIndex = 0
-
 type blocksPool struct {
-	storer          PruningStorer
-	marshaller      marshal.Marshalizer
-	maxDelta        uint64
-	cleanupInterval uint64
-
-	indexesMap map[uint32]uint64
-	mutMap     sync.RWMutex
+	marshaller marshal.Marshalizer
+	dataPool   DataPool
 }
 
-// NewBlocksPool will create a new blocks pool instance
+// NewBlocksPool will create a new instance of hyper outport blocks pool
 func NewBlocksPool(
-	storer PruningStorer,
+	dataPool DataPool,
 	marshaller marshal.Marshalizer,
-	maxDelta uint64,
-	cleanupInterval uint64,
 ) (*blocksPool, error) {
-	if check.IfNil(storer) {
-		return nil, ErrNilPruningStorer
+	if check.IfNil(dataPool) {
+		return nil, ErrNilDataPool
 	}
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
 	}
 
-	bp := &blocksPool{
-		storer:          storer,
-		marshaller:      marshaller,
-		maxDelta:        maxDelta,
-		cleanupInterval: cleanupInterval,
-	}
-
-	bp.initIndexesMap()
-
-	return bp, nil
+	return &blocksPool{
+		dataPool:   dataPool,
+		marshaller: marshaller,
+	}, nil
 }
 
-func (bp *blocksPool) initIndexesMap() {
-	indexesMap := make(map[uint32]uint64)
-	indexesMap[core.MetachainShardId] = initIndex
-
-	bp.indexesMap = indexesMap
+// UpdateMetaState will triger meta state update from base data pool
+func (bp *blocksPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
+	return bp.dataPool.UpdateMetaState(checkpoint)
 }
 
-// Put will put value into storer
-func (bp *blocksPool) Put(key []byte, value []byte) error {
-	return bp.storer.Put(key, value)
+// GetLastCheckpoint returns last checkpoint data
+func (bp *blocksPool) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
+	return bp.dataPool.GetLastCheckpoint()
 }
 
-// Get will get value from storer
+// Get will trigger data pool get operation
 func (bp *blocksPool) Get(key []byte) ([]byte, error) {
-	return bp.storer.Get(key)
-}
-
-func (bp *blocksPool) UpdateMetaState(index uint64) {
-	bp.mutMap.Lock()
-	bp.indexesMap[core.MetachainShardId] = index
-	bp.mutMap.Unlock()
-
-	err := bp.storer.SetCheckpoint(index)
+	data, err := bp.dataPool.Get(key)
 	if err != nil {
-		log.Warn("failed to set checkpoint", "error", err.Error())
+		return nil, fmt.Errorf("failed to get from data pool: %w", err)
 	}
 
-	err = bp.pruneStorer(index)
-	if err != nil {
-		log.Warn("failed to prune storer", "error", err.Error())
-	}
-}
-
-func (bp *blocksPool) pruneStorer(index uint64) error {
-	if index%bp.cleanupInterval != 0 {
-		return nil
-	}
-
-	return bp.storer.Prune(index)
+	return data, nil
 }
 
 // PutBlock will put the provided outport block data to the pool
-func (bp *blocksPool) PutBlock(hash []byte, outportBlock *outport.OutportBlock, index uint64) error {
-	shardID := outportBlock.ShardID
+func (bp *blocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
+	shardID := outportBlock.GetShardID()
+	currentIndex, err := outportBlock.GetHeaderNonce()
+	if err != nil {
+		return err
+	}
 
+	previousIndex := outportBlock.GetHighestFinalBlockNonce()
+	isHigherIndex := currentIndex >= previousIndex
+	if !isHigherIndex {
+		return fmt.Errorf("%w: new meta index should be higher than previous, previous index %d, new index %d",
+			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
+	}
+
+	// TODO: marshall data only when/if saving to storage
+	//  we do not necessarily need to marshall outport block if it is saved only to cache
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
 	if err != nil {
 		return err
 	}
 
-	bp.mutMap.Lock()
-	defer bp.mutMap.Unlock()
+	return bp.dataPool.PutBlock(hash, outportBlockBytes, currentIndex, shardID)
+}
 
-	currentIndex, ok := bp.indexesMap[shardID]
-	if !ok {
-		bp.indexesMap[shardID] = initIndex
-		currentIndex = initIndex
-	}
-
-	if currentIndex == initIndex {
-		err := bp.storer.Put(hash, outportBlockBytes)
-		if err != nil {
-			return err
-		}
-
-		bp.indexesMap[shardID] = index
-
-		return nil
-	}
-
-	metaIndex := bp.indexesMap[core.MetachainShardId]
-
-	if !bp.shouldPutBlockData(currentIndex, metaIndex) {
-		return ErrFailedToPutBlockDataToPool
-	}
-
-	err = bp.storer.Put(hash, outportBlockBytes)
+// GetMetaBlock will return the meta outport block data from the pool
+func (bp *blocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+	marshalledData, err := bp.dataPool.Get(hash)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get meta block from pool: %w", err)
 	}
 
-	bp.indexesMap[shardID] = index
-
-	return nil
-}
-
-func (bp *blocksPool) shouldPutBlockData(index, baseIndex uint64) bool {
-	diff := float64(int64(index) - int64(baseIndex))
-	delta := math.Abs(diff)
-
-	return math.Abs(delta) < float64(bp.maxDelta)
-}
-
-// GetBlock will return outport block data from the pool
-func (bp *blocksPool) GetBlock(hash []byte) (*outport.OutportBlock, error) {
-	marshalledData, err := bp.storer.Get(hash)
+	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
+	err = bp.marshaller.Unmarshal(metaOutportBlock, marshalledData)
 	if err != nil {
 		return nil, err
 	}
 
-	outportBlock := &outport.OutportBlock{}
-	err = bp.marshaller.Unmarshal(outportBlock, marshalledData)
+	return metaOutportBlock, nil
+}
+
+// GetShardBlock will return the shard outport block data from the pool
+func (bp *blocksPool) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error) {
+	marshalledData, err := bp.dataPool.Get(hash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get shard block from pool: %w", err)
+	}
+
+	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}
+	err = bp.marshaller.Unmarshal(shardOutportBlock, marshalledData)
 	if err != nil {
 		return nil, err
 	}
 
-	return outportBlock, nil
+	return shardOutportBlock, nil
 }
 
-// Close will trigger close on blocks pool component
+// Close will trigger close on data pool component
 func (bp *blocksPool) Close() error {
-	err := bp.storer.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return bp.dataPool.Close()
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface
