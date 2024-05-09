@@ -20,11 +20,11 @@ const (
 )
 
 type dataPool struct {
-	storer               PruningStorer
-	marshaller           marshal.Marshalizer
-	maxDelta             uint64
-	cleanupInterval      uint64
-	firstCommitableBlock uint64
+	storer                PruningStorer
+	marshaller            marshal.Marshalizer
+	maxDelta              uint64
+	cleanupInterval       uint64
+	firstCommitableBlocks map[uint32]uint64
 
 	previousIndexesMap map[uint32]uint64
 	mutMap             sync.RWMutex
@@ -32,11 +32,11 @@ type dataPool struct {
 
 // DataPoolArgs defines the arguments needed to create the blocks pool component
 type DataPoolArgs struct {
-	Storer               PruningStorer
-	Marshaller           marshal.Marshalizer
-	MaxDelta             uint64
-	CleanupInterval      uint64
-	FirstCommitableBlock uint64
+	Storer                PruningStorer
+	Marshaller            marshal.Marshalizer
+	MaxDelta              uint64
+	CleanupInterval       uint64
+	FirstCommitableBlocks map[uint32]uint64
 }
 
 // NewDataPool will create a new data pool instance
@@ -55,11 +55,11 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 	}
 
 	bp := &dataPool{
-		storer:               args.Storer,
-		marshaller:           args.Marshaller,
-		maxDelta:             args.MaxDelta,
-		cleanupInterval:      args.CleanupInterval,
-		firstCommitableBlock: args.FirstCommitableBlock,
+		storer:                args.Storer,
+		marshaller:            args.Marshaller,
+		maxDelta:              args.MaxDelta,
+		cleanupInterval:       args.CleanupInterval,
+		firstCommitableBlocks: args.FirstCommitableBlocks,
 	}
 
 	bp.initIndexesMap()
@@ -70,6 +70,8 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 func (bp *dataPool) initIndexesMap() {
 	lastCheckpoint, err := bp.GetLastCheckpoint()
 	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastNonces == nil {
+		log.Warn("failed to get last checkpoint, will set empty indexes map", "error", err)
+
 		indexesMap := make(map[uint32]uint64)
 		bp.previousIndexesMap = indexesMap
 		return
@@ -101,7 +103,7 @@ func (bp *dataPool) UpdateMetaState(checkpoint *data.BlockCheckpoint) error {
 		index = initIndex
 	}
 
-	if index >= bp.firstCommitableBlock {
+	if index >= bp.firstCommitableBlocks[core.MetachainShardId] {
 		err := bp.setCheckpoint(checkpoint)
 		if err != nil {
 			return fmt.Errorf("%w, failed to set checkpoint", err)
@@ -147,6 +149,16 @@ func (bp *dataPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID
 	bp.mutMap.Lock()
 	defer bp.mutMap.Unlock()
 
+	firstCommitableBlock, ok := bp.firstCommitableBlocks[shardID]
+	if !ok {
+		return fmt.Errorf("failed to get first commitable block for shard %d", shardID)
+	}
+
+	if newIndex < firstCommitableBlock {
+		log.Trace("do not commit block", "newIndex", newIndex, "firstCommitableBlock", firstCommitableBlock)
+		return nil
+	}
+
 	lastIndex := bp.getLastIndex(shardID)
 	if lastIndex == initIndex {
 		bp.previousIndexesMap[shardID] = newIndex
@@ -162,8 +174,6 @@ func (bp *dataPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID
 	if err != nil {
 		return fmt.Errorf("failed to put into storer: %w", err)
 	}
-
-	bp.previousIndexesMap[shardID] = newIndex
 
 	return nil
 }

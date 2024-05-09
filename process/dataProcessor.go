@@ -18,7 +18,7 @@ type dataProcessor struct {
 	outportBlocksPool     BlocksPool
 	dataAggregator        DataAggregator
 	outportBlockConverter OutportBlockConverter
-	firstCommitableBlock  uint64
+	firstCommitableBlocks map[uint32]uint64
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -28,7 +28,7 @@ func NewDataProcessor(
 	blocksPool BlocksPool,
 	dataAggregator DataAggregator,
 	outportBlockConverter OutportBlockConverter,
-	firstCommitableBlock uint64,
+	firstCommitableBlocks map[uint32]uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -52,7 +52,7 @@ func NewDataProcessor(
 		outportBlocksPool:     blocksPool,
 		dataAggregator:        dataAggregator,
 		outportBlockConverter: outportBlockConverter,
-		firstCommitableBlock:  firstCommitableBlock,
+		firstCommitableBlocks: firstCommitableBlocks,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
@@ -117,11 +117,15 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	if metaNonce < dp.firstCommitableBlock {
-		// do not try to aggregate or publish hyper outport block
-		// update only blocks pool state
+	firstCommitableBlock, ok := dp.firstCommitableBlocks[core.MetachainShardId]
+	if !ok {
+		return fmt.Errorf("failed to get first commitable block for meta")
+	}
 
-		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableBlock", dp.firstCommitableBlock)
+	if metaNonce < firstCommitableBlock {
+		// do not try to aggregate or publish hyper outport block
+
+		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableBlock", firstCommitableBlock)
 
 		return nil
 	}

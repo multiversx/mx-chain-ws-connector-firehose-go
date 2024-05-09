@@ -17,11 +17,16 @@ import (
 
 func createDefaultBlocksPoolArgs() process.DataPoolArgs {
 	return process.DataPoolArgs{
-		Storer:               &testscommon.PruningStorerMock{},
-		Marshaller:           gogoProtoMarshaller,
-		MaxDelta:             10,
-		CleanupInterval:      100,
-		FirstCommitableBlock: 0,
+		Storer:          &testscommon.PruningStorerMock{},
+		Marshaller:      gogoProtoMarshaller,
+		MaxDelta:        10,
+		CleanupInterval: 100,
+		FirstCommitableBlocks: map[uint32]uint64{
+			core.MetachainShardId: 0,
+			0:                     0,
+			1:                     0,
+			2:                     0,
+		},
 	}
 }
 
@@ -112,10 +117,13 @@ func TestDataPool_UpdateMetaState(t *testing.T) {
 		t.Parallel()
 
 		firstCommitableBlock := uint64(10)
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: firstCommitableBlock,
+		}
 
 		args := createDefaultBlocksPoolArgs()
 		args.CleanupInterval = cleanupInterval
-		args.FirstCommitableBlock = firstCommitableBlock
+		args.FirstCommitableBlocks = firstCommitableBlocks
 		args.Marshaller = protoMarshaller
 		args.Storer = &testscommon.PruningStorerMock{
 			PutCalled: func(key, data []byte) error {
@@ -145,11 +153,14 @@ func TestDataPool_UpdateMetaState(t *testing.T) {
 		t.Parallel()
 
 		firstCommitableBlock := uint64(10)
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: firstCommitableBlock,
+		}
 
 		putCalled := false
 		args := createDefaultBlocksPoolArgs()
 		args.CleanupInterval = cleanupInterval
-		args.FirstCommitableBlock = firstCommitableBlock
+		args.FirstCommitableBlocks = firstCommitableBlocks
 		args.Marshaller = protoMarshaller
 		args.Storer = &testscommon.PruningStorerMock{
 			PutCalled: func(key, data []byte) error {

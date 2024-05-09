@@ -36,8 +36,13 @@
     # Defines the number of active persisters to keep open
     NumPersistersToKeep = 2
 
-    # Defines the first commitable meta block nonce
-    FirstCommitableBlock = 0
+    # Defines the first commitable blocks per shard
+    FirstCommitableBlocks = [
+        { ShardID = "metachain", Nonce = 19831900 },
+        { ShardID = "0", Nonce = 19846832 },
+        { ShardID = "1", Nonce = 19838462 },
+        { ShardID = "2", Nonce = 19846838 }
+    ]
 
 [OutportBlocksStorage]
     [OutportBlocksStorage.Cache]

@@ -203,7 +203,7 @@ func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
 		val, err := ps.activePersisters[idx].persister.Get(key)
 		if err != nil {
-			log.Error("failed to get key from persister", "key", hex.EncodeToString(key), "error", err)
+			log.Trace("failed to get key from persister", "key", hex.EncodeToString(key), "error", err)
 			continue
 		}
 

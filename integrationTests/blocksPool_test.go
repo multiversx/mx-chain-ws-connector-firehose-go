@@ -20,10 +20,27 @@ func getDefaultConfig() config.Config {
 
 	cfg := config.Config{
 		DataPool: config.DataPoolConfig{
-			MaxDelta:             maxDelta,
-			PruningWindow:        pruningWindow,
-			NumPersistersToKeep:  2,
-			FirstCommitableBlock: 0,
+			MaxDelta:            maxDelta,
+			PruningWindow:       pruningWindow,
+			NumPersistersToKeep: 2,
+			FirstCommitableBlocks: []config.FirstCommitableBlock{
+				{
+					ShardID: "metachain",
+					Nonce:   0,
+				},
+				{
+					ShardID: "0",
+					Nonce:   0,
+				},
+				{
+					ShardID: "1",
+					Nonce:   0,
+				},
+				{
+					ShardID: "2",
+					Nonce:   0,
+				},
+			},
 		},
 		OutportBlocksStorage: config.StorageConfig{
 			Cache: config.CacheConfig{
@@ -59,12 +76,15 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cfg.DataPool.FirstCommitableBlocks)
+	require.Nil(t, err)
+
 	argsBlocksPool := process.DataPoolArgs{
-		Storer:               blocksStorer,
-		Marshaller:           marshaller,
-		MaxDelta:             cfg.DataPool.MaxDelta,
-		CleanupInterval:      cfg.DataPool.PruningWindow,
-		FirstCommitableBlock: cfg.DataPool.FirstCommitableBlock,
+		Storer:                blocksStorer,
+		Marshaller:            marshaller,
+		MaxDelta:              cfg.DataPool.MaxDelta,
+		CleanupInterval:       cfg.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
 	}
 	blocksPool, err := process.NewDataPool(argsBlocksPool)
 	require.Nil(t, err)
@@ -179,12 +199,15 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cfg.DataPool.FirstCommitableBlocks)
+	require.Nil(t, err)
+
 	argsDataPool := process.DataPoolArgs{
-		Storer:               blocksStorer,
-		Marshaller:           marshaller,
-		MaxDelta:             cfg.DataPool.MaxDelta,
-		CleanupInterval:      cfg.DataPool.PruningWindow,
-		FirstCommitableBlock: cfg.DataPool.FirstCommitableBlock,
+		Storer:                blocksStorer,
+		Marshaller:            marshaller,
+		MaxDelta:              cfg.DataPool.MaxDelta,
+		CleanupInterval:       cfg.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
 	}
 	blocksPool, err := process.NewDataPool(argsDataPool)
 	require.Nil(t, err)

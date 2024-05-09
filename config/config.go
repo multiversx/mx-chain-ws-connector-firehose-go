@@ -23,10 +23,15 @@ type WebSocketConfig struct {
 
 // DataPoolConfig will map data poil configuration
 type DataPoolConfig struct {
-	MaxDelta             uint64
-	PruningWindow        uint64
-	NumPersistersToKeep  int
-	FirstCommitableBlock uint64
+	MaxDelta              uint64
+	PruningWindow         uint64
+	NumPersistersToKeep   int
+	FirstCommitableBlocks []FirstCommitableBlock
+}
+
+type FirstCommitableBlock struct {
+	ShardID string
+	Nonce   uint64
 }
 
 // StorageConfig will map the storage unit configuration

@@ -67,6 +67,8 @@ func (bp *blocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) er
 			ErrFailedToPutBlockDataToPool, previousIndex, currentIndex)
 	}
 
+	// TODO: marshall data only when/if saving to storage
+	//  we do not necessarily need to marshall outport block if it is saved only to cache
 	outportBlockBytes, err := bp.marshaller.Marshal(outportBlock)
 	if err != nil {
 		return err

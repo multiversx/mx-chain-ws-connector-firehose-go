@@ -45,6 +45,11 @@ func (cr *connectorRunner) Run() error {
 	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
 	protoMarshaller := &process.ProtoMarshaller{}
 
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cr.config.DataPool.FirstCommitableBlocks)
+	if err != nil {
+		return err
+	}
+
 	outportBlockConverter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	if err != nil {
 		return err
@@ -61,11 +66,11 @@ func (cr *connectorRunner) Run() error {
 	}
 
 	argsBlocksPool := process.DataPoolArgs{
-		Storer:               blocksStorer,
-		Marshaller:           protoMarshaller,
-		MaxDelta:             cr.config.DataPool.MaxDelta,
-		CleanupInterval:      cr.config.DataPool.PruningWindow,
-		FirstCommitableBlock: cr.config.DataPool.FirstCommitableBlock,
+		Storer:                blocksStorer,
+		Marshaller:            protoMarshaller,
+		MaxDelta:              cr.config.DataPool.MaxDelta,
+		CleanupInterval:       cr.config.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
 	}
 	dataPool, err := process.NewDataPool(argsBlocksPool)
 	if err != nil {
@@ -96,7 +101,7 @@ func (cr *connectorRunner) Run() error {
 		blocksPool,
 		dataAggregator,
 		outportBlockConverter,
-		cr.config.DataPool.FirstCommitableBlock,
+		firstCommitableBlocks,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
