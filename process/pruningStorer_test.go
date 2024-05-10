@@ -469,16 +469,16 @@ func TestPruningStorer_Dump(t *testing.T) {
 	_ = ps.Put([]byte("key3"), []byte("value3"))
 	_ = ps.Put([]byte("key4"), []byte("value4"))
 
-	persister4 := ps.GetActivePersister(0)
-	key4Val, err := persister4.Get([]byte("key4"))
+	persister := ps.GetActivePersister(0)
+	key4Val, err := persister.Get([]byte("key4"))
 	require.Nil(t, key4Val)
 	require.Error(t, err)
 
 	err = ps.Dump()
 	require.Nil(t, err)
 
-	persister4 = ps.GetActivePersister(0)
-	key4Val, err = persister4.Get([]byte("key4"))
+	persister = ps.GetActivePersister(0)
+	key4Val, err = persister.Get([]byte("key4"))
 	require.NotNil(t, key4Val)
 	require.Nil(t, err)
 }

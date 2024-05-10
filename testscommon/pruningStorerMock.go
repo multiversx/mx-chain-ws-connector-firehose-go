@@ -1,7 +1,7 @@
 package testscommon
 
-// PruningStorerStub -
-type PruningStorerStub struct {
+// PruningStorerMock -
+type PruningStorerMock struct {
 	GetCalled   func(key []byte) ([]byte, error)
 	PutCalled   func(key []byte, data []byte) error
 	PruneCalled func(index uint64) error
@@ -10,7 +10,7 @@ type PruningStorerStub struct {
 }
 
 // Get -
-func (p *PruningStorerStub) Get(key []byte) ([]byte, error) {
+func (p *PruningStorerMock) Get(key []byte) ([]byte, error) {
 	if p.GetCalled != nil {
 		return p.GetCalled(key)
 	}
@@ -19,7 +19,7 @@ func (p *PruningStorerStub) Get(key []byte) ([]byte, error) {
 }
 
 // Put -
-func (p *PruningStorerStub) Put(key []byte, data []byte) error {
+func (p *PruningStorerMock) Put(key []byte, data []byte) error {
 	if p.PutCalled != nil {
 		return p.PutCalled(key, data)
 	}
@@ -28,7 +28,7 @@ func (p *PruningStorerStub) Put(key []byte, data []byte) error {
 }
 
 // Prune -
-func (p *PruningStorerStub) Prune(index uint64) error {
+func (p *PruningStorerMock) Prune(index uint64) error {
 	if p.PruneCalled != nil {
 		return p.PruneCalled(index)
 	}
@@ -37,7 +37,7 @@ func (p *PruningStorerStub) Prune(index uint64) error {
 }
 
 // Dump -
-func (p *PruningStorerStub) Dump() error {
+func (p *PruningStorerMock) Dump() error {
 	if p.DumpCalled != nil {
 		return p.DumpCalled()
 	}
@@ -46,7 +46,7 @@ func (p *PruningStorerStub) Dump() error {
 }
 
 // Close -
-func (p *PruningStorerStub) Close() error {
+func (p *PruningStorerMock) Close() error {
 	if p.CloseCalled != nil {
 		return p.CloseCalled()
 	}
@@ -55,11 +55,11 @@ func (p *PruningStorerStub) Close() error {
 }
 
 // Destroy -
-func (p *PruningStorerStub) Destroy() error {
+func (p *PruningStorerMock) Destroy() error {
 	return nil
 }
 
 // IsInterfaceNil -
-func (p *PruningStorerStub) IsInterfaceNil() bool {
+func (p *PruningStorerMock) IsInterfaceNil() bool {
 	return p == nil
 }

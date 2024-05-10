@@ -1,13 +1,13 @@
 package testscommon
 
-// PublisherStub -
-type PublisherStub struct {
+// PublisherMock -
+type PublisherMock struct {
 	PublishBlockCalled func(headerHash []byte) error
 	CloseCalled        func() error
 }
 
 // PublishBlock -
-func (p *PublisherStub) PublishBlock(headerHash []byte) error {
+func (p *PublisherMock) PublishBlock(headerHash []byte) error {
 	if p.PublishBlockCalled != nil {
 		return p.PublishBlockCalled(headerHash)
 	}
@@ -16,7 +16,7 @@ func (p *PublisherStub) PublishBlock(headerHash []byte) error {
 }
 
 // Close -
-func (p *PublisherStub) Close() error {
+func (p *PublisherMock) Close() error {
 	if p.CloseCalled != nil {
 		return p.CloseCalled()
 	}
@@ -25,6 +25,6 @@ func (p *PublisherStub) Close() error {
 }
 
 // IsInterfaceNil -
-func (p *PublisherStub) IsInterfaceNil() bool {
+func (p *PublisherMock) IsInterfaceNil() bool {
 	return p == nil
 }

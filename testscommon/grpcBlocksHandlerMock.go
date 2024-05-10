@@ -4,14 +4,14 @@ import (
 	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
-// GRPCBlocksHandlerStub -
-type GRPCBlocksHandlerStub struct {
+// GRPCBlocksHandlerMock -
+type GRPCBlocksHandlerMock struct {
 	FetchHyperBlockByHashCalled  func(hash []byte) (*data.HyperOutportBlock, error)
 	FetchHyperBlockByNonceCalled func(nonce uint64) (*data.HyperOutportBlock, error)
 }
 
 // FetchHyperBlockByHash -
-func (g *GRPCBlocksHandlerStub) FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error) {
+func (g *GRPCBlocksHandlerMock) FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error) {
 	if g.FetchHyperBlockByHashCalled != nil {
 		return g.FetchHyperBlockByHashCalled(hash)
 	}
@@ -19,7 +19,7 @@ func (g *GRPCBlocksHandlerStub) FetchHyperBlockByHash(hash []byte) (*data.HyperO
 }
 
 // FetchHyperBlockByNonce -
-func (g *GRPCBlocksHandlerStub) FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
+func (g *GRPCBlocksHandlerMock) FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
 	if g.FetchHyperBlockByNonceCalled != nil {
 		return g.FetchHyperBlockByNonceCalled(nonce)
 	}
@@ -27,6 +27,6 @@ func (g *GRPCBlocksHandlerStub) FetchHyperBlockByNonce(nonce uint64) (*data.Hype
 }
 
 // IsInterfaceNil -
-func (g *GRPCBlocksHandlerStub) IsInterfaceNil() bool {
+func (g *GRPCBlocksHandlerMock) IsInterfaceNil() bool {
 	return g == nil
 }

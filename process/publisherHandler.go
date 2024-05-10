@@ -12,11 +12,11 @@ import (
 )
 
 type publisherHandler struct {
-	handler              HyperBlockPublisher
-	outportBlocksPool    HyperBlocksPool
-	dataAggregator       DataAggregator
-	retryDuration        time.Duration
-	firstCommitableBlock uint64
+	handler               HyperBlockPublisher
+	outportBlocksPool     BlocksPool
+	dataAggregator        DataAggregator
+	retryDuration         time.Duration
+	firstCommitableBlocks map[uint32]uint64
 
 	blocksChan chan []byte
 	cancelFunc func()
@@ -26,29 +26,29 @@ type publisherHandler struct {
 // NewPublisherHandler creates a new publisher handler component
 func NewPublisherHandler(
 	handler HyperBlockPublisher,
-	outportBlocksPool HyperBlocksPool,
+	outportBlocksPool BlocksPool,
 	dataAggregator DataAggregator,
 	retryDurationInMiliseconds uint64,
-	firstCommitableBlock uint64,
+	firstCommitableBlocks map[uint32]uint64,
 ) (*publisherHandler, error) {
 	if check.IfNil(handler) {
 		return nil, ErrNilPublisher
 	}
 	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilHyperBlocksPool
+		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(dataAggregator) {
 		return nil, ErrNilDataAggregator
 	}
 
 	ph := &publisherHandler{
-		handler:              handler,
-		outportBlocksPool:    outportBlocksPool,
-		dataAggregator:       dataAggregator,
-		retryDuration:        time.Duration(retryDurationInMiliseconds) * time.Millisecond,
-		firstCommitableBlock: firstCommitableBlock,
-		blocksChan:           make(chan []byte),
-		closeChan:            make(chan struct{}),
+		handler:               handler,
+		outportBlocksPool:     outportBlocksPool,
+		dataAggregator:        dataAggregator,
+		retryDuration:         time.Duration(retryDurationInMiliseconds) * time.Millisecond,
+		firstCommitableBlocks: firstCommitableBlocks,
+		blocksChan:            make(chan []byte),
+		closeChan:             make(chan struct{}),
 	}
 
 	var ctx context.Context
@@ -104,23 +104,13 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 		return err
 	}
 
-	metaRound := metaOutportBlock.BlockData.Header.GetRound()
+	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
+	shardID := metaOutportBlock.GetShardID()
 
-	if metaRound < ph.firstCommitableBlock {
+	if metaNonce < ph.firstCommitableBlocks[shardID] {
 		// do not try to aggregate or publish hyper outport block
-		// update only blocks pool state
 
-		log.Trace("do not commit block", "currentRound", metaRound, "firstCommitableRound", ph.firstCommitableBlock)
-
-		lastCheckpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: metaRound,
-			},
-		}
-		err := ph.outportBlocksPool.UpdateMetaState(lastCheckpoint)
-		if err != nil {
-			return err
-		}
+		log.Trace("do not commit block", "currentRound", metaNonce, "firstCommitableRound", ph.firstCommitableBlocks)
 
 		return nil
 	}
@@ -153,15 +143,15 @@ func (ph *publisherHandler) getLastRoundsData(hyperOutportBlock *hyperOutportBlo
 	}
 
 	checkpoint := &data.BlockCheckpoint{
-		LastRounds: make(map[uint32]uint64),
+		LastNonces: make(map[uint32]uint64),
 	}
 
 	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
-	checkpoint.LastRounds[core.MetachainShardId] = metaBlock.GetRound()
+	checkpoint.LastNonces[core.MetachainShardId] = metaBlock.GetNonce()
 
 	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
 		header := outportBlockData.OutportBlock.BlockData.Header
-		checkpoint.LastRounds[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
+		checkpoint.LastNonces[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
 	}
 
 	return checkpoint, nil
@@ -169,13 +159,13 @@ func (ph *publisherHandler) getLastRoundsData(hyperOutportBlock *hyperOutportBlo
 
 func checkMetaOutportBlockHeader(metaOutportBlock *hyperOutportBlocks.MetaOutportBlock) error {
 	if metaOutportBlock == nil {
-		return fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
+		return fmt.Errorf("%w for metaOutportBlock", ErrNilOutportBlockData)
 	}
 	if metaOutportBlock.BlockData == nil {
-		return fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
+		return fmt.Errorf("%w for blockData", ErrNilOutportBlockData)
 	}
 	if metaOutportBlock.BlockData.Header == nil {
-		return fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
+		return fmt.Errorf("%w for blockData header", ErrNilOutportBlockData)
 	}
 
 	return nil

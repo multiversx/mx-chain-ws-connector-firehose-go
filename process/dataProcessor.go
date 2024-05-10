@@ -13,7 +13,7 @@ type dataProcessor struct {
 	marshaller            marshal.Marshalizer
 	operationHandlers     map[string]func(marshalledData []byte) error
 	publisher             Publisher
-	outportBlocksPool     HyperBlocksPool
+	outportBlocksPool     BlocksPool
 	outportBlockConverter OutportBlockConverter
 }
 
@@ -21,14 +21,14 @@ type dataProcessor struct {
 func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
-	outportBlocksPool HyperBlocksPool,
+	blocksPool BlocksPool,
 	outportBlockConverter OutportBlockConverter,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
 	}
-	if check.IfNil(outportBlocksPool) {
-		return nil, ErrNilHyperBlocksPool
+	if check.IfNil(blocksPool) {
+		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
@@ -40,7 +40,7 @@ func NewDataProcessor(
 	dp := &dataProcessor{
 		marshaller:            marshaller,
 		publisher:             publisher,
-		outportBlocksPool:     outportBlocksPool,
+		outportBlocksPool:     blocksPool,
 		outportBlockConverter: outportBlockConverter,
 	}
 
@@ -83,7 +83,7 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
 	metaOutportBlock, err := dp.outportBlockConverter.HandleMetaOutportBlock(outportBlock)
 	if err != nil {
-		return fmt.Errorf("failed to convert outportBlock to metaOutportBlock: %w", err)
+		return fmt.Errorf("failed to handle metaOutportBlock: %w", err)
 	}
 	if metaOutportBlock == nil {
 		return ErrInvalidOutportBlock
@@ -94,15 +94,15 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 	if metaOutportBlock.BlockData.Header == nil {
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
-	metaRound := metaOutportBlock.BlockData.Header.GetRound()
+	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
 
 	log.Info("saving meta outport block",
 		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
-		"round", metaRound,
+		"nonce", metaNonce,
 		"shardID", metaOutportBlock.ShardID)
 
 	headerHash := metaOutportBlock.BlockData.HeaderHash
-	err = dp.outportBlocksPool.PutMetaBlock(headerHash, metaOutportBlock)
+	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
@@ -118,7 +118,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
 	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlock(outportBlock)
 	if err != nil {
-		return fmt.Errorf("failed to convert outportBlock to shardOutportBlock: %w", err)
+		return fmt.Errorf("failed to handle shardOutportBlock: %w", err)
 	}
 	if shardOutportBlock.BlockData == nil {
 		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)
@@ -126,16 +126,16 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	if shardOutportBlock.BlockData.Header == nil {
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
-	round := shardOutportBlock.BlockData.Header.GetRound()
+	nonce := shardOutportBlock.BlockData.Header.GetNonce()
 
 	log.Info("saving shard outport block",
 		"hash", shardOutportBlock.BlockData.GetHeaderHash(),
-		"round", round,
+		"nonce", nonce,
 		"shardID", shardOutportBlock.ShardID)
 
 	headerHash := outportBlock.BlockData.HeaderHash
 
-	return dp.outportBlocksPool.PutShardBlock(headerHash, shardOutportBlock)
+	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
 }
 
 func (dp *dataProcessor) revertBlock(marshalledData []byte) error {

@@ -8,7 +8,6 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/stretchr/testify/require"
 
 	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
@@ -50,27 +49,24 @@ const (
 func TestHeaderConverter(t *testing.T) {
 	t.Parallel()
 
-	var protoMarshaller = &marshal.GogoProtoMarshalizer{}
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV1JSONPath)
 	require.NoError(t, err, "failed to read test data")
 
-	ob := outport.OutportBlock{}
-	err = json.Unmarshal(jsonBytes, &ob)
+	ob := &outport.OutportBlock{}
+	err = json.Unmarshal(jsonBytes, ob)
 	require.NoError(t, err, "failed to unmarshal test block")
 
-	converter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
-	shardOutportBlock, err := converter.HandleShardOutportBlock(&ob)
-	if err != nil {
-		return
-	}
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
+	shardOutportBlock, err := converter.HandleShardOutportBlock(ob)
 	require.NoError(t, err, "failed to marshal to standard outport")
 
-	header := block.Header{}
-	err = protoMarshaller.Unmarshal(&header, ob.BlockData.HeaderBytes)
+	header := &block.Header{}
+	err = gogoProtoMarshaller.Unmarshal(header, ob.BlockData.HeaderBytes)
 	require.NoError(t, err, "failed to unmarshall outport block header bytes")
 
-	checkHeaderV1(t, &header, shardOutportBlock)
-	checkFields(t, &ob, shardOutportBlock)
+	checkHeaderV1(t, header, shardOutportBlock)
+	checkFields(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
@@ -84,11 +80,10 @@ func TestHeaderV2Converter(t *testing.T) {
 	err = json.Unmarshal(jsonBytes, &ob)
 	require.NoError(t, err, "failed to unmarshal test block")
 
-	converter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
 	shardOutportBlock, err := converter.HandleShardOutportBlock(&ob)
-	if err != nil {
-		return
-	}
+	require.Nil(t, err)
 	require.NoError(t, err, "failed to marshal to standard outport")
 
 	header := block.HeaderV2{}
@@ -110,11 +105,8 @@ func TestMetaBlockConverter(t *testing.T) {
 	err = json.Unmarshal(jsonBytes, &ob)
 	require.NoError(t, err, "failed to unmarshal test block")
 
-	converter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	converter, _ := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	metaOutportBlock, err := converter.HandleMetaOutportBlock(&ob)
-	if err != nil {
-		return
-	}
 	require.NoError(t, err, "failed to marshal to standard outport")
 
 	header := block.MetaBlock{}
@@ -534,7 +526,7 @@ func checkBlockData(t *testing.T, blockData *outport.BlockData, getter blockData
 func mustCastBigInt(t *testing.T, i *big.Int) []byte {
 	t.Helper()
 
-	converter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	converter, _ := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	buf, err := converter.CastBigInt(i)
 	require.NoError(t, err, "failed to cast from big.Int")
 

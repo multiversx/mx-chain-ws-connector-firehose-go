@@ -20,10 +20,27 @@ func getDefaultConfig() config.Config {
 
 	cfg := config.Config{
 		DataPool: config.DataPoolConfig{
-			MaxDelta:             maxDelta,
-			PruningWindow:        pruningWindow,
-			NumPersistersToKeep:  2,
-			FirstCommitableBlock: 0,
+			MaxDelta:            maxDelta,
+			PruningWindow:       pruningWindow,
+			NumPersistersToKeep: 2,
+			FirstCommitableBlocks: []config.FirstCommitableBlock{
+				{
+					ShardID: "metachain",
+					Nonce:   0,
+				},
+				{
+					ShardID: "0",
+					Nonce:   0,
+				},
+				{
+					ShardID: "1",
+					Nonce:   0,
+				},
+				{
+					ShardID: "2",
+					Nonce:   0,
+				},
+			},
 		},
 		OutportBlocksStorage: config.StorageConfig{
 			Cache: config.CacheConfig{
@@ -59,7 +76,17 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	blocksPool, err := process.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow, cfg.DataPool.FirstCommitableBlock)
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cfg.DataPool.FirstCommitableBlocks)
+	require.Nil(t, err)
+
+	argsBlocksPool := process.DataPoolArgs{
+		Storer:                blocksStorer,
+		Marshaller:            marshaller,
+		MaxDelta:              cfg.DataPool.MaxDelta,
+		CleanupInterval:       cfg.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
+	}
+	blocksPool, err := process.NewDataPool(argsBlocksPool)
 	require.Nil(t, err)
 
 	shardID := uint32(2)
@@ -68,11 +95,21 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 
 	// should fail after maxDelta attempts
 	for i := uint64(0); i < maxDelta; i++ {
+
 		hash := []byte("hash_" + fmt.Sprintf("%d", i))
 
 		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
+
+	checkpoint := &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
+			core.MetachainShardId: 1,
+			shardID:               1,
+		},
+	}
+	err = blocksPool.UpdateMetaState(checkpoint)
+	require.Nil(t, err)
 
 	oldHash := []byte("hash_" + fmt.Sprintf("%d", maxDelta-1))
 	hash := []byte("hash_" + fmt.Sprintf("%d", maxDelta))
@@ -89,26 +126,10 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
-	if pruningWindow <= maxDelta {
-		require.Fail(t, "prunning window should be bigger than delta")
-	}
+	require.True(t, pruningWindow > maxDelta, "prunning window should be bigger than delta")
 
 	for i := maxDelta + 1; i < pruningWindow; i++ {
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: i,
-			},
-		}
-		err = blocksPool.UpdateMetaState(checkpoint)
-		require.Nil(t, err)
-
-		hash := []byte("hash_" + fmt.Sprintf("%d", i))
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
-		require.Nil(t, err)
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
-		require.Nil(t, err)
+		setBlocksPoolData(t, blocksPool, i, shardID)
 	}
 
 	// should still find in storer
@@ -117,21 +138,7 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	require.NotNil(t, retData)
 
 	for i := pruningWindow; i < pruningWindow*2; i++ {
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: i,
-			},
-		}
-		err = blocksPool.UpdateMetaState(checkpoint)
-		require.Nil(t, err)
-
-		hash := []byte("hash_" + fmt.Sprintf("%d", i))
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
-		require.Nil(t, err)
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
-		require.Nil(t, err)
+		setBlocksPoolData(t, blocksPool, i, shardID)
 	}
 
 	// should still find in storer
@@ -140,25 +147,11 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	require.NotNil(t, retData)
 
 	for i := pruningWindow * 2; i < pruningWindow*3; i++ {
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: i,
-			},
-		}
-		err = blocksPool.UpdateMetaState(checkpoint)
-		require.Nil(t, err)
-
-		hash := []byte("hash_" + fmt.Sprintf("%d", i))
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
-		require.Nil(t, err)
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
-		require.Nil(t, err)
+		setBlocksPoolData(t, blocksPool, i, shardID)
 	}
 
-	checkpoint := &data.BlockCheckpoint{
-		LastRounds: map[uint32]uint64{
+	checkpoint = &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
 			core.MetachainShardId: pruningWindow * 3,
 		},
 	}
@@ -169,6 +162,25 @@ func TestBlocksPool_FullPersisterMode(t *testing.T) {
 	retData, err = blocksStorer.Get(oldHash)
 	require.Nil(t, retData)
 	require.Error(t, err)
+}
+
+func setBlocksPoolData(t *testing.T, blocksPool process.DataPool, i uint64, shardID uint32) {
+	checkpoint := &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
+			core.MetachainShardId: i,
+			shardID:               i,
+		},
+	}
+	err := blocksPool.UpdateMetaState(checkpoint)
+	require.Nil(t, err)
+
+	hash := []byte("hash_" + fmt.Sprintf("%d", i))
+
+	err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
+	require.Nil(t, err)
+
+	err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
+	require.Nil(t, err)
 }
 
 func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
@@ -187,7 +199,17 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	}()
 	require.Nil(t, err)
 
-	blocksPool, err := process.NewBlocksPool(blocksStorer, marshaller, cfg.DataPool.MaxDelta, cfg.DataPool.PruningWindow, cfg.DataPool.FirstCommitableBlock)
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cfg.DataPool.FirstCommitableBlocks)
+	require.Nil(t, err)
+
+	argsDataPool := process.DataPoolArgs{
+		Storer:                blocksStorer,
+		Marshaller:            marshaller,
+		MaxDelta:              cfg.DataPool.MaxDelta,
+		CleanupInterval:       cfg.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
+	}
+	blocksPool, err := process.NewDataPool(argsDataPool)
 	require.Nil(t, err)
 
 	shardID := uint32(2)
@@ -201,6 +223,15 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
 		require.Nil(t, err)
 	}
+
+	checkpoint := &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
+			core.MetachainShardId: 1,
+			shardID:               1,
+		},
+	}
+	err = blocksPool.UpdateMetaState(checkpoint)
+	require.Nil(t, err)
 
 	hash := []byte("hash_" + fmt.Sprintf("%d", maxDelta))
 
@@ -216,49 +247,16 @@ func TestBlocksPool_OptimizedPersisterMode(t *testing.T) {
 	err = blocksPool.PutBlock(hash, []byte("data1"), maxDelta+1, shardID)
 	require.True(t, errors.Is(err, process.ErrFailedToPutBlockDataToPool))
 
-	if pruningWindow <= maxDelta {
-		require.Fail(t, "prunning window should be bigger than delta")
+	require.True(t, pruningWindow > maxDelta, "prunning window should be bigger than delta")
+
+	for i := maxDelta + 1; i < pruningWindow*2; i++ {
+		setBlocksPoolData(t, blocksPool, i, shardID)
 	}
 
-	for i := maxDelta + 1; i < pruningWindow; i++ {
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: i,
-			},
-		}
-		err = blocksPool.UpdateMetaState(checkpoint)
-		require.Nil(t, err)
-
-		hash := []byte("hash_" + fmt.Sprintf("%d", i))
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
-		require.Nil(t, err)
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
-		require.Nil(t, err)
-	}
-
-	for i := pruningWindow; i < pruningWindow*2; i++ {
-		checkpoint := &data.BlockCheckpoint{
-			LastRounds: map[uint32]uint64{
-				core.MetachainShardId: i,
-			},
-		}
-		err = blocksPool.UpdateMetaState(checkpoint)
-		require.Nil(t, err)
-
-		hash := []byte("hash_" + fmt.Sprintf("%d", i))
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, core.MetachainShardId)
-		require.Nil(t, err)
-
-		err = blocksPool.PutBlock(hash, []byte("data1"), i, shardID)
-		require.Nil(t, err)
-	}
-
-	checkpoint := &data.BlockCheckpoint{
-		LastRounds: map[uint32]uint64{
+	checkpoint = &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
 			core.MetachainShardId: pruningWindow * 2,
+			shardID:               pruningWindow + 2,
 		},
 	}
 	err = blocksPool.UpdateMetaState(checkpoint)

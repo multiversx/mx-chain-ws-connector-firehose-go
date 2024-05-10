@@ -66,21 +66,22 @@ type DataAggregator interface {
 type DataPool interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
-	PutBlock(hash []byte, value []byte, round uint64, shardID uint32) error
+	PutBlock(hash []byte, value []byte, index uint64, shardID uint32) error
 	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
 	Close() error
 	IsInterfaceNil() bool
 }
 
-// HyperBlocksPool defines the behaviour of a blocks pool handler component that is
+// BlocksPool defines the behaviour of a blocks pool handler component that is
 // able to handle meta and shard outport blocks data
-type HyperBlocksPool interface {
+type BlocksPool interface {
 	Get(key []byte) ([]byte, error)
-	PutMetaBlock(hash []byte, outportBlock *hyperOutportBlocks.MetaOutportBlock) error
-	PutShardBlock(hash []byte, outportBlock *hyperOutportBlocks.ShardOutportBlock) error
+	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
 	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -114,4 +115,12 @@ type GRPCBlocksHandler interface {
 type GRPCServer interface {
 	Start()
 	Close()
+	IsInterfaceNil() bool
+}
+
+// OutportBlockHandler defines the behaviour of an outport block component used in blocks pool
+type OutportBlockHandler interface {
+	GetHeaderNonce() (uint64, error)
+	GetHighestFinalBlockNonce() uint64
+	GetShardID() uint32
 }

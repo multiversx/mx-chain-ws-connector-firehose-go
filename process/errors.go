@@ -12,16 +12,16 @@ var ErrNilOutportBlockData = errors.New("nil outport block data")
 var ErrNilWriter = errors.New("nil writer provided")
 
 // ErrNilBlockCreator signals that a nil block creator was provided
-var ErrNilBlockCreator = errors.New("nil block creator provided")
+var ErrNilBlockCreator = errors.New("nil block creator")
 
 // ErrNilPublisher signals that a nil publisher was provided
-var ErrNilPublisher = errors.New("nil publisher provided")
+var ErrNilPublisher = errors.New("nil publisher")
 
-// ErrNilHyperBlocksPool signals that a nil hyper blocks pool was provided
-var ErrNilHyperBlocksPool = errors.New("nil hyper blocks pool provided")
+// ErrNilBlocksPool signals that a nil blocks pool was provided
+var ErrNilBlocksPool = errors.New("nil blocks pool")
 
 // ErrNilOutportBlocksConverter signals that a nil blocks pool was provided
-var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter provided")
+var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter")
 
 // ErrNilDataAggregator signals that a nil data aggregator was provided
 var ErrNilDataAggregator = errors.New("nil data aggregator provided")
@@ -54,7 +54,13 @@ var ErrInvalidOutportBlock = errors.New("invalid outport block provided")
 var ErrFailedToPutBlockDataToPool = errors.New("failed to put block data")
 
 // ErrNilDataPool signals that a nil data pool was provided
-var ErrNilDataPool = errors.New("nil data pool provided")
+var ErrNilDataPool = errors.New("nil data pool")
 
-// ErrNilHyperOutportBlock signals that a nil hyper outport block  was provided
-var ErrNilHyperOutportBlock = errors.New("nil hyper outport block provided")
+// ErrNilHyperOutportBlock signals that a nil hyper outport block was provided
+var ErrNilHyperOutportBlock = errors.New("nil hyper outport block")
+
+// ErrNilBlockServiceContext signal that the context provided for the block service is nil.
+var ErrNilBlockServiceContext = errors.New("nil block service context")
+
+// ErrInvalidValue signals that an invalid value was provded
+var ErrInvalidValue = errors.New("invalid value provided")

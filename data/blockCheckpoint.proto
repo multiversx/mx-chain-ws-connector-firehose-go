@@ -5,5 +5,5 @@ package proto;
 option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/data;data";
 
 message BlockCheckpoint {
-    map <uint32, uint64> LastRounds = 1;
+    map <uint32, uint64> LastNonces = 1;
 }

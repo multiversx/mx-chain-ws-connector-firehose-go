@@ -22,12 +22,18 @@ type WebSocketConfig struct {
 	Version                    uint32
 }
 
-// DataPoolConfig will map data poil configuration
+// DataPoolConfig will map data pool configuration
 type DataPoolConfig struct {
-	MaxDelta             uint64
-	PruningWindow        uint64
-	NumPersistersToKeep  int
-	FirstCommitableBlock uint64
+	MaxDelta              uint64
+	PruningWindow         uint64
+	NumPersistersToKeep   int
+	FirstCommitableBlocks []FirstCommitableBlock
+}
+
+// FirstCommitableBlock will map first commitable block configuration
+type FirstCommitableBlock struct {
+	ShardID string
+	Nonce   uint64
 }
 
 // PublisherConfig will map publisher configuration

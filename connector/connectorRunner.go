@@ -45,7 +45,15 @@ func (cr *connectorRunner) Run() error {
 	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
 	protoMarshaller := &process.ProtoMarshaller{}
 
-	outportBlockConverter := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cr.config.DataPool.FirstCommitableBlocks)
+	if err != nil {
+		return err
+	}
+
+	outportBlockConverter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	if err != nil {
+		return err
+	}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -57,46 +65,42 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	baseBlocksPool, err := process.NewBlocksPool(
-		blocksStorer,
+	argsBlocksPool := process.DataPoolArgs{
+		Storer:                blocksStorer,
+		Marshaller:            protoMarshaller,
+		MaxDelta:              cr.config.DataPool.MaxDelta,
+		CleanupInterval:       cr.config.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
+	}
+	dataPool, err := process.NewDataPool(argsBlocksPool)
+	if err != nil {
+		return err
+	}
+
+	blocksPool, err := process.NewBlocksPool(
+		dataPool,
 		protoMarshaller,
-		cr.config.DataPool.MaxDelta,
-		cr.config.DataPool.PruningWindow,
-		cr.config.DataPool.FirstCommitableBlock,
 	)
 	if err != nil {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewHyperOutportBlocksPool(
-		baseBlocksPool,
-		protoMarshaller,
-	)
+	dataAggregator, err := process.NewDataAggregator(blocksPool)
 	if err != nil {
 		return err
 	}
 
-	dataAggregator, err := process.NewDataAggregator(outportBlocksPool)
-	if err != nil {
-		return err
-	}
-
-	server, err := factory.CreateGRPCServer(cr.enableGrpcServer, cr.config.GRPC, outportBlocksPool, dataAggregator)
-	if err != nil {
-		return err
-	}
-
-	hyperBlockPublisher, err := factory.CreatePublisher(cr.enableGrpcServer, blockContainer)
+	hyperBlockPublisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
 	if err != nil {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
 
 	publisherHandler, err := process.NewPublisherHandler(
 		hyperBlockPublisher,
-		outportBlocksPool,
+		blocksPool,
 		dataAggregator,
 		cr.config.Publisher.RetryDurationInMiliseconds,
-		cr.config.DataPool.FirstCommitableBlock,
+		firstCommitableBlocks,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create common publisher: %w", err)
@@ -105,7 +109,7 @@ func (cr *connectorRunner) Run() error {
 	dataProcessor, err := process.NewDataProcessor(
 		publisherHandler,
 		gogoProtoMarshaller,
-		outportBlocksPool,
+		blocksPool,
 		outportBlockConverter,
 	)
 	if err != nil {
@@ -126,7 +130,7 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = outportBlocksPool.Close()
+	err = publisherHandler.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -136,8 +140,9 @@ func (cr *connectorRunner) Run() error {
 		log.Error(err.Error())
 	}
 
-	if server != nil {
-		server.Close()
+	err = blocksPool.Close()
+	if err != nil {
+		log.Error(err.Error())
 	}
 
 	return err

@@ -7,9 +7,11 @@ import (
 )
 
 const (
-	FirehosePrefix    = firehosePrefix
-	BlockPrefix       = blockPrefix
-	MetaCheckpointKey = metaCheckpointKey
+	// FirehosePrefix -
+	FirehosePrefix = firehosePrefix
+
+	// BlockPrefix -
+	BlockPrefix = blockPrefix
 )
 
 // GetActivePersisters -

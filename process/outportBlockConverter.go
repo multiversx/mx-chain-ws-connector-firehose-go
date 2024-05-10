@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/multiversx/mx-chain-core-go/core"
+	"github.com/multiversx/mx-chain-core-go/core/check"
 	coreData "github.com/multiversx/mx-chain-core-go/data"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
@@ -24,12 +25,19 @@ type outportBlockConverter struct {
 func NewOutportBlockConverter(
 	gogoMarshaller marshal.Marshalizer,
 	protoMarshaller marshal.Marshalizer,
-) *outportBlockConverter {
+) (*outportBlockConverter, error) {
+	if check.IfNil(gogoMarshaller) {
+		return nil, fmt.Errorf("%w: for gogo proto marshaller", ErrNilMarshaller)
+	}
+	if check.IfNil(protoMarshaller) {
+		return nil, fmt.Errorf("%w: for proto marshaller", ErrNilMarshaller)
+	}
+
 	return &outportBlockConverter{
 		gogoProtoMarshaller: gogoMarshaller,
 		protoMarshaller:     protoMarshaller,
 		bigIntCaster:        coreData.BigIntCaster{},
-	}
+	}, nil
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.
@@ -44,14 +52,14 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 	// marshal with gogo, since the outportBlock is gogo protobuf (coming from the node).
 	bytes, err := o.gogoProtoMarshaller.Marshal(outportBlock)
 	if err != nil {
-		return nil, fmt.Errorf("marshal shard outport block error: %s", err)
+		return nil, fmt.Errorf("marshal shard outport block error: %w", err)
 	}
 
 	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}
 	// unmarshall into google protobuf. This is the proto that will be later consumed.
 	err = o.protoMarshaller.Unmarshal(shardOutportBlock, bytes)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal shard outport block error: %s", err)
+		return nil, fmt.Errorf("unmarshal shard outport block error: %w", err)
 	}
 
 	// ShardHeaderV1 marshals 1 to 1 into *data.ShardOutportBlock.
