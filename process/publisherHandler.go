@@ -11,6 +11,8 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
+const minRetryDudrationInMilliseconds = 100
+
 type publisherHandler struct {
 	handler               HyperBlockPublisher
 	outportBlocksPool     BlocksPool
@@ -45,6 +47,10 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 	}
 	if args.FirstCommitableBlocks == nil {
 		return nil, ErrNilFirstCommitableBlocks
+	}
+	if args.RetryDurationInMilliseconds < minRetryDudrationInMilliseconds {
+		return nil, fmt.Errorf("%w for retry duration: provided %d, min required %d",
+			ErrInvalidValue, args.RetryDurationInMilliseconds, minRetryDudrationInMilliseconds)
 	}
 
 	ph := &publisherHandler{

@@ -1,6 +1,7 @@
 package process_test
 
 import (
+	"errors"
 	"sync/atomic"
 	"testing"
 
@@ -29,9 +30,7 @@ func createDefaultPublisherHandlerArgs() process.PublisherHandlerArgs {
 		OutportBlocksPool:           &testscommon.HyperBlocksPoolMock{},
 		DataAggregator:              &testscommon.DataAggregatorMock{},
 		RetryDurationInMilliseconds: defaultRetryDuration,
-		FirstCommitableBlocks: map[uint32]uint64{
-			core.MetachainShardId: 0,
-		},
+		FirstCommitableBlocks:       defaultFirstCommitableBlocks,
 	}
 }
 
@@ -69,6 +68,28 @@ func TestNewPublisherHandler(t *testing.T) {
 		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, ph)
 		require.Equal(t, process.ErrNilDataAggregator, err)
+	})
+
+	t.Run("nil first commitable blocks", func(t *testing.T) {
+		t.Parallel()
+
+		args := createDefaultPublisherHandlerArgs()
+		args.FirstCommitableBlocks = nil
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, ph)
+		require.Equal(t, process.ErrNilFirstCommitableBlocks, err)
+	})
+
+	t.Run("invalid retry duration", func(t *testing.T) {
+		t.Parallel()
+
+		args := createDefaultPublisherHandlerArgs()
+		args.RetryDurationInMilliseconds = 99
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, ph)
+		require.True(t, errors.Is(err, process.ErrInvalidValue))
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -190,4 +211,17 @@ func TestPublisherHandler_Close(t *testing.T) {
 	require.Nil(t, err)
 
 	require.True(t, publisherCloseCalled)
+}
+
+func TestPublisherHandler_IsInterfaceNil(t *testing.T) {
+	t.Parallel()
+
+	args := createDefaultPublisherHandlerArgs()
+	args.DataAggregator = nil
+	ph, _ := process.NewPublisherHandler(args)
+	require.True(t, ph.IsInterfaceNil())
+
+	args = createDefaultPublisherHandlerArgs()
+	ph, _ = process.NewPublisherHandler(args)
+	require.False(t, ph.IsInterfaceNil())
 }
