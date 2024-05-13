@@ -23,19 +23,28 @@ var defaultFirstCommitableBlocks = map[uint32]uint64{
 	2:                     0,
 }
 
+func createDefaultPublisherHandlerArgs() process.PublisherHandlerArgs {
+	return process.PublisherHandlerArgs{
+		Handler:                     &testscommon.HyperBlockPublisherStub{},
+		OutportBlocksPool:           &testscommon.HyperBlocksPoolMock{},
+		DataAggregator:              &testscommon.DataAggregatorMock{},
+		RetryDurationInMilliseconds: defaultRetryDuration,
+		FirstCommitableBlocks: map[uint32]uint64{
+			core.MetachainShardId: 0,
+		},
+	}
+}
+
 func TestNewPublisherHandler(t *testing.T) {
 	t.Parallel()
 
 	t.Run("nil publisher", func(t *testing.T) {
 		t.Parallel()
 
-		ph, err := process.NewPublisherHandler(
-			nil,
-			&testscommon.HyperBlocksPoolMock{},
-			&testscommon.DataAggregatorMock{},
-			defaultRetryDuration,
-			defaultFirstCommitableBlocks,
-		)
+		args := createDefaultPublisherHandlerArgs()
+		args.Handler = nil
+
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, ph)
 		require.Equal(t, process.ErrNilPublisher, err)
 	})
@@ -43,13 +52,10 @@ func TestNewPublisherHandler(t *testing.T) {
 	t.Run("nil outport blocks pool", func(t *testing.T) {
 		t.Parallel()
 
-		ph, err := process.NewPublisherHandler(
-			&testscommon.HyperBlockPublisherStub{},
-			nil,
-			&testscommon.DataAggregatorMock{},
-			defaultRetryDuration,
-			defaultFirstCommitableBlocks,
-		)
+		args := createDefaultPublisherHandlerArgs()
+		args.OutportBlocksPool = nil
+
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, ph)
 		require.Equal(t, process.ErrNilBlocksPool, err)
 	})
@@ -57,13 +63,10 @@ func TestNewPublisherHandler(t *testing.T) {
 	t.Run("nil data aggregator", func(t *testing.T) {
 		t.Parallel()
 
-		ph, err := process.NewPublisherHandler(
-			&testscommon.HyperBlockPublisherStub{},
-			&testscommon.HyperBlocksPoolMock{},
-			nil,
-			defaultRetryDuration,
-			defaultFirstCommitableBlocks,
-		)
+		args := createDefaultPublisherHandlerArgs()
+		args.DataAggregator = nil
+
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, ph)
 		require.Equal(t, process.ErrNilDataAggregator, err)
 	})
@@ -71,13 +74,8 @@ func TestNewPublisherHandler(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		ph, err := process.NewPublisherHandler(
-			&testscommon.HyperBlockPublisherStub{},
-			&testscommon.HyperBlocksPoolMock{},
-			&testscommon.DataAggregatorMock{},
-			defaultRetryDuration,
-			defaultFirstCommitableBlocks,
-		)
+		args := createDefaultPublisherHandlerArgs()
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, err)
 		require.False(t, ph.IsInterfaceNil())
 	})
@@ -101,26 +99,26 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
 		updateMetaStateCalled := uint32(0)
-		ph, err := process.NewPublisherHandler(
-			&testscommon.HyperBlockPublisherStub{},
-			&testscommon.HyperBlocksPoolMock{
-				GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
-					return metaOutportBlock, nil
-				},
-				UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
-					atomic.AddUint32(&updateMetaStateCalled, 1)
-					return nil
-				},
+
+		args := createDefaultPublisherHandlerArgs()
+		args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+			GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+				return metaOutportBlock, nil
 			},
-			&testscommon.DataAggregatorMock{
-				ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
-					require.Fail(t, "should not have been called")
-					return nil, nil
-				},
+			UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
+				atomic.AddUint32(&updateMetaStateCalled, 1)
+				return nil
 			},
-			defaultRetryDuration,
-			firstCommitableBlocks,
-		)
+		}
+		args.DataAggregator = &testscommon.DataAggregatorMock{
+			ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
+				require.Fail(t, "should not have been called")
+				return nil, nil
+			},
+		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
+
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, err)
 
 		err = ph.PublishBlock([]byte("headerHash"))
@@ -144,25 +142,25 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
 		updateMetaStateCalled := uint32(0)
-		ph, err := process.NewPublisherHandler(
-			&testscommon.HyperBlockPublisherStub{},
-			&testscommon.HyperBlocksPoolMock{
-				GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
-					return metaOutportBlock, nil
-				},
-				UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
-					atomic.AddUint32(&updateMetaStateCalled, 1)
-					return nil
-				},
+
+		args := createDefaultPublisherHandlerArgs()
+		args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+			GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+				return metaOutportBlock, nil
 			},
-			&testscommon.DataAggregatorMock{
-				ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
-					return hyperOutportBlock, nil
-				},
+			UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
+				atomic.AddUint32(&updateMetaStateCalled, 1)
+				return nil
 			},
-			defaultRetryDuration,
-			firstCommitableBlocks,
-		)
+		}
+		args.DataAggregator = &testscommon.DataAggregatorMock{
+			ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
+				return hyperOutportBlock, nil
+			},
+		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
+
+		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, err)
 
 		err = ph.PublishBlock([]byte("headerHash"))
@@ -176,18 +174,16 @@ func TestPublisherHandler_Close(t *testing.T) {
 	t.Parallel()
 
 	publisherCloseCalled := false
-	ph, err := process.NewPublisherHandler(
-		&testscommon.HyperBlockPublisherStub{
-			CloseCalled: func() error {
-				publisherCloseCalled = true
-				return nil
-			},
+
+	args := createDefaultPublisherHandlerArgs()
+	args.Handler = &testscommon.HyperBlockPublisherStub{
+		CloseCalled: func() error {
+			publisherCloseCalled = true
+			return nil
 		},
-		&testscommon.HyperBlocksPoolMock{},
-		&testscommon.DataAggregatorMock{},
-		defaultRetryDuration,
-		defaultFirstCommitableBlocks,
-	)
+	}
+
+	ph, err := process.NewPublisherHandler(args)
 	require.Nil(t, err)
 
 	err = ph.Close()

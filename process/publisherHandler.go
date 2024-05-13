@@ -23,30 +23,36 @@ type publisherHandler struct {
 	closeChan  chan struct{}
 }
 
+// PublisherHandlerArgs defines the argsuments needed to create a new publisher handler
+type PublisherHandlerArgs struct {
+	Handler                     HyperBlockPublisher
+	OutportBlocksPool           BlocksPool
+	DataAggregator              DataAggregator
+	RetryDurationInMilliseconds uint64
+	FirstCommitableBlocks       map[uint32]uint64
+}
+
 // NewPublisherHandler creates a new publisher handler component
-func NewPublisherHandler(
-	handler HyperBlockPublisher,
-	outportBlocksPool BlocksPool,
-	dataAggregator DataAggregator,
-	retryDurationInMiliseconds uint64,
-	firstCommitableBlocks map[uint32]uint64,
-) (*publisherHandler, error) {
-	if check.IfNil(handler) {
+func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
+	if check.IfNil(args.Handler) {
 		return nil, ErrNilPublisher
 	}
-	if check.IfNil(outportBlocksPool) {
+	if check.IfNil(args.OutportBlocksPool) {
 		return nil, ErrNilBlocksPool
 	}
-	if check.IfNil(dataAggregator) {
+	if check.IfNil(args.DataAggregator) {
 		return nil, ErrNilDataAggregator
+	}
+	if args.FirstCommitableBlocks == nil {
+		return nil, ErrNilFirstCommitableBlocks
 	}
 
 	ph := &publisherHandler{
-		handler:               handler,
-		outportBlocksPool:     outportBlocksPool,
-		dataAggregator:        dataAggregator,
-		retryDuration:         time.Duration(retryDurationInMiliseconds) * time.Millisecond,
-		firstCommitableBlocks: firstCommitableBlocks,
+		handler:               args.Handler,
+		outportBlocksPool:     args.OutportBlocksPool,
+		dataAggregator:        args.DataAggregator,
+		retryDuration:         time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
+		firstCommitableBlocks: args.FirstCommitableBlocks,
 		blocksChan:            make(chan []byte),
 		closeChan:             make(chan struct{}),
 	}
@@ -63,7 +69,7 @@ func (ph *publisherHandler) startListener(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("closing commonPublisher listener")
+			log.Debug("closing publisherHandler listener")
 			return
 		case headerHash := <-ph.blocksChan:
 			ph.handlePublishEvent(headerHash)
@@ -71,7 +77,7 @@ func (ph *publisherHandler) startListener(ctx context.Context) {
 	}
 }
 
-// PublishHyperBlock will push aggregated outport block data to the firehose writer
+// PublishBlock will push header hash to blocks channel
 func (ph *publisherHandler) PublishBlock(headerHash []byte) error {
 	select {
 	case ph.blocksChan <- headerHash:
@@ -107,10 +113,15 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
 	shardID := metaOutportBlock.GetShardID()
 
-	if metaNonce < ph.firstCommitableBlocks[shardID] {
+	firstCommitableBlock, ok := ph.firstCommitableBlocks[shardID]
+	if !ok {
+		return fmt.Errorf("failed to get first commitable block for shard %d", shardID)
+	}
+
+	if metaNonce < firstCommitableBlock {
 		// do not try to aggregate or publish hyper outport block
 
-		log.Trace("do not commit block", "currentRound", metaNonce, "firstCommitableRound", ph.firstCommitableBlocks)
+		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
 
 		return nil
 	}
@@ -120,7 +131,7 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 		return err
 	}
 
-	lastCheckpoint, err := ph.getLastRoundsData(hyperOutportBlock)
+	lastCheckpoint, err := ph.getLastCheckpointData(hyperOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to get last round data: %w", err)
 	}
@@ -133,7 +144,7 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	return ph.outportBlocksPool.UpdateMetaState(lastCheckpoint)
 }
 
-func (ph *publisherHandler) getLastRoundsData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+func (ph *publisherHandler) getLastCheckpointData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
 	if hyperOutportBlock == nil {
 		return nil, ErrNilHyperOutportBlock
 	}
@@ -178,9 +189,7 @@ func (ph *publisherHandler) Close() error {
 		return err
 	}
 
-	if ph.cancelFunc != nil {
-		ph.cancelFunc()
-	}
+	ph.cancelFunc()
 
 	close(ph.closeChan)
 

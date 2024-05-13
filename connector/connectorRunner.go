@@ -95,13 +95,15 @@ func (cr *connectorRunner) Run() error {
 		return fmt.Errorf("cannot create publisher: %w", err)
 	}
 
-	publisherHandler, err := process.NewPublisherHandler(
-		hyperBlockPublisher,
-		blocksPool,
-		dataAggregator,
-		cr.config.Publisher.RetryDurationInMiliseconds,
-		firstCommitableBlocks,
-	)
+	publisherHandlerArgs := process.PublisherHandlerArgs{
+		Handler:                     hyperBlockPublisher,
+		OutportBlocksPool:           blocksPool,
+		DataAggregator:              dataAggregator,
+		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
+		FirstCommitableBlocks:       firstCommitableBlocks,
+	}
+
+	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
 	if err != nil {
 		return fmt.Errorf("cannot create common publisher: %w", err)
 	}
