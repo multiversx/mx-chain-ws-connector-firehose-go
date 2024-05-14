@@ -115,57 +115,60 @@ func TestNewPublisherHandler(t *testing.T) {
 	})
 }
 
-func TestNewPublisherHandler_PublishLastCheckpoint(t *testing.T) {
-	t.Parallel()
-
-	args := createDefaultPublisherHandlerArgs()
-
-	publishCheckpoint := &data.PublishCheckpoint{
-		HeaderHash: []byte("headerHash1"),
-		Published:  false,
-	}
-	publishCheckpointBytes, _ := args.Marshalizer.Marshal(publishCheckpoint)
-
-	metaOutportBlock := createMetaOutportBlock()
-	hyperOutportBlock := createHyperOutportBlock()
-	hyperOutportBlock.MetaOutportBlock = metaOutportBlock
-
-	args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
-		GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
-			return metaOutportBlock, nil
-		},
-		GetCalled: func(hash []byte) ([]byte, error) {
-			if bytes.Equal([]byte(process.PublishCheckpointKey), hash) {
-				return publishCheckpointBytes, nil
-			}
-
-			return []byte{}, nil
-		},
-	}
-	args.DataAggregator = &testscommon.DataAggregatorMock{
-		ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
-			return hyperOutportBlock, nil
-		},
-	}
-
-	wasCalled := false
-	args.Handler = &testscommon.HyperBlockPublisherStub{
-		PublishHyperBlockCalled: func(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error {
-			wasCalled = true
-
-			return nil
-		},
-	}
-
-	ph, err := process.NewPublisherHandler(args)
-	require.Nil(t, err)
-	require.NotNil(t, ph)
-
-	require.True(t, wasCalled)
-}
-
 func TestPublisherHandler_PublishBlock(t *testing.T) {
 	t.Parallel()
+
+	t.Run("should publish based on checkpoint if exists", func(t *testing.T) {
+		t.Parallel()
+
+		args := createDefaultPublisherHandlerArgs()
+
+		publishCheckpoint := &data.PublishCheckpoint{
+			HeaderHash: []byte("headerHash1"),
+			Published:  false,
+		}
+		publishCheckpointBytes, _ := args.Marshalizer.Marshal(publishCheckpoint)
+
+		metaOutportBlock := createMetaOutportBlock()
+		hyperOutportBlock := createHyperOutportBlock()
+		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
+
+		args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+			GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+				return metaOutportBlock, nil
+			},
+			GetCalled: func(hash []byte) ([]byte, error) {
+				if bytes.Equal([]byte(process.PublishCheckpointKey), hash) {
+					return publishCheckpointBytes, nil
+				}
+
+				return []byte{}, nil
+			},
+		}
+		args.DataAggregator = &testscommon.DataAggregatorMock{
+			ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
+				return hyperOutportBlock, nil
+			},
+		}
+
+		wasCalled := false
+		args.Handler = &testscommon.HyperBlockPublisherStub{
+			PublishHyperBlockCalled: func(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error {
+				wasCalled = true
+
+				return nil
+			},
+		}
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, err)
+		require.NotNil(t, ph)
+
+		err = ph.PublishBlock([]byte("headerHash"))
+		require.Nil(t, err)
+
+		require.True(t, wasCalled)
+	})
 
 	t.Run("should not process hyper block until first commitable block", func(t *testing.T) {
 		t.Parallel()
