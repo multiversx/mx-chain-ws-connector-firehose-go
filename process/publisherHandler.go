@@ -82,11 +82,6 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 	var ctx context.Context
 	ctx, ph.cancelFunc = context.WithCancel(context.Background())
 
-	err := ph.handleLastCheckpointOnInit()
-	if err != nil {
-		return nil, err
-	}
-
 	go ph.startListener(ctx)
 
 	return ph, nil
@@ -94,6 +89,11 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 
 func (ph *publisherHandler) startListener(ctx context.Context) {
 	log.Debug("starting publisherHandler listerer")
+
+	err := ph.handleLastCheckpointOnInit()
+	if err != nil {
+		log.Error("failed to handle last publish checkpoint on init", "error", err)
+	}
 
 	for {
 		select {
@@ -122,10 +122,11 @@ func (ph *publisherHandler) handlePublishEvent(headerHash []byte) {
 	for {
 		err := ph.handlerHyperOutportBlock(headerHash)
 		if err == nil {
+			log.Info("published hyper block", "headerHash", headerHash)
 			return
 		}
 
-		log.Error("failed to publish hyper block event", "error", err)
+		log.Error("failed to publish hyper block event", "headerHash", headerHash, "error", err)
 		time.Sleep(ph.retryDuration)
 	}
 }
