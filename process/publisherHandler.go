@@ -243,9 +243,14 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 		return err
 	}
 
-	lastCheckpoint, err := ph.getLastCheckpointData(hyperOutportBlock)
+	lastBlockCheckpoint, err := ph.getLastBlockCheckpoint(hyperOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to get last round data: %w", err)
+	}
+
+	err = ph.outportBlocksPool.UpdateMetaState(lastBlockCheckpoint)
+	if err != nil {
+		return err
 	}
 
 	err = ph.handler.PublishHyperBlock(hyperOutportBlock)
@@ -255,10 +260,10 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 
 	ph.updatePublishCheckpoint()
 
-	return ph.outportBlocksPool.UpdateMetaState(lastCheckpoint)
+	return nil
 }
 
-func (ph *publisherHandler) getLastCheckpointData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+func (ph *publisherHandler) getLastBlockCheckpoint(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
 	if hyperOutportBlock == nil {
 		return nil, ErrNilHyperOutportBlock
 	}
