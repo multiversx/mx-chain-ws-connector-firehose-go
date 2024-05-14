@@ -8,6 +8,7 @@ import (
 
 // HyperBlocksPoolMock -
 type HyperBlocksPoolMock struct {
+	PutCalled               func(hash []byte, data []byte) error
 	GetCalled               func(hash []byte) ([]byte, error)
 	PutBlockCalled          func(hash []byte, outportBlock process.OutportBlockHandler) error
 	GetMetaBlockCalled      func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
@@ -24,6 +25,15 @@ func (b *HyperBlocksPoolMock) Get(hash []byte) ([]byte, error) {
 	}
 
 	return []byte{}, nil
+}
+
+// Put -
+func (b *HyperBlocksPoolMock) Put(hash []byte, data []byte) error {
+	if b.PutCalled != nil {
+		return b.PutCalled(hash, data)
+	}
+
+	return nil
 }
 
 // PutBlock -

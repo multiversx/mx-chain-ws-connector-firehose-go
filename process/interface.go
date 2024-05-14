@@ -77,6 +77,7 @@ type DataPool interface {
 // able to handle meta and shard outport blocks data
 type BlocksPool interface {
 	Get(key []byte) ([]byte, error)
+	Put(key []byte, value []byte) error
 	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)

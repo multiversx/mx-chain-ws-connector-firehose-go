@@ -100,6 +100,7 @@ func (cr *connectorRunner) Run() error {
 		OutportBlocksPool:           blocksPool,
 		DataAggregator:              dataAggregator,
 		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
+		Marshalizer:                 protoMarshaller,
 		FirstCommitableBlocks:       firstCommitableBlocks,
 	}
 
