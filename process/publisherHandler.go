@@ -143,7 +143,9 @@ func (ph *publisherHandler) setPublishCheckpoint(headerHash []byte) {
 
 func (ph *publisherHandler) updatePublishCheckpoint() {
 	ph.checkpointMut.Lock()
-	ph.checkpoint.Published = true
+	if ph.checkpoint != nil {
+		ph.checkpoint.Published = true
+	}
 	ph.checkpointMut.Unlock()
 }
 
