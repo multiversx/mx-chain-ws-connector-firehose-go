@@ -9,9 +9,8 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/server"
 )
 
-// CreatePublisher will return the required Publisher implementation based on whether the hyperOutportBlock are
-// served via gRPC or stdout.
-func CreatePublisher(
+// CreateHyperBlockPublisher will create a new hyper block publisher component
+func CreateHyperBlockPublisher(
 	cfg *config.Config,
 	enableGRPCServer bool,
 	blockContainer process.BlockContainerHandler,

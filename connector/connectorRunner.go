@@ -90,9 +90,9 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	hyperBlockPublisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
+	hyperBlockPublisher, err := factory.CreateHyperBlockPublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
 	if err != nil {
-		return fmt.Errorf("cannot create publisher: %w", err)
+		return fmt.Errorf("cannot create hyper block publisher: %w", err)
 	}
 
 	publisherHandlerArgs := process.PublisherHandlerArgs{
