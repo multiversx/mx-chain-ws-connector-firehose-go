@@ -3,6 +3,8 @@ package process_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -250,6 +252,71 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		require.Nil(t, err)
 
 		require.GreaterOrEqual(t, atomic.LoadUint32(&updateMetaStateCalled), uint32(1))
+	})
+
+	t.Run("should work with multiple calls", func(t *testing.T) {
+		t.Parallel()
+
+		round := uint64(10)
+
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: round - 1,
+		}
+
+		metaOutportBlock := createMetaOutportBlock()
+		metaOutportBlock.BlockData.Header.Round = round
+		hyperOutportBlock := createHyperOutportBlock()
+		hyperOutportBlock.MetaOutportBlock = metaOutportBlock
+
+		updateMetaStateCalled := uint32(0)
+
+		args := createDefaultPublisherHandlerArgs()
+		args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+			GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+				return metaOutportBlock, nil
+			},
+			UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
+				atomic.AddUint32(&updateMetaStateCalled, 1)
+				return nil
+			},
+		}
+		args.DataAggregator = &testscommon.DataAggregatorMock{
+			ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
+				return hyperOutportBlock, nil
+			},
+		}
+		cnt := uint32(0)
+		args.Handler = &testscommon.HyperBlockPublisherStub{
+			PublishHyperBlockCalled: func(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error {
+				atomic.AddUint32(&cnt, 1)
+				if atomic.LoadUint32(&cnt)%2 == 0 {
+					return errors.New("some error")
+				}
+
+				return nil
+			},
+		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, err)
+
+		numCalls := 100
+		wg := sync.WaitGroup{}
+		wg.Add(numCalls)
+
+		for i := 0; i < numCalls; i++ {
+			go func(idx int) {
+				errPublish := ph.PublishBlock([]byte(fmt.Sprintf("headerHash%d", idx)))
+				require.Nil(t, errPublish)
+
+				wg.Done()
+			}(i)
+		}
+
+		wg.Wait()
+
+		require.GreaterOrEqual(t, atomic.LoadUint32(&updateMetaStateCalled), uint32(numCalls/2))
 	})
 }
 

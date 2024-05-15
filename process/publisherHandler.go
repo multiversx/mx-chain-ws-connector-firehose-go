@@ -126,7 +126,8 @@ func (ph *publisherHandler) handlePublishEvent(headerHash []byte) {
 			return
 		}
 
-		log.Error("failed to publish hyper block event", "headerHash", headerHash, "error", err)
+		log.Warn("failed to publish hyper block event, will try again",
+			"headerHash", headerHash, "error", err)
 		time.Sleep(ph.retryDuration)
 	}
 }
