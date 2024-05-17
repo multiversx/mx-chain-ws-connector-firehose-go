@@ -16,7 +16,7 @@ import (
 const (
 	publishCheckpointKey = "publishCheckpoint"
 
-	minRetryDudrationInMilliseconds = 100
+	minRetryDurationInMilliseconds = 100
 )
 
 type publisherHandler struct {
@@ -62,9 +62,9 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 	if args.FirstCommitableBlocks == nil {
 		return nil, ErrNilFirstCommitableBlocks
 	}
-	if args.RetryDurationInMilliseconds < minRetryDudrationInMilliseconds {
+	if args.RetryDurationInMilliseconds < minRetryDurationInMilliseconds {
 		return nil, fmt.Errorf("%w for retry duration: provided %d, min required %d",
-			ErrInvalidValue, args.RetryDurationInMilliseconds, minRetryDudrationInMilliseconds)
+			ErrInvalidValue, args.RetryDurationInMilliseconds, minRetryDurationInMilliseconds)
 	}
 
 	ph := &publisherHandler{
