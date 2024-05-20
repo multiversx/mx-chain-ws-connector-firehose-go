@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// GRPCServerStreamStub -
-type GRPCServerStreamStub struct {
+// GRPCServerStreamMock -
+type GRPCServerStreamMock struct {
 	SetHeaderCalled  func(_ metadata.MD) error
 	SendHeaderCalled func(_ metadata.MD) error
 	SetTrailerCalled func(_ metadata.MD)
@@ -19,7 +19,7 @@ type GRPCServerStreamStub struct {
 }
 
 // Send -
-func (g *GRPCServerStreamStub) Send(block *data.HyperOutportBlock) error {
+func (g *GRPCServerStreamMock) Send(block *data.HyperOutportBlock) error {
 	if g.SendCalled != nil {
 		return g.SendCalled(block)
 	}
@@ -28,7 +28,7 @@ func (g *GRPCServerStreamStub) Send(block *data.HyperOutportBlock) error {
 }
 
 // SetHeader -
-func (g *GRPCServerStreamStub) SetHeader(md metadata.MD) error {
+func (g *GRPCServerStreamMock) SetHeader(md metadata.MD) error {
 	if g.SetHeaderCalled != nil {
 		return g.SetHeaderCalled(md)
 	}
@@ -37,7 +37,7 @@ func (g *GRPCServerStreamStub) SetHeader(md metadata.MD) error {
 }
 
 // SendHeader -
-func (g *GRPCServerStreamStub) SendHeader(md metadata.MD) error {
+func (g *GRPCServerStreamMock) SendHeader(md metadata.MD) error {
 	if g.SendHeaderCalled != nil {
 		return g.SendHeaderCalled(md)
 	}
@@ -46,14 +46,14 @@ func (g *GRPCServerStreamStub) SendHeader(md metadata.MD) error {
 }
 
 // SetTrailer -
-func (g *GRPCServerStreamStub) SetTrailer(md metadata.MD) {
+func (g *GRPCServerStreamMock) SetTrailer(md metadata.MD) {
 	if g.SetTrailerCalled != nil {
 		g.SetTrailerCalled(md)
 	}
 }
 
 // Context -
-func (g *GRPCServerStreamStub) Context() context.Context {
+func (g *GRPCServerStreamMock) Context() context.Context {
 	if g.ContextCalled != nil {
 		return g.ContextCalled()
 	}
@@ -62,7 +62,7 @@ func (g *GRPCServerStreamStub) Context() context.Context {
 }
 
 // SendMsg -
-func (g *GRPCServerStreamStub) SendMsg(m any) error {
+func (g *GRPCServerStreamMock) SendMsg(m any) error {
 	if g.SendMsgCalled != nil {
 		return g.SendMsgCalled(m)
 	}
@@ -71,7 +71,7 @@ func (g *GRPCServerStreamStub) SendMsg(m any) error {
 }
 
 // RecvMsg -
-func (g *GRPCServerStreamStub) RecvMsg(m any) error {
+func (g *GRPCServerStreamMock) RecvMsg(m any) error {
 	if g.RecvMsgCalled != nil {
 		return g.RecvMsgCalled(m)
 	}

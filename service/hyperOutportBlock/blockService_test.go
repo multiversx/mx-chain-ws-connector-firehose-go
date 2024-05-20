@@ -106,7 +106,7 @@ func TestService_Poll(t *testing.T) {
 		require.Nil(t, err)
 
 		nonce := uint64(10)
-		stream := &testscommon.GRPCServerStreamStub{}
+		stream := &testscommon.GRPCServerStreamMock{}
 		pdDuration := durationpb.New(time.Duration(100) * time.Millisecond)
 
 		wg := &sync.WaitGroup{}
@@ -148,7 +148,7 @@ func TestService_Poll(t *testing.T) {
 		expectedErr := errors.New("expected error")
 
 		sendBlockCalled := uint32(0)
-		stream := &testscommon.GRPCServerStreamStub{
+		stream := &testscommon.GRPCServerStreamMock{
 			SendCalled: func(block *data.HyperOutportBlock) error {
 				if atomic.LoadUint32(&sendBlockCalled) <= 1 {
 					atomic.AddUint32(&sendBlockCalled, 1)
@@ -207,7 +207,7 @@ func TestService_HyperOutportBlocksStreamByHash(t *testing.T) {
 	}
 
 	wasCalled := uint32(0)
-	stream := &testscommon.GRPCServerStreamStub{
+	stream := &testscommon.GRPCServerStreamMock{
 		SendCalled: func(block *data.HyperOutportBlock) error {
 			atomic.AddUint32(&wasCalled, 1)
 			return nil
@@ -265,7 +265,7 @@ func TestService_HyperOutportBlocksStreamByNonce(t *testing.T) {
 	}
 
 	wasCalled := uint32(0)
-	stream := &testscommon.GRPCServerStreamStub{
+	stream := &testscommon.GRPCServerStreamMock{
 		SendCalled: func(block *data.HyperOutportBlock) error {
 			atomic.AddUint32(&wasCalled, 1)
 			return nil
