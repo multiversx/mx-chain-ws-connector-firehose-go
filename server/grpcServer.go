@@ -69,7 +69,8 @@ func (s *grpcServerWrapper) run() error {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
-	if err = s.server.Serve(lis); err != nil {
+	err = s.server.Serve(lis)
+	if err != nil {
 		return fmt.Errorf("failed to serve: %v", err)
 	}
 

@@ -3,37 +3,31 @@ package server_test
 import (
 	"net"
 	"testing"
+	"time"
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/server"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/testscommon"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
-
-type GRPCServerStub struct{}
-
-func (g *GRPCServerStub) RegisterService(desc *grpc.ServiceDesc, impl any) {
-}
-
-func (g *GRPCServerStub) GetServiceInfo() map[string]grpc.ServiceInfo {
-	return make(map[string]grpc.ServiceInfo)
-}
-
-func (g *GRPCServerStub) Serve(lis net.Listener) error {
-	return nil
-}
-
-func (g *GRPCServerStub) GracefulStop() {
-}
 
 func TestNewGRPCServerWrapper(t *testing.T) {
 	t.Parallel()
 
+	serveCalled := false
+	stopCalled := false
 	gsv, err := server.NewGRPCServerWrapper(
-		&GRPCServerStub{},
+		&testscommon.GRPCServerMock{
+			ServeCalled: func(lis net.Listener) error {
+				serveCalled = true
+				return nil
+			},
+			GracefulStopCalled: func() {
+				stopCalled = true
+			},
+		},
 		config.GRPCConfig{
-			URL: "localhost:8081",
+			URL: ":8081",
 		},
 		&testscommon.GRPCBlocksHandlerMock{},
 	)
@@ -41,5 +35,12 @@ func TestNewGRPCServerWrapper(t *testing.T) {
 	require.False(t, gsv.IsInterfaceNil())
 
 	gsv.Start()
+
+	time.Sleep(1000 * time.Millisecond)
+
+	require.True(t, serveCalled)
+
 	gsv.Close()
+
+	require.True(t, stopCalled)
 }
