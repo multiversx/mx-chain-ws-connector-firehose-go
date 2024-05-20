@@ -30,15 +30,33 @@
 
 [DataPool]
     # Should be smaller then PruningWindow
-    MaxDelta = 100
+    MaxDelta = 50
+
+    # Defines the number of block that will be added until a new persister will be created
     PruningWindow = 1000
 
     # Defines the number of active persisters to keep open
     NumPersistersToKeep = 2
 
+    # Defines the first commitable blocks per shard.
+    # The nonces have to be setup based on metachain shard, they can be fetched by interogating
+    # this gateway endpoint `https://gateway.multiversx.com/block/4294967295/by-nonce/<metachain nonce here>`
+    FirstCommitableBlocks = [
+        { ShardID = "metachain", Nonce = 0 },
+        { ShardID = "0", Nonce = 0 },
+        { ShardID = "1", Nonce = 0 },
+        { ShardID = "2", Nonce = 0 }
+    ]
+
+[Publisher]
+    # RetryDurationInMiliseconds defines the retry duration for common publisher
+    # handler when there is an error on publish
+    RetryDurationInMiliseconds = 1000
+
 [OutportBlocksStorage]
     [OutportBlocksStorage.Cache]
         Name = "OutportBlocksStorage"
+        # Cache capacity and size has to be higher than max allowed deltas per shards in total
         Capacity = 100
         Type = "SizeLRU"
         SizeInBytes = 209715200 # 200MB

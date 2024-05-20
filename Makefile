@@ -13,7 +13,7 @@ build:
 
 run: build
 	cd ${cmd_dir} && \
-		./${binary}
+		./${binary} --log-level="*:DEBUG"
 
 debug: build
 	cd ${cmd_dir} && \

@@ -35,7 +35,7 @@ func TestNewGRPCServerWrapper(t *testing.T) {
 		config.GRPCConfig{
 			URL: "localhost:8081",
 		},
-		&testscommon.GRPCBlocksHandlerStub{},
+		&testscommon.GRPCBlocksHandlerMock{},
 	)
 	require.Nil(t, err)
 	require.False(t, gsv.IsInterfaceNil())

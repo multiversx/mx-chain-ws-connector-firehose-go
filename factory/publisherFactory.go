@@ -10,14 +10,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-// CreatePublisher will return the required Publisher implementation based on whether the hyperOutportBlock are
-// served via gRPC or stdout.
-func CreatePublisher(
+// CreateHyperBlockPublisher will create a new hyper block publisher component
+func CreateHyperBlockPublisher(
 	cfg *config.Config,
 	enableGRPCServer bool,
 	blockContainer process.BlockContainerHandler,
-	outportBlocksPool process.DataPool,
-	dataAggregator process.DataAggregator) (process.Publisher, error) {
+	outportBlocksPool process.BlocksPool,
+	dataAggregator process.DataAggregator,
+) (process.HyperBlockPublisher, error) {
 	if enableGRPCServer {
 		handler, err := process.NewGRPCBlocksHandler(outportBlocksPool, dataAggregator)
 		if err != nil {

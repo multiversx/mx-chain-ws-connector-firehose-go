@@ -443,3 +443,42 @@ func TestPruningStorer_Prune(t *testing.T) {
 		require.Equal(t, []byte("value4"), key4Val)
 	})
 }
+
+func TestPruningStorer_Dump(t *testing.T) {
+	t.Parallel()
+
+	tmpPath := t.TempDir()
+
+	_ = os.MkdirAll(filepath.Join(tmpPath, "4"), os.ModePerm)
+
+	dbConfig := config.DBConfig{
+		FilePath:          tmpPath,
+		Type:              "LvlDB",
+		BatchDelaySeconds: 2,
+		MaxBatchSize:      100,
+		MaxOpenFiles:      10,
+	}
+
+	numPersistersToKeep := 2
+	ps, err := process.NewPruningStorer(dbConfig, testscommon.NewCacherMock(), numPersistersToKeep, !isFullDBSync)
+	require.Nil(t, err)
+	require.NotNil(t, ps)
+
+	_ = ps.Put([]byte("key1"), []byte("value1"))
+	_ = ps.Put([]byte("key2"), []byte("value2"))
+	_ = ps.Put([]byte("key3"), []byte("value3"))
+	_ = ps.Put([]byte("key4"), []byte("value4"))
+
+	persister := ps.GetActivePersister(0)
+	key4Val, err := persister.Get([]byte("key4"))
+	require.Nil(t, key4Val)
+	require.Error(t, err)
+
+	err = ps.Dump()
+	require.Nil(t, err)
+
+	persister = ps.GetActivePersister(0)
+	key4Val, err = persister.Get([]byte("key4"))
+	require.NotNil(t, key4Val)
+	require.Nil(t, err)
+}

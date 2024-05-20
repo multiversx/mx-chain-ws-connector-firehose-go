@@ -1,7 +1,6 @@
 package process
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -16,8 +15,6 @@ import (
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 )
-
-const metaCheckpointKey = "lastMetaRound"
 
 type persisterData struct {
 	persister types.Persister
@@ -206,7 +203,7 @@ func (ps *pruningStorer) getFromPersister(key []byte) ([]byte, error) {
 	for idx := 0; idx < len(ps.activePersisters); idx++ {
 		val, err := ps.activePersisters[idx].persister.Get(key)
 		if err != nil {
-			log.Error(err.Error())
+			log.Trace("failed to get key from persister", "key", hex.EncodeToString(key), "error", err)
 			continue
 		}
 
@@ -228,29 +225,6 @@ func (ps *pruningStorer) Put(key, data []byte) error {
 	}
 
 	return ps.putInPersister(key, data)
-}
-
-func (ps *pruningStorer) SetCheckpoint(round uint64) error {
-	metaRound := make([]byte, 8)
-	binary.LittleEndian.PutUint64(metaRound, round)
-
-	err := ps.putInPersister([]byte(metaCheckpointKey), metaRound)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ps *pruningStorer) GetCheckpoint() (uint64, error) {
-	data, err := ps.getFromPersister([]byte(metaCheckpointKey))
-	if err != nil {
-		return 0, err
-	}
-
-	lastMetaRound := binary.LittleEndian.Uint64(data)
-
-	return lastMetaRound, nil
 }
 
 func (ps *pruningStorer) putInPersister(key, data []byte) error {

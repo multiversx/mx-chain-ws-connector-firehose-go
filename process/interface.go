@@ -6,8 +6,8 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
-
-	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 // WSConnector defines a ws connector that receives incoming data and can be closed
@@ -41,9 +41,16 @@ type Writer interface {
 	Close() error
 }
 
-// Publisher defines the behaviour of an aggregated outport block publisher component
+// Publisher defines the behaviour of a common publisher component
 type Publisher interface {
-	PublishHyperBlock(hyperOutportBlock *data.HyperOutportBlock) error
+	PublishBlock(headerHash []byte) error
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// HyperBlockPublisher defines the behaviour of an aggregated outport block publisher component
+type HyperBlockPublisher interface {
+	PublishHyperBlock(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -51,7 +58,7 @@ type Publisher interface {
 // DataAggregator defines the behaviour of a component that is able to aggregate outport
 // block data for shards
 type DataAggregator interface {
-	ProcessHyperBlock(outportBlock *outport.OutportBlock) (*data.HyperOutportBlock, error)
+	ProcessHyperBlock(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error)
 	IsInterfaceNil() bool
 }
 
@@ -59,9 +66,23 @@ type DataAggregator interface {
 type DataPool interface {
 	Put(key []byte, value []byte) error
 	Get(key []byte) ([]byte, error)
-	PutBlock(hash []byte, outportBlock *outport.OutportBlock, round uint64) error
-	GetBlock(hash []byte) (*outport.OutportBlock, error)
-	UpdateMetaState(index uint64)
+	PutBlock(hash []byte, value []byte, index uint64, shardID uint32) error
+	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// BlocksPool defines the behaviour of a blocks pool handler component that is
+// able to handle meta and shard outport blocks data
+type BlocksPool interface {
+	Get(key []byte) ([]byte, error)
+	Put(key []byte, value []byte) error
+	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
+	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
+	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)
+	UpdateMetaState(checkpoint *data.BlockCheckpoint) error
+	GetLastCheckpoint() (*data.BlockCheckpoint, error)
 	Close() error
 	IsInterfaceNil() bool
 }
@@ -72,7 +93,6 @@ type PruningStorer interface {
 	Put(key, data []byte) error
 	Prune(index uint64) error
 	Dump() error
-	SetCheckpoint(round uint64) error
 	Close() error
 	Destroy() error
 	IsInterfaceNil() bool
@@ -80,15 +100,15 @@ type PruningStorer interface {
 
 // OutportBlockConverter handles the conversion between gogo and google proto buffer definitions.
 type OutportBlockConverter interface {
-	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*data.ShardOutportBlock, error)
-	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*data.MetaOutportBlock, error)
+	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error)
+	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error)
 	IsInterfaceNil() bool
 }
 
 // GRPCBlocksHandler defines the behaviour of handling block via gRPC
 type GRPCBlocksHandler interface {
-	FetchHyperBlockByHash(hash []byte) (*data.HyperOutportBlock, error)
-	FetchHyperBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error)
+	FetchHyperBlockByHash(hash []byte) (*hyperOutportBlocks.HyperOutportBlock, error)
+	FetchHyperBlockByNonce(nonce uint64) (*hyperOutportBlocks.HyperOutportBlock, error)
 	IsInterfaceNil() bool
 }
 
@@ -97,4 +117,11 @@ type GRPCServer interface {
 	Start()
 	Close()
 	IsInterfaceNil() bool
+}
+
+// OutportBlockHandler defines the behaviour of an outport block component used in blocks pool
+type OutportBlockHandler interface {
+	GetHeaderNonce() (uint64, error)
+	GetHighestFinalBlockNonce() uint64
+	GetShardID() uint32
 }

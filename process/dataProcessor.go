@@ -1,59 +1,52 @@
 package process
 
 import (
-	"encoding/binary"
+	"fmt"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
-	"github.com/multiversx/mx-chain-core-go/data"
-	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 )
 
 type dataProcessor struct {
-	marshaller        marshal.Marshalizer
-	operationHandlers map[string]func(marshalledData []byte) error
-	publisher         Publisher
-	outportBlocksPool DataPool
-	dataAggregator    DataAggregator
-	blockCreator      BlockContainerHandler
+	marshaller            marshal.Marshalizer
+	operationHandlers     map[string]func(marshalledData []byte) error
+	publisher             Publisher
+	outportBlocksPool     BlocksPool
+	outportBlockConverter OutportBlockConverter
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
 func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
-	outportBlocksPool DataPool,
-	dataAggregator DataAggregator,
-	blockCreator BlockContainerHandler,
+	blocksPool BlocksPool,
+	outportBlockConverter OutportBlockConverter,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
 	}
-	if check.IfNil(outportBlocksPool) {
+	if check.IfNil(blocksPool) {
 		return nil, ErrNilBlocksPool
 	}
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
 	}
-	if check.IfNil(dataAggregator) {
-		return nil, ErrNilDataAggregator
-	}
-	if check.IfNil(blockCreator) {
-		return nil, ErrNilBlockCreator
+	if check.IfNil(outportBlockConverter) {
+		return nil, ErrNilOutportBlocksConverter
 	}
 
 	dp := &dataProcessor{
-		marshaller:        marshaller,
-		publisher:         publisher,
-		outportBlocksPool: outportBlocksPool,
-		dataAggregator:    dataAggregator,
-		blockCreator:      blockCreator,
+		marshaller:            marshaller,
+		publisher:             publisher,
+		outportBlocksPool:     blocksPool,
+		outportBlockConverter: outportBlockConverter,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
-		outport.TopicSaveBlock: dp.saveBlock,
+		outport.TopicSaveBlock:          dp.saveBlock,
+		outport.TopicRevertIndexedBlock: dp.revertBlock,
 	}
 
 	return dp, nil
@@ -80,78 +73,84 @@ func (dp *dataProcessor) saveBlock(marshalledData []byte) error {
 		return ErrNilOutportBlockData
 	}
 
-	log.Info("saving block", "hash", outportBlock.BlockData.GetHeaderHash(), "shardID", outportBlock.ShardID)
-
-	err = dp.pushToBlocksPool(outportBlock)
-	if err != nil {
-		return err
-	}
-
 	if outportBlock.ShardID == core.MetachainShardId {
 		return dp.handleMetaOutportBlock(outportBlock)
 	}
 
-	return nil
+	return dp.handleShardOutportBlock(outportBlock)
 }
 
 func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlock) error {
-	hyperOutportBlock, err := dp.dataAggregator.ProcessHyperBlock(outportBlock)
+	metaOutportBlock, err := dp.outportBlockConverter.HandleMetaOutportBlock(outportBlock)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to handle metaOutportBlock: %w", err)
+	}
+	if metaOutportBlock == nil {
+		return ErrInvalidOutportBlock
+	}
+	if metaOutportBlock.BlockData == nil {
+		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)
+	}
+	if metaOutportBlock.BlockData.Header == nil {
+		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
+	}
+	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
+
+	log.Info("saving meta outport block",
+		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
+		"nonce", metaNonce,
+		"shardID", metaOutportBlock.ShardID)
+
+	headerHash := metaOutportBlock.BlockData.HeaderHash
+	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
+	if err != nil {
+		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
+	err = dp.publisher.PublishBlock(headerHash)
 	if err != nil {
-		return err
-	}
-
-	header := hyperOutportBlock.MetaOutportBlock.BlockData.Header
-
-	err = dp.putMetaNonce(header.GetNonce(), outportBlock.BlockData.GetHeaderHash())
-	if err != nil {
-		return err
-	}
-
-	dp.outportBlocksPool.UpdateMetaState(header.GetRound())
-
-	return nil
-}
-
-func (dp *dataProcessor) putMetaNonce(nonce uint64, hash []byte) error {
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, nonce)
-
-	return dp.outportBlocksPool.Put(nonceBytes, hash)
-}
-
-func (dp *dataProcessor) pushToBlocksPool(outportBlock *outport.OutportBlock) error {
-	blockHash := outportBlock.BlockData.HeaderHash
-
-	header, err := dp.getHeader(outportBlock)
-	if err != nil {
-		return err
-	}
-
-	err = dp.outportBlocksPool.PutBlock(blockHash, outportBlock, header.GetRound())
-	if err != nil {
-		return err
+		return fmt.Errorf("failed to publish block: %w", err)
 	}
 
 	return nil
 }
 
-func (dp *dataProcessor) getHeader(outportBlock *outport.OutportBlock) (data.HeaderHandler, error) {
-	blockCreator, err := dp.blockCreator.Get(core.HeaderType(outportBlock.BlockData.HeaderType))
+func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
+	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlock(outportBlock)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to handle shardOutportBlock: %w", err)
+	}
+	if shardOutportBlock.BlockData == nil {
+		return fmt.Errorf("%w for blockData", ErrInvalidOutportBlock)
+	}
+	if shardOutportBlock.BlockData.Header == nil {
+		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
+	}
+	nonce := shardOutportBlock.BlockData.Header.GetNonce()
+
+	log.Info("saving shard outport block",
+		"hash", shardOutportBlock.BlockData.GetHeaderHash(),
+		"nonce", nonce,
+		"shardID", shardOutportBlock.ShardID)
+
+	headerHash := outportBlock.BlockData.HeaderHash
+
+	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
+}
+
+func (dp *dataProcessor) revertBlock(marshalledData []byte) error {
+	blockData := &outport.BlockData{}
+	err := dp.marshaller.Unmarshal(blockData, marshalledData)
+	if err != nil {
+		return err
 	}
 
-	header, err := block.GetHeaderFromBytes(dp.marshaller, blockCreator, outportBlock.BlockData.HeaderBytes)
+	err = dp.publisher.PublishBlock(blockData.HeaderHash)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to publish block: %w", err)
 	}
 
-	return header, nil
+	return nil
 }
 
 // Close will close the internal writer

@@ -10,6 +10,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	logger "github.com/multiversx/mx-chain-logger-go"
 
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/factory"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
@@ -22,7 +23,7 @@ var ErrNilConfig = errors.New("nil configs provided")
 
 type connectorRunner struct {
 	config           *config.Config
-	dbMode           string
+	dbMode           common.DBMode
 	enableGrpcServer bool
 }
 
@@ -34,7 +35,7 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 
 	return &connectorRunner{
 		config:           cfg,
-		dbMode:           dbMode,
+		dbMode:           common.DBMode(dbMode),
 		enableGrpcServer: enableGrpcServer,
 	}, nil
 }
@@ -42,7 +43,17 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 // Run will trigger connector service
 func (cr *connectorRunner) Run() error {
 	gogoProtoMarshaller := &marshal.GogoProtoMarshalizer{}
-	converter := process.NewOutportBlockConverter()
+	protoMarshaller := &process.ProtoMarshaller{}
+
+	firstCommitableBlocks, err := common.ConvertFirstCommitableBlocks(cr.config.DataPool.FirstCommitableBlocks)
+	if err != nil {
+		return err
+	}
+
+	outportBlockConverter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	if err != nil {
+		return err
+	}
 
 	blockContainer, err := factory.CreateBlockContainer()
 	if err != nil {
@@ -54,22 +65,56 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	outportBlocksPool, err := process.NewBlocksPool(blocksStorer, gogoProtoMarshaller, cr.config.DataPool.MaxDelta, cr.config.DataPool.PruningWindow)
+	argsBlocksPool := process.DataPoolArgs{
+		Storer:                blocksStorer,
+		Marshaller:            protoMarshaller,
+		MaxDelta:              cr.config.DataPool.MaxDelta,
+		CleanupInterval:       cr.config.DataPool.PruningWindow,
+		FirstCommitableBlocks: firstCommitableBlocks,
+	}
+	dataPool, err := process.NewDataPool(argsBlocksPool)
 	if err != nil {
 		return err
 	}
 
-	dataAggregator, err := process.NewDataAggregator(outportBlocksPool, converter)
+	blocksPool, err := process.NewBlocksPool(
+		dataPool,
+		protoMarshaller,
+	)
 	if err != nil {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, outportBlocksPool, dataAggregator)
+	dataAggregator, err := process.NewDataAggregator(blocksPool)
 	if err != nil {
-		return fmt.Errorf("cannot create publisher: %w", err)
+		return err
 	}
 
-	dataProcessor, err := process.NewDataProcessor(publisher, gogoProtoMarshaller, outportBlocksPool, dataAggregator, blockContainer)
+	hyperBlockPublisher, err := factory.CreateHyperBlockPublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
+	if err != nil {
+		return fmt.Errorf("cannot create hyper block publisher: %w", err)
+	}
+
+	publisherHandlerArgs := process.PublisherHandlerArgs{
+		Handler:                     hyperBlockPublisher,
+		OutportBlocksPool:           blocksPool,
+		DataAggregator:              dataAggregator,
+		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
+		Marshalizer:                 protoMarshaller,
+		FirstCommitableBlocks:       firstCommitableBlocks,
+	}
+
+	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
+	if err != nil {
+		return fmt.Errorf("cannot create common publisher: %w", err)
+	}
+
+	dataProcessor, err := process.NewDataProcessor(
+		publisherHandler,
+		gogoProtoMarshaller,
+		blocksPool,
+		outportBlockConverter,
+	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
 	}
@@ -88,7 +133,7 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = publisher.Close()
+	err = publisherHandler.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -98,7 +143,7 @@ func (cr *connectorRunner) Run() error {
 		log.Error(err.Error())
 	}
 
-	err = outportBlocksPool.Close()
+	err = blocksPool.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}

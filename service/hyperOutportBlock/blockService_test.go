@@ -32,7 +32,7 @@ func TestNewService(t *testing.T) {
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
-		bs, err := hyperOutportBlock.NewService(context.TODO(), &testscommon.GRPCBlocksHandlerStub{})
+		bs, err := hyperOutportBlock.NewService(context.TODO(), &testscommon.GRPCBlocksHandlerMock{})
 		require.Nil(t, err)
 		require.NotNil(t, bs)
 	})
@@ -41,7 +41,7 @@ func TestNewService(t *testing.T) {
 func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 	t.Parallel()
 
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByHashCalled: func(hash []byte) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{
@@ -66,7 +66,7 @@ func TestService_GetHyperOutportBlockByHash(t *testing.T) {
 func TestService_GetHyperOutportBlockByNonce(t *testing.T) {
 	t.Parallel()
 
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{
@@ -95,7 +95,7 @@ func TestService_Poll(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 
 		fetchBlockCalled := uint32(0)
-		blocksHandler := &testscommon.GRPCBlocksHandlerStub{
+		blocksHandler := &testscommon.GRPCBlocksHandlerMock{
 			FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 				atomic.AddUint32(&fetchBlockCalled, 1)
 				return &data.HyperOutportBlock{}, nil
@@ -134,7 +134,7 @@ func TestService_Poll(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		blocksHandler := &testscommon.GRPCBlocksHandlerStub{
+		blocksHandler := &testscommon.GRPCBlocksHandlerMock{
 			FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 				return &data.HyperOutportBlock{}, nil
 			},
@@ -184,7 +184,7 @@ func TestService_HyperOutportBlocksStreamByHash(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByHashCalled: func(hash []byte) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{
@@ -241,7 +241,7 @@ func TestService_HyperOutportBlocksStreamByNonce(t *testing.T) {
 
 	nonce := uint64(10)
 
-	handler := testscommon.GRPCBlocksHandlerStub{
+	handler := testscommon.GRPCBlocksHandlerMock{
 		FetchHyperBlockByNonceCalled: func(nonce uint64) (*data.HyperOutportBlock, error) {
 			return &data.HyperOutportBlock{
 				MetaOutportBlock: &data.MetaOutportBlock{
