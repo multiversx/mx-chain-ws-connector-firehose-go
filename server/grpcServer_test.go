@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,12 +15,12 @@ import (
 func TestNewGRPCServerWrapper(t *testing.T) {
 	t.Parallel()
 
-	serveCalled := false
+	serveCalls := uint32(0)
 	stopCalled := false
 	gsv, err := server.NewGRPCServerWrapper(
 		&testscommon.GRPCServerMock{
 			ServeCalled: func(lis net.Listener) error {
-				serveCalled = true
+				atomic.AddUint32(&serveCalls, 1)
 				return nil
 			},
 			GracefulStopCalled: func() {
@@ -38,7 +39,7 @@ func TestNewGRPCServerWrapper(t *testing.T) {
 
 	time.Sleep(1000 * time.Millisecond)
 
-	require.True(t, serveCalled)
+	require.Equal(t, uint32(1), atomic.LoadUint32(&serveCalls))
 
 	gsv.Close()
 
