@@ -7,8 +7,6 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
-	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
-	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 type dataProcessor struct {
@@ -16,9 +14,7 @@ type dataProcessor struct {
 	operationHandlers     map[string]func(marshalledData []byte) error
 	publisher             Publisher
 	outportBlocksPool     BlocksPool
-	dataAggregator        DataAggregator
 	outportBlockConverter OutportBlockConverter
-	firstCommitableBlocks map[uint32]uint64
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -26,9 +22,7 @@ func NewDataProcessor(
 	publisher Publisher,
 	marshaller marshal.Marshalizer,
 	blocksPool BlocksPool,
-	dataAggregator DataAggregator,
 	outportBlockConverter OutportBlockConverter,
-	firstCommitableBlocks map[uint32]uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -39,9 +33,6 @@ func NewDataProcessor(
 	if check.IfNil(marshaller) {
 		return nil, ErrNilMarshaller
 	}
-	if check.IfNil(dataAggregator) {
-		return nil, ErrNilDataAggregator
-	}
 	if check.IfNil(outportBlockConverter) {
 		return nil, ErrNilOutportBlocksConverter
 	}
@@ -50,13 +41,12 @@ func NewDataProcessor(
 		marshaller:            marshaller,
 		publisher:             publisher,
 		outportBlocksPool:     blocksPool,
-		dataAggregator:        dataAggregator,
 		outportBlockConverter: outportBlockConverter,
-		firstCommitableBlocks: firstCommitableBlocks,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
-		outport.TopicSaveBlock: dp.saveBlock,
+		outport.TopicSaveBlock:          dp.saveBlock,
+		outport.TopicRevertIndexedBlock: dp.revertBlock,
 	}
 
 	return dp, nil
@@ -111,73 +101,18 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		"nonce", metaNonce,
 		"shardID", metaOutportBlock.ShardID)
 
-	headerHash := outportBlock.BlockData.HeaderHash
+	headerHash := metaOutportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
 	}
 
-	firstCommitableBlock, ok := dp.firstCommitableBlocks[core.MetachainShardId]
-	if !ok {
-		return fmt.Errorf("failed to get first commitable block for meta")
-	}
-
-	if metaNonce < firstCommitableBlock {
-		// do not try to aggregate or publish hyper outport block
-
-		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableBlock", firstCommitableBlock)
-
-		return nil
-	}
-
-	hyperOutportBlock, err := dp.dataAggregator.ProcessHyperBlock(metaOutportBlock)
+	err = dp.publisher.PublishBlock(headerHash)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to publish block: %w", err)
 	}
 
-	lastCheckpoint, err := dp.getLastIndexesData(hyperOutportBlock)
-	if err != nil {
-		return fmt.Errorf("failed to get last indexes data: %w", err)
-	}
-
-	err = dp.publisher.PublishHyperBlock(hyperOutportBlock)
-	if err != nil {
-		return fmt.Errorf("failed to publish hyperblock: %w", err)
-	}
-
-	return dp.outportBlocksPool.UpdateMetaState(lastCheckpoint)
-}
-
-func (dp *dataProcessor) getLastIndexesData(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
-	if hyperOutportBlock == nil {
-		return nil, ErrNilHyperOutportBlock
-	}
-	if hyperOutportBlock.MetaOutportBlock == nil {
-		return nil, fmt.Errorf("%w for metaOutportBlock", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData == nil {
-		return nil, fmt.Errorf("%w for blockData", ErrNilHyperOutportBlock)
-	}
-	if hyperOutportBlock.MetaOutportBlock.BlockData.Header == nil {
-		return nil, fmt.Errorf("%w for blockData header", ErrNilHyperOutportBlock)
-	}
-
-	checkpoint, err := dp.outportBlocksPool.GetLastCheckpoint()
-	if err != nil {
-		checkpoint = &data.BlockCheckpoint{
-			LastNonces: make(map[uint32]uint64),
-		}
-	}
-
-	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
-	checkpoint.LastNonces[core.MetachainShardId] = metaBlock.GetNonce()
-
-	for _, outportBlockData := range hyperOutportBlock.NotarizedHeadersOutportData {
-		header := outportBlockData.OutportBlock.BlockData.Header
-		checkpoint.LastNonces[outportBlockData.OutportBlock.ShardID] = header.GetNonce()
-	}
-
-	return checkpoint, nil
+	return nil
 }
 
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
@@ -201,6 +136,21 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	headerHash := outportBlock.BlockData.HeaderHash
 
 	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
+}
+
+func (dp *dataProcessor) revertBlock(marshalledData []byte) error {
+	blockData := &outport.BlockData{}
+	err := dp.marshaller.Unmarshal(blockData, marshalledData)
+	if err != nil {
+		return err
+	}
+
+	err = dp.publisher.PublishBlock(blockData.HeaderHash)
+	if err != nil {
+		return fmt.Errorf("failed to publish block: %w", err)
+	}
+
+	return nil
 }
 
 // Close will close the internal writer

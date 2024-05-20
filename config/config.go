@@ -6,6 +6,7 @@ type Config struct {
 	DataPool             DataPoolConfig
 	OutportBlocksStorage StorageConfig
 	GRPC                 GRPCConfig
+	Publisher            PublisherConfig
 }
 
 // WebSocketConfig holds web sockets config
@@ -33,6 +34,11 @@ type DataPoolConfig struct {
 type FirstCommitableBlock struct {
 	ShardID string
 	Nonce   uint64
+}
+
+// PublisherConfig will map publisher configuration
+type PublisherConfig struct {
+	RetryDurationInMiliseconds uint64
 }
 
 // StorageConfig will map the storage unit configuration

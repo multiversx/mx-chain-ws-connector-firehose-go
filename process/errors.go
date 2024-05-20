@@ -26,6 +26,9 @@ var ErrNilOutportBlocksConverter = errors.New("nil outport blocks converter")
 // ErrNilDataAggregator signals that a nil data aggregator was provided
 var ErrNilDataAggregator = errors.New("nil data aggregator provided")
 
+// ErrNilFirstCommitableBlocks signals that a nil first commitable blocks map was provided
+var ErrNilFirstCommitableBlocks = errors.New("nil first commitable blocks map")
+
 // ErrWrongTypeAssertion signals that a type assertion faled
 var ErrWrongTypeAssertion = errors.New("type assertion failed")
 

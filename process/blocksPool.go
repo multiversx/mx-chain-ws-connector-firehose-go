@@ -52,6 +52,11 @@ func (bp *blocksPool) Get(key []byte) ([]byte, error) {
 	return data, nil
 }
 
+// Put will trigger data pool put operation
+func (bp *blocksPool) Put(key []byte, value []byte) error {
+	return bp.dataPool.Put(key, value)
+}
+
 // PutBlock will put the provided outport block data to the pool
 func (bp *blocksPool) PutBlock(hash []byte, outportBlock OutportBlockHandler) error {
 	shardID := outportBlock.GetShardID()

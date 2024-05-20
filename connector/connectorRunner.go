@@ -90,18 +90,30 @@ func (cr *connectorRunner) Run() error {
 		return err
 	}
 
-	publisher, err := factory.CreatePublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
+	hyperBlockPublisher, err := factory.CreateHyperBlockPublisher(cr.config, cr.enableGrpcServer, blockContainer, blocksPool, dataAggregator)
 	if err != nil {
-		return fmt.Errorf("cannot create publisher: %w", err)
+		return fmt.Errorf("cannot create hyper block publisher: %w", err)
+	}
+
+	publisherHandlerArgs := process.PublisherHandlerArgs{
+		Handler:                     hyperBlockPublisher,
+		OutportBlocksPool:           blocksPool,
+		DataAggregator:              dataAggregator,
+		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
+		Marshalizer:                 protoMarshaller,
+		FirstCommitableBlocks:       firstCommitableBlocks,
+	}
+
+	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
+	if err != nil {
+		return fmt.Errorf("cannot create common publisher: %w", err)
 	}
 
 	dataProcessor, err := process.NewDataProcessor(
-		publisher,
+		publisherHandler,
 		gogoProtoMarshaller,
 		blocksPool,
-		dataAggregator,
 		outportBlockConverter,
-		firstCommitableBlocks,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)
@@ -121,7 +133,7 @@ func (cr *connectorRunner) Run() error {
 
 	log.Info("application closing, calling Close on all subcomponents...")
 
-	err = publisher.Close()
+	err = publisherHandler.Close()
 	if err != nil {
 		log.Error(err.Error())
 	}

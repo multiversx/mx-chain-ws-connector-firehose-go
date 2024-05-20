@@ -41,8 +41,15 @@ type Writer interface {
 	Close() error
 }
 
-// Publisher defines the behaviour of an aggregated outport block publisher component
+// Publisher defines the behaviour of a common publisher component
 type Publisher interface {
+	PublishBlock(headerHash []byte) error
+	Close() error
+	IsInterfaceNil() bool
+}
+
+// HyperBlockPublisher defines the behaviour of an aggregated outport block publisher component
+type HyperBlockPublisher interface {
 	PublishHyperBlock(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) error
 	Close() error
 	IsInterfaceNil() bool
@@ -70,6 +77,7 @@ type DataPool interface {
 // able to handle meta and shard outport blocks data
 type BlocksPool interface {
 	Get(key []byte) ([]byte, error)
+	Put(key []byte, value []byte) error
 	PutBlock(hash []byte, outportBlock OutportBlockHandler) error
 	GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error)
 	GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutportBlock, error)

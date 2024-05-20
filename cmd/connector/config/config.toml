@@ -30,7 +30,9 @@
 
 [DataPool]
     # Should be smaller then PruningWindow
-    MaxDelta = 100
+    MaxDelta = 50
+
+    # Defines the number of block that will be added until a new persister will be created
     PruningWindow = 1000
 
     # Defines the number of active persisters to keep open
@@ -46,9 +48,15 @@
         { ShardID = "2", Nonce = 0 }
     ]
 
+[Publisher]
+    # RetryDurationInMiliseconds defines the retry duration for common publisher
+    # handler when there is an error on publish
+    RetryDurationInMiliseconds = 1000
+
 [OutportBlocksStorage]
     [OutportBlocksStorage.Cache]
         Name = "OutportBlocksStorage"
+        # Cache capacity and size has to be higher than max allowed deltas per shards in total
         Capacity = 100
         Type = "SizeLRU"
         SizeInBytes = 209715200 # 200MB
