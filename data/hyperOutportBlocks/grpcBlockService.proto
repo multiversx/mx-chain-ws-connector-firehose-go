@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package proto;
+
+import "google/protobuf/duration.proto";
+
+import "data/hyperOutportBlocks/hyperOutportBlock.proto";
+
+option go_package = "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks";
+
+message BlockHashRequest {
+  string hash = 1;
+}
+
+message BlockHashStreamRequest {
+  string hash = 1;
+  google.protobuf.Duration pollingInterval = 2;
+}
+
+message BlockNonceRequest {
+  uint64 nonce = 1;
+}
+
+message BlockNonceStreamRequest {
+  uint64 nonce = 1;
+  google.protobuf.Duration pollingInterval = 2;
+}
+
+service BlockStream {
+  rpc BlocksByHash(BlockHashStreamRequest) returns (stream proto.HyperOutportBlock) {}
+  rpc BlocksByNonce(BlockNonceStreamRequest) returns (stream proto.HyperOutportBlock) {}
+}
+
+service BlockFetch {
+  rpc GetBlockByHash(BlockHashRequest) returns (HyperOutportBlock) {}
+  rpc GetBlockByNonce(BlockNonceRequest) returns (proto.HyperOutportBlock) {}
+}

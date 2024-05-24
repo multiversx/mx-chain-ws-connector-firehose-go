@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -25,39 +24,41 @@ type serverStream interface {
 	Send(*data.HyperOutportBlock) error
 }
 
-// Service returns blocks based on nonce or hash from cache.
-type Service struct {
+// service returns blocks based on nonce or hash from cache.
+type service struct {
 	ctx           context.Context
 	blocksHandler process.GRPCBlocksHandler
 
-	data.UnimplementedHyperOutportBlockServiceServer
+	data.UnimplementedBlockStreamServer
 }
 
 // NewService returns a new instance of the hyperOutportBlock service.
-func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*Service, error) {
+func NewService(ctx context.Context, blocksHandler process.GRPCBlocksHandler) (*service, error) {
 	if check.IfNil(blocksHandler) {
-		return nil, process.ErrNilOutportBlockData
+		return nil, process.ErrNilGRPCBlocksHandler
 	}
-
 	if ctx == nil {
 		return nil, process.ErrNilBlockServiceContext
 	}
 
-	return &Service{ctx: ctx, blocksHandler: blocksHandler}, nil
+	return &service{
+		ctx:           ctx,
+		blocksHandler: blocksHandler,
+	}, nil
 }
 
 // GetHyperOutportBlockByHash retrieves the hyperBlock stored in block pool and converts it to standard proto.
-func (bs *Service) GetHyperOutportBlockByHash(ctx context.Context, req *data.BlockHashRequest) (*data.HyperOutportBlock, error) {
+func (bs *service) GetHyperOutportBlockByHash(ctx context.Context, req *data.BlockHashRequest) (*data.HyperOutportBlock, error) {
 	return bs.fetchBlockByHash(req.Hash)
 }
 
 // GetHyperOutportBlockByNonce retrieve a block from the nonce.
-func (bs *Service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.BlockNonceRequest) (*data.HyperOutportBlock, error) {
+func (bs *service) GetHyperOutportBlockByNonce(ctx context.Context, req *data.BlockNonceRequest) (*data.HyperOutportBlock, error) {
 	return bs.fetchBlockByNonce(req.Nonce)
 }
 
 // HyperOutportBlockStreamByHash will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByHashServer) error {
+func (bs *service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamRequest, stream data.BlockStream_BlocksByHashServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByHash(req.Hash)
 	if err != nil {
 		return err
@@ -69,7 +70,7 @@ func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 		return fmt.Errorf("failed to send stream to hyperOutportBlock: %w", err)
 	}
 
-	// start polling and retrieve the starting nonce
+	// TODO: handle nil checks (already handled in another PR)
 	nonce := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Nonce + 1
 	err = bs.poll(nonce, stream, req.PollingInterval)
 	if err != nil {
@@ -80,7 +81,7 @@ func (bs *Service) HyperOutportBlockStreamByHash(req *data.BlockHashStreamReques
 }
 
 // HyperOutportBlockStreamByNonce will return a stream on which the incoming hyperBlocks are being sent.
-func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.HyperOutportBlockService_HyperOutportBlockStreamByNonceServer) error {
+func (bs *service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequest, stream data.BlockStream_BlocksByNonceServer) error {
 	hyperOutportBlock, err := bs.fetchBlockByNonce(req.Nonce)
 	if err != nil {
 		return err
@@ -92,7 +93,7 @@ func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequ
 		return fmt.Errorf("failed to send stream to hyperOutportBlock: %w", err)
 	}
 
-	// start polling and retrieve the starting nonce
+	// TODO: handle nil checks (already handled in another PR)
 	nonce := hyperOutportBlock.MetaOutportBlock.BlockData.Header.Nonce + 1
 	err = bs.poll(nonce, stream, req.PollingInterval)
 	if err != nil {
@@ -102,7 +103,7 @@ func (bs *Service) HyperOutportBlockStreamByNonce(req *data.BlockNonceStreamRequ
 	return nil
 }
 
-func (bs *Service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
+func (bs *service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, error) {
 	hyperOutportBlock, err := bs.blocksHandler.FetchHyperBlockByNonce(nonce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve hyperOutportBlock with nonce '%d': %w", nonce, err)
@@ -111,7 +112,7 @@ func (bs *Service) fetchBlockByNonce(nonce uint64) (*data.HyperOutportBlock, err
 	return hyperOutportBlock, nil
 }
 
-func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error) {
+func (bs *service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error) {
 	decodeString, err := hex.DecodeString(hash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode hex string: %w", err)
@@ -124,12 +125,10 @@ func (bs *Service) fetchBlockByHash(hash string) (*data.HyperOutportBlock, error
 	return hyperOutportBlock, nil
 }
 
-// TODO: add more unit tests.
-func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
-	// parse the provided pollingInterval
-	timeDuration, err := protoToTimeDuration(pollingInterval)
-	if err != nil {
-		return fmt.Errorf("invalid polling interval: %w", err)
+func (bs *service) poll(nonce uint64, stream serverStream, pollingInterval *duration.Duration) error {
+	timeDuration := pollingInterval.AsDuration()
+	if timeDuration <= 0 {
+		return fmt.Errorf("block nonce stream request: invalid polling interval provided")
 	}
 	ticker := time.NewTicker(timeDuration)
 
@@ -137,33 +136,25 @@ func (bs *Service) poll(nonce uint64, stream serverStream, pollingInterval *dura
 		select {
 		case <-bs.ctx.Done():
 			ticker.Stop()
-			return bs.ctx.Err()
+			return nil
 
 		case <-stream.Context().Done():
 			ticker.Stop()
-			return stream.Context().Err()
+			return nil
 
 		case <-ticker.C:
-			// fetch the next hyperBlock.
 			hb, fetchErr := bs.blocksHandler.FetchHyperBlockByNonce(nonce)
 			if fetchErr != nil {
-				// if the hyperBlock was not found. try again in the next iteration.
 				log.Error(fmt.Errorf("failed to retrieve hyper block with nonce '%d': %w", nonce, fetchErr).Error())
 				continue
 			}
 
-			// if found, send it on the stream.
-			if sendErr := stream.Send(hb); sendErr != nil {
+			sendErr := stream.Send(hb)
+			if sendErr != nil {
 				return fmt.Errorf("failed to send hyperOutportBlock: %w", sendErr)
 			}
 
 			nonce++
 		}
 	}
-}
-
-func protoToTimeDuration(protoDur *duration.Duration) (time.Duration, error) {
-	seconds := strconv.FormatInt(protoDur.GetSeconds(), 10)    // Convert int64 to string
-	nanos := strconv.FormatInt(int64(protoDur.GetNanos()), 10) // Convert int32 to string
-	return time.ParseDuration(seconds + "s" + nanos + "ns")
 }

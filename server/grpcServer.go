@@ -6,7 +6,6 @@ import (
 	"net"
 
 	logger "github.com/multiversx/mx-chain-logger-go"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
@@ -19,35 +18,43 @@ var (
 	log = logger.GetOrCreate("server")
 )
 
-type grpcServer struct {
-	server *grpc.Server
+type grpcServer interface {
+	reflection.GRPCServer
+	Serve(lis net.Listener) error
+	GracefulStop()
+}
+
+type grpcServerWrapper struct {
+	server grpcServer
 	config config.GRPCConfig
 
 	cancelFunc context.CancelFunc
 }
 
-// New instantiates the underlying grpc server handling rpc requests.
-func New(config config.GRPCConfig, blocksHandler process.GRPCBlocksHandler) (*grpcServer, error) {
-	s := grpc.NewServer()
-
+// NewGRPCServerWrapper instantiates the underlying grpc server handling rpc requests.
+func NewGRPCServerWrapper(
+	grpcServer grpcServer,
+	config config.GRPCConfig,
+	blocksHandler process.GRPCBlocksHandler,
+) (*grpcServerWrapper, error) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	service, err := hyperOutportBlock.NewService(ctx, blocksHandler)
 	if err != nil {
 		cancelFunc()
 		return nil, fmt.Errorf("failed to create service: %w", err)
 	}
-	data.RegisterHyperOutportBlockServiceServer(s, service)
-	reflection.Register(s)
+	data.RegisterBlockStreamServer(grpcServer, service)
+	reflection.Register(grpcServer)
 
-	return &grpcServer{
-		server:     s,
+	return &grpcServerWrapper{
+		server:     grpcServer,
 		config:     config,
 		cancelFunc: cancelFunc,
 	}, nil
 }
 
 // Start will start the grpc server on the configured URL.
-func (s *grpcServer) Start() {
+func (s *grpcServerWrapper) Start() {
 	go func() {
 		err := s.run()
 		if err != nil {
@@ -56,13 +63,14 @@ func (s *grpcServer) Start() {
 	}()
 }
 
-func (s *grpcServer) run() error {
+func (s *grpcServerWrapper) run() error {
 	lis, err := net.Listen("tcp", s.config.URL)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
-	if err = s.server.Serve(lis); err != nil {
+	err = s.server.Serve(lis)
+	if err != nil {
 		return fmt.Errorf("failed to serve: %v", err)
 	}
 
@@ -70,14 +78,15 @@ func (s *grpcServer) run() error {
 }
 
 // Close will gracefully stop the grpc server.
-func (s *grpcServer) Close() {
+func (s *grpcServerWrapper) Close() {
 	if s.cancelFunc != nil {
-	     s.cancelFunc()
+		s.cancelFunc()
 	}
+
 	s.server.GracefulStop()
 }
 
 // IsInterfaceNil checks if the underlying server is nil.
-func (s *grpcServer) IsInterfaceNil() bool {
+func (s *grpcServerWrapper) IsInterfaceNil() bool {
 	return s == nil
 }

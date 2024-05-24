@@ -7,6 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/server"
+	"google.golang.org/grpc"
 )
 
 // CreateHyperBlockPublisher will create a new hyper block publisher component
@@ -23,7 +24,9 @@ func CreateHyperBlockPublisher(
 			return nil, fmt.Errorf("failed to create grpc blocks handler: %w", err)
 		}
 
-		s, err := server.New(cfg.GRPC, handler)
+		grpcServer := grpc.NewServer()
+
+		s, err := server.NewGRPCServerWrapper(grpcServer, cfg.GRPC, handler)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create grpc server: %w", err)
 		}

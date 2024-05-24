@@ -29,10 +29,10 @@ func main() {
 	defer cc.Close()
 
 	// create the client
-	client := data.NewHyperOutportBlockServiceClient(cc)
+	client := data.NewBlockStreamClient(cc)
 
 	// initiate streaming.
-	stream, err := client.HyperOutportBlockStreamByHash(context.Background(), &data.BlockHashStreamRequest{
+	stream, err := client.BlocksByHash(context.Background(), &data.BlockHashStreamRequest{
 		Hash:            "97227073a4f6702eefe6d4925a49bc6786947d084fb60250b39edabcba9ef6de",
 		PollingInterval: durationpb.New(time.Second),
 	})
