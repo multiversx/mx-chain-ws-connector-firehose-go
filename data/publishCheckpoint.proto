@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/multiversx/mx-chain-ws-connector-template-go/data;data";
+
+message PublishCheckpoint {
+    bytes HeaderHash = 1;
+    bool  Published  = 2;
+}
