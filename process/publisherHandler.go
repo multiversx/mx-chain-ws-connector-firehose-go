@@ -317,7 +317,9 @@ func (ph *publisherHandler) Close() error {
 
 	ph.cancelFunc()
 
-	close(ph.closeChan)
+	if ph.closeChan != nil {
+		close(ph.closeChan)
+	}
 
 	return nil
 }
