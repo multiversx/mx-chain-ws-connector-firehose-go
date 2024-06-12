@@ -101,7 +101,6 @@ func (cr *connectorRunner) Run() error {
 		DataAggregator:              dataAggregator,
 		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
 		Marshalizer:                 protoMarshaller,
-		FirstCommitableBlocks:       firstCommitableBlocks,
 	}
 
 	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
@@ -114,6 +113,7 @@ func (cr *connectorRunner) Run() error {
 		gogoProtoMarshaller,
 		blocksPool,
 		outportBlockConverter,
+		firstCommitableBlocks,
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)

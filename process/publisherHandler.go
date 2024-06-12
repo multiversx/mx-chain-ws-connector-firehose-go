@@ -20,12 +20,11 @@ const (
 )
 
 type publisherHandler struct {
-	handler               HyperBlockPublisher
-	outportBlocksPool     BlocksPool
-	dataAggregator        DataAggregator
-	retryDuration         time.Duration
-	marshaller            marshal.Marshalizer
-	firstCommitableBlocks map[uint32]uint64
+	handler           HyperBlockPublisher
+	outportBlocksPool BlocksPool
+	dataAggregator    DataAggregator
+	retryDuration     time.Duration
+	marshaller        marshal.Marshalizer
 
 	blocksChan chan []byte
 	cancelFunc func()
@@ -42,7 +41,6 @@ type PublisherHandlerArgs struct {
 	DataAggregator              DataAggregator
 	RetryDurationInMilliseconds uint64
 	Marshalizer                 marshal.Marshalizer
-	FirstCommitableBlocks       map[uint32]uint64
 }
 
 // NewPublisherHandler creates a new publisher handler component
@@ -59,24 +57,20 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 	if check.IfNil(args.Marshalizer) {
 		return nil, ErrNilMarshaller
 	}
-	if args.FirstCommitableBlocks == nil {
-		return nil, ErrNilFirstCommitableBlocks
-	}
 	if args.RetryDurationInMilliseconds < minRetryDurationInMilliseconds {
 		return nil, fmt.Errorf("%w for retry duration: provided %d, min required %d",
 			ErrInvalidValue, args.RetryDurationInMilliseconds, minRetryDurationInMilliseconds)
 	}
 
 	ph := &publisherHandler{
-		handler:               args.Handler,
-		outportBlocksPool:     args.OutportBlocksPool,
-		dataAggregator:        args.DataAggregator,
-		marshaller:            args.Marshalizer,
-		retryDuration:         time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
-		firstCommitableBlocks: args.FirstCommitableBlocks,
-		checkpoint:            &data.PublishCheckpoint{},
-		blocksChan:            make(chan []byte),
-		closeChan:             make(chan struct{}),
+		handler:           args.Handler,
+		outportBlocksPool: args.OutportBlocksPool,
+		dataAggregator:    args.DataAggregator,
+		marshaller:        args.Marshalizer,
+		retryDuration:     time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
+		checkpoint:        &data.PublishCheckpoint{},
+		blocksChan:        make(chan []byte),
+		closeChan:         make(chan struct{}),
 	}
 
 	var ctx context.Context
@@ -222,22 +216,6 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	err = checkMetaOutportBlockHeader(metaOutportBlock)
 	if err != nil {
 		return err
-	}
-
-	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
-	shardID := metaOutportBlock.GetShardID()
-
-	firstCommitableBlock, ok := ph.firstCommitableBlocks[shardID]
-	if !ok {
-		return fmt.Errorf("failed to get first commitable block for shard %d", shardID)
-	}
-
-	if metaNonce < firstCommitableBlock {
-		// do not try to aggregate or publish hyper outport block
-
-		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
-
-		return nil
 	}
 
 	hyperOutportBlock, err := ph.dataAggregator.ProcessHyperBlock(metaOutportBlock)
