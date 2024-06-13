@@ -254,6 +254,48 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 		require.True(t, putBlockWasCalled)
 	})
 
+	t.Run("should not publish block until first commitable block", func(t *testing.T) {
+		t.Parallel()
+
+		round := uint64(10)
+
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: round + 1,
+		}
+
+		outportBlock := createChainMetaOutportBlock()
+		outportBlockBytes, err := gogoProtoMarshaller.Marshal(outportBlock)
+		require.Nil(t, err)
+
+		metaOutportBlock, err := outportBlockConverter.HandleMetaOutportBlock(outportBlock)
+		require.Nil(t, err)
+
+		publishWasCalled := false
+		dp, _ := process.NewDataProcessor(
+			&testscommon.PublisherMock{
+				PublishBlockCalled: func(headerHash []byte) error {
+					publishWasCalled = true
+					return nil
+				},
+			},
+			gogoProtoMarshaller,
+			&testscommon.HyperBlocksPoolMock{
+				PutBlockCalled: func(hash []byte, outportBlock process.OutportBlockHandler) error {
+					require.Equal(t, metaOutportBlock, outportBlock)
+
+					return nil
+				},
+			},
+			outportBlockConverter,
+			firstCommitableBlocks,
+		)
+
+		err = dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
+		require.Nil(t, err)
+
+		require.False(t, publishWasCalled)
+	})
+
 	t.Run("meta outport block, should work", func(t *testing.T) {
 		t.Parallel()
 
