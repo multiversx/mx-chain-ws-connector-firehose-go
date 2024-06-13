@@ -89,6 +89,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolMock{},
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilPublisher, err)
@@ -102,6 +103,7 @@ func TestNewDataProcessor(t *testing.T) {
 			nil,
 			&testscommon.HyperBlocksPoolMock{},
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilMarshaller, err)
@@ -115,6 +117,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerMock{},
 			nil,
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilBlocksPool, err)
@@ -128,9 +131,24 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolMock{},
 			nil,
+			defaultFirstCommitableBlocks,
 		)
 		require.Nil(t, dp)
 		require.Equal(t, process.ErrNilOutportBlocksConverter, err)
+	})
+
+	t.Run("nil first commitable blocks", func(t *testing.T) {
+		t.Parallel()
+
+		dp, err := process.NewDataProcessor(
+			&testscommon.PublisherMock{},
+			&testscommon.MarshallerStub{},
+			&testscommon.HyperBlocksPoolMock{},
+			&testscommon.OutportBlockConverterMock{},
+			nil,
+		)
+		require.Nil(t, dp)
+		require.Equal(t, process.ErrNilFirstCommitableBlocks, err)
 	})
 
 	t.Run("should work", func(t *testing.T) {
@@ -141,6 +159,7 @@ func TestNewDataProcessor(t *testing.T) {
 			&testscommon.MarshallerStub{},
 			&testscommon.HyperBlocksPoolMock{},
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 		require.Nil(t, err)
 		require.False(t, dp.IsInterfaceNil())
@@ -155,6 +174,7 @@ func TestDataProcessor_ProcessPayload_NotImplementedTopics(t *testing.T) {
 		&testscommon.MarshallerStub{},
 		&testscommon.HyperBlocksPoolMock{},
 		&testscommon.OutportBlockConverterMock{},
+		defaultFirstCommitableBlocks,
 	)
 
 	require.Nil(t, dp.ProcessPayload([]byte("payload"), "random topic", 1))
@@ -179,6 +199,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			gogoProtoMarshaller,
 			&testscommon.HyperBlocksPoolMock{},
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 
 		err := dp.ProcessPayload(nil, outportcore.TopicSaveBlock, 1)
@@ -200,6 +221,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 			protoMarshaller,
 			&testscommon.HyperBlocksPoolMock{},
 			&testscommon.OutportBlockConverterMock{},
+			defaultFirstCommitableBlocks,
 		)
 
 		err := dp.ProcessPayload([]byte("invalid payload"), outportcore.TopicSaveBlock, 1)
@@ -223,6 +245,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 				},
 			},
 			outportBlockConverter,
+			defaultFirstCommitableBlocks,
 		)
 
 		err := dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -258,6 +281,7 @@ func TestDataProcessor_ProcessPayload(t *testing.T) {
 				},
 			},
 			outportBlockConverter,
+			defaultFirstCommitableBlocks,
 		)
 
 		err = dp.ProcessPayload(outportBlockBytes, outportcore.TopicSaveBlock, 1)
@@ -281,6 +305,7 @@ func TestDataProcessor_Close(t *testing.T) {
 		&testscommon.MarshallerStub{},
 		&testscommon.HyperBlocksPoolMock{},
 		&testscommon.OutportBlockConverterMock{},
+		defaultFirstCommitableBlocks,
 	)
 	require.Nil(t, err)
 
