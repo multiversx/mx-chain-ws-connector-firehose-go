@@ -18,7 +18,7 @@ import (
 func createDefaultBlocksPoolArgs() process.DataPoolArgs {
 	return process.DataPoolArgs{
 		Storer:          &testscommon.PruningStorerMock{},
-		Marshaller:      gogoProtoMarshaller,
+		Marshaller:      protoMarshaller,
 		MaxDelta:        10,
 		CleanupInterval: 100,
 		FirstCommitableBlocks: map[uint32]uint64{
@@ -405,9 +405,10 @@ func TestDataPool_Close(t *testing.T) {
 			return nil
 		},
 	}
-	bp, _ := process.NewDataPool(args)
+	bp, err := process.NewDataPool(args)
+	require.Nil(t, err)
 
-	err := bp.Close()
+	err = bp.Close()
 	require.Nil(t, err)
 
 	require.True(t, wasCalled)
