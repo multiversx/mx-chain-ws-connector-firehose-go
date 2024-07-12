@@ -43,6 +43,29 @@ message ShardOutportBlock {
   bytes                        HighestFinalBlockHash  = 10;
 }
 
+message ShardOutportBlockV2 {
+  uint32                       ShardID                = 1;
+  BlockData                    BlockData              = 2;
+  TransactionPoolV2              TransactionPool        = 3;
+  HeaderGasConsumption         HeaderGasConsumption   = 4;
+  map <string, AlteredAccount> AlteredAccounts        = 5;
+  repeated string              NotarizedHeadersHashes = 6;
+  uint32                       NumberOfShards         = 7;
+  repeated uint64              SignersIndexes         = 8;
+  uint64                       HighestFinalBlockNonce = 9;
+  bytes                        HighestFinalBlockHash  = 10;
+}
+
+message TransactionPoolV2 {
+  map<string, TxInfoV2>     Transactions                               = 1;
+  map<string, RewardInfo> Rewards                                    = 3;
+  map<string, Receipt>    Receipts                                   = 4;
+  map<string, TxInfo>     InvalidTxs                                 = 5;
+  repeated LogData        Logs                                       = 6;
+  repeated string         ScheduledExecutedSCRSHashesPrevBlock       = 7;
+  repeated string         ScheduledExecutedInvalidTxsHashesPrevBlock = 8;
+}
+
 // Header holds the metadata of a block. This is the part that is being hashed and run through consensus.
 // The header holds the hash of the body and also the link to the previous block header hash
 message Header  {
@@ -236,6 +259,14 @@ message TxInfo {
   Transaction Transaction    = 1;
   FeeInfo     FeeInfo        = 2;
   uint32      ExecutionOrder = 3;
+}
+
+message TxInfoV2 {
+  Transaction Transaction    = 1;
+  FeeInfo     FeeInfo        = 2;
+  uint32      ExecutionOrder = 3;
+  SCRInfo     SmartContractResults = 4;
+  repeated    Log Logs = 5;
 }
 
 message SCRInfo {

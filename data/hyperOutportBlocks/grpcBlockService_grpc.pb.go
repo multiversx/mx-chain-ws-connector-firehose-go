@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.6.1
-// source: data/hyperOutportBlocks/grpcBlockService.proto
+// source: grpcBlockService.proto
 
 package hyperOutportBlocks
 
@@ -191,7 +191,7 @@ var BlockStream_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "data/hyperOutportBlocks/grpcBlockService.proto",
+	Metadata: "grpcBlockService.proto",
 }
 
 // BlockFetchClient is the client API for BlockFetch service.
@@ -313,5 +313,5 @@ var BlockFetch_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "data/hyperOutportBlocks/grpcBlockService.proto",
+	Metadata: "grpcBlockService.proto",
 }
