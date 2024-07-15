@@ -16,7 +16,6 @@ import (
 
 type fieldsGetter interface {
 	GetShardID() uint32
-	GetTransactionPool() *data.TransactionPool
 	GetHeaderGasConsumption() *data.HeaderGasConsumption
 	GetAlteredAccounts() map[string]*data.AlteredAccount
 	GetNotarizedHeadersHashes() []string
@@ -24,6 +23,16 @@ type fieldsGetter interface {
 	GetSignersIndexes() []uint64
 	GetHighestFinalBlockNonce() uint64
 	GetHighestFinalBlockHash() []byte
+}
+
+type fieldsGetterV1 interface {
+	fieldsGetter
+	GetTransactionPool() *data.TransactionPool
+}
+
+type fieldsGetterV2 interface {
+	fieldsGetter
+	GetTransactionPool() *data.TransactionPoolV2
 }
 
 type blockDataGetter interface {
@@ -46,6 +55,43 @@ const (
 	outportBlockMetaBlockJSONPath = "../testscommon/testdata/outportBlockMetaBlock.json"
 )
 
+func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
+	t.Parallel()
+
+	jsonBytes, err := os.ReadFile(outportBlockHeaderV1JSONPath)
+	require.NoError(t, err, "failed to read test data")
+
+	ob := &outport.OutportBlock{}
+	err = json.Unmarshal(jsonBytes, ob)
+	require.NoError(t, err, "failed to unmarshal test block")
+
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
+
+	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
+	if err != nil {
+		panic(err)
+	}
+
+	header := &block.Header{}
+	err = gogoProtoMarshaller.Unmarshal(header, ob.BlockData.HeaderBytes)
+	require.NoError(t, err, "failed to unmarshall outport block header bytes")
+
+	checkHeaderV1ShardV2(t, header, shardOutportBlock)
+	checkFieldsV2(t, ob, shardOutportBlock)
+	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
+
+	j, err := json.Marshal(shardOutportBlock)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.WriteFile("./shardoutport.json", j, 0655)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestHeaderConverter(t *testing.T) {
 	t.Parallel()
 
@@ -66,7 +112,7 @@ func TestHeaderConverter(t *testing.T) {
 	require.NoError(t, err, "failed to unmarshall outport block header bytes")
 
 	checkHeaderV1(t, header, shardOutportBlock)
-	checkFields(t, ob, shardOutportBlock)
+	checkFieldsV1(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
@@ -91,7 +137,7 @@ func TestHeaderV2Converter(t *testing.T) {
 	require.NoError(t, err, "failed to unmarshall outport block header bytes")
 
 	checkHeaderV2(t, &header, shardOutportBlock)
-	checkFields(t, &ob, shardOutportBlock)
+	checkFieldsV1(t, &ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
@@ -114,8 +160,49 @@ func TestMetaBlockConverter(t *testing.T) {
 	require.NoError(t, err, "failed to unmarshall outport block header bytes")
 
 	checkHeaderMeta(t, &header, metaOutportBlock)
-	checkFields(t, &ob, metaOutportBlock)
+	checkFieldsV1(t, &ob, metaOutportBlock)
 	checkBlockData(t, ob.BlockData, metaOutportBlock.BlockData)
+}
+
+func checkHeaderV1ShardV2(t *testing.T, header *block.Header, shardOutportBlock *data.ShardOutportBlockV2) {
+	require.Equal(t, header.Nonce, shardOutportBlock.BlockData.Header.Nonce)
+	require.Equal(t, header.PrevHash, shardOutportBlock.BlockData.Header.PrevHash)
+	require.Equal(t, header.PrevRandSeed, shardOutportBlock.BlockData.Header.PrevRandSeed)
+	require.Equal(t, header.RandSeed, shardOutportBlock.BlockData.Header.RandSeed)
+	require.Equal(t, header.PubKeysBitmap, shardOutportBlock.BlockData.Header.PubKeysBitmap)
+	require.Equal(t, header.ShardID, shardOutportBlock.BlockData.Header.ShardID)
+	require.Equal(t, header.TimeStamp, shardOutportBlock.BlockData.Header.TimeStamp)
+	require.Equal(t, header.Round, shardOutportBlock.BlockData.Header.Round)
+	require.Equal(t, header.Epoch, shardOutportBlock.BlockData.Header.Epoch)
+	require.Equal(t, header.BlockBodyType.String(), shardOutportBlock.BlockData.Header.BlockBodyType.String())
+	require.Equal(t, header.Signature, shardOutportBlock.BlockData.Header.Signature)
+	require.Equal(t, header.LeaderSignature, shardOutportBlock.BlockData.Header.LeaderSignature)
+	require.Equal(t, header.RootHash, shardOutportBlock.BlockData.Header.RootHash)
+	require.Equal(t, header.MetaBlockHashes, shardOutportBlock.BlockData.Header.MetaBlockHashes)
+	require.Equal(t, header.TxCount, shardOutportBlock.BlockData.Header.TxCount)
+	require.Equal(t, header.EpochStartMetaHash, shardOutportBlock.BlockData.Header.EpochStartMetaHash)
+	require.Equal(t, header.ReceiptsHash, shardOutportBlock.BlockData.Header.ReceiptsHash)
+	require.Equal(t, header.ChainID, shardOutportBlock.BlockData.Header.ChainID)
+	require.Equal(t, header.SoftwareVersion, shardOutportBlock.BlockData.Header.SoftwareVersion)
+	require.Equal(t, header.Reserved, shardOutportBlock.BlockData.Header.Reserved)
+	require.Equal(t, mustCastBigInt(t, header.AccumulatedFees), shardOutportBlock.BlockData.Header.AccumulatedFees)
+	require.Equal(t, mustCastBigInt(t, header.DeveloperFees), shardOutportBlock.BlockData.Header.DeveloperFees)
+
+	// Block data - Header - Mini block headers.
+	for i, miniBlockHeader := range header.MiniBlockHeaders {
+		require.Equal(t, miniBlockHeader.Hash, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].Hash)
+		require.Equal(t, miniBlockHeader.SenderShardID, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].SenderShardID)
+		require.Equal(t, miniBlockHeader.ReceiverShardID, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].ReceiverShardID)
+		require.Equal(t, miniBlockHeader.TxCount, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].TxCount)
+		require.Equal(t, miniBlockHeader.Type, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].Type)
+		require.Equal(t, miniBlockHeader.Reserved, shardOutportBlock.BlockData.Header.MiniBlockHeaders[i].Reserved)
+	}
+
+	// Block data - Header - Peer changes.
+	for i, peerChange := range header.PeerChanges {
+		require.Equal(t, peerChange.PubKey, shardOutportBlock.BlockData.Header.PeerChanges[i].PubKey)
+		require.Equal(t, peerChange.ShardIdDest, shardOutportBlock.BlockData.Header.PeerChanges[i].ShardIdDest)
+	}
 }
 
 func checkHeaderV1(t *testing.T, header *block.Header, fireOutportBlock *data.ShardOutportBlock) {
@@ -312,7 +399,7 @@ func checkHeaderMeta(t *testing.T, header *block.MetaBlock, fireOutportBlock *da
 	require.Equal(t, header.Reserved, fireOutportBlock.BlockData.Header.Reserved)
 }
 
-func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock fieldsGetter) {
+func checkFieldsV1(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock fieldsGetterV1) {
 	// Asserting values.
 	require.Equal(t, outportBlock.ShardID, fireOutportBlock.GetShardID())
 	require.Equal(t, outportBlock.NotarizedHeadersHashes, fireOutportBlock.GetNotarizedHeadersHashes())
@@ -374,6 +461,198 @@ func checkFields(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBl
 
 		// Transaction pool - Smart Contract results - Execution Order.
 		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().SmartContractResults[k].ExecutionOrder)
+	}
+
+	// Transaction Pool - Rewards
+	for k, v := range outportBlock.TransactionPool.Rewards {
+		// Transaction Pool - Rewards - Reward info
+		require.Equal(t, v.Reward.Round, fireOutportBlock.GetTransactionPool().Rewards[k].Reward.Round)
+		require.Equal(t, mustCastBigInt(t, v.Reward.Value), fireOutportBlock.GetTransactionPool().Rewards[k].Reward.Value)
+		require.Equal(t, v.Reward.RcvAddr, fireOutportBlock.GetTransactionPool().Rewards[k].Reward.RcvAddr)
+		require.Equal(t, v.Reward.Epoch, fireOutportBlock.GetTransactionPool().Rewards[k].Reward.Epoch)
+
+		// Transaction Pool - Rewards - Execution Order
+		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().Rewards[k].ExecutionOrder)
+	}
+
+	// Transaction Pool - Receipts
+	for k, v := range outportBlock.TransactionPool.Receipts {
+		// Transaction Pool - Receipts - Receipt info
+		require.Equal(t, mustCastBigInt(t, v.Value), fireOutportBlock.GetTransactionPool().Receipts[k].Value)
+		require.Equal(t, v.SndAddr, fireOutportBlock.GetTransactionPool().Receipts[k].SndAddr)
+		require.Equal(t, v.Data, fireOutportBlock.GetTransactionPool().Receipts[k].Data)
+		require.Equal(t, v.TxHash, fireOutportBlock.GetTransactionPool().Receipts[k].TxHash)
+	}
+
+	// Transaction Pool - Invalid Txs
+	for k, v := range outportBlock.TransactionPool.InvalidTxs {
+		// Transaction Pool - Invalid Txs - Tx Info
+		require.Equal(t, v.Transaction.Nonce, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Nonce)
+		require.Equal(t, mustCastBigInt(t, v.Transaction.Value), fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Value)
+		require.Equal(t, v.Transaction.RcvAddr, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.RcvAddr)
+		require.Equal(t, v.Transaction.RcvUserName, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.RcvUserName)
+		require.Equal(t, v.Transaction.SndAddr, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.SndAddr)
+		require.Equal(t, v.Transaction.GasPrice, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.GasPrice)
+		require.Equal(t, v.Transaction.GasLimit, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.GasLimit)
+		require.Equal(t, v.Transaction.Data, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Data)
+		require.Equal(t, v.Transaction.ChainID, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.ChainID)
+		require.Equal(t, v.Transaction.Version, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Version)
+		require.Equal(t, v.Transaction.Signature, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Signature)
+		require.Equal(t, v.Transaction.Options, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.Options)
+		require.Equal(t, v.Transaction.GuardianAddr, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.GuardianAddr)
+		require.Equal(t, v.Transaction.GuardianSignature, fireOutportBlock.GetTransactionPool().InvalidTxs[k].Transaction.GuardianSignature)
+		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().InvalidTxs[k].ExecutionOrder)
+
+		// Transaction pool - Invalid Txs - Fee info.
+		require.Equal(t, v.FeeInfo.GasUsed, fireOutportBlock.GetTransactionPool().InvalidTxs[k].FeeInfo.GasUsed)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), fireOutportBlock.GetTransactionPool().InvalidTxs[k].FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), fireOutportBlock.GetTransactionPool().InvalidTxs[k].FeeInfo.InitialPaidFee)
+
+		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().InvalidTxs[k].ExecutionOrder)
+	}
+
+	// Transaction Pool - Logs
+	for i, l := range outportBlock.TransactionPool.Logs {
+		// Transaction Pool - Logs - Log Data
+		require.Equal(t, l.TxHash, fireOutportBlock.GetTransactionPool().Logs[i].TxHash)
+
+		// Transaction Pool - Logs - Log data - Log
+		require.Equal(t, l.Log.Address, fireOutportBlock.GetTransactionPool().Logs[i].Log.Address)
+
+		for k, e := range outportBlock.TransactionPool.Logs[i].Log.Events {
+			require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Logs[i].Log.Events[k].Address)
+			require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Logs[i].Log.Events[k].Identifier)
+			require.Equal(t, e.Topics, fireOutportBlock.GetTransactionPool().Logs[i].Log.Events[k].Topics)
+			require.Equal(t, e.Data, fireOutportBlock.GetTransactionPool().Logs[i].Log.Events[k].Data)
+			require.Equal(t, e.AdditionalData, fireOutportBlock.GetTransactionPool().Logs[i].Log.Events[k].AdditionalData)
+		}
+	}
+
+	// Transaction Pool - ScheduledExecutedSCRSHashesPrevBlock
+	for i, s := range outportBlock.TransactionPool.ScheduledExecutedSCRSHashesPrevBlock {
+		require.Equal(t, s, fireOutportBlock.GetTransactionPool().ScheduledExecutedSCRSHashesPrevBlock[i])
+	}
+
+	// Transaction Pool - ScheduledExecutedInvalidTxsHashesPrevBlock
+	for i, s := range outportBlock.TransactionPool.ScheduledExecutedInvalidTxsHashesPrevBlock {
+		require.Equal(t, s, fireOutportBlock.GetTransactionPool().ScheduledExecutedInvalidTxsHashesPrevBlock[i])
+	}
+
+	// Header gas consumption.
+	require.Equal(t, outportBlock.HeaderGasConsumption.GasProvided, fireOutportBlock.GetHeaderGasConsumption().GasProvided)
+	require.Equal(t, outportBlock.HeaderGasConsumption.GasRefunded, fireOutportBlock.GetHeaderGasConsumption().GasRefunded)
+	require.Equal(t, outportBlock.HeaderGasConsumption.GasPenalized, fireOutportBlock.GetHeaderGasConsumption().GasPenalized)
+	require.Equal(t, outportBlock.HeaderGasConsumption.MaxGasPerBlock, fireOutportBlock.GetHeaderGasConsumption().MaxGasPerBlock)
+
+	// Altered accounts.
+	for key, account := range outportBlock.AlteredAccounts {
+		acc := fireOutportBlock.GetAlteredAccounts()[key]
+
+		require.Equal(t, account.Address, acc.Address)
+		require.Equal(t, account.Nonce, acc.Nonce)
+		require.Equal(t, account.Balance, acc.Balance)
+		require.Equal(t, account.Balance, acc.Balance)
+
+		// Altered accounts - Account token data.
+		for i, token := range account.Tokens {
+			require.Equal(t, token.Nonce, acc.Tokens[i].Nonce)
+			require.Equal(t, token.Identifier, acc.Tokens[i].Identifier)
+			require.Equal(t, token.Balance, acc.Tokens[i].Balance)
+			require.Equal(t, token.Properties, acc.Tokens[i].Properties)
+
+			// Altered accounts - Account token data - Metadata.
+			if token.MetaData != nil {
+				require.Equal(t, token.MetaData.Nonce, acc.Tokens[i].MetaData.Nonce)
+				require.Equal(t, token.MetaData.Name, acc.Tokens[i].MetaData.Name)
+				require.Equal(t, token.MetaData.Creator, acc.Tokens[i].MetaData.Creator)
+				require.Equal(t, token.MetaData.Royalties, acc.Tokens[i].MetaData.Royalties)
+				require.Equal(t, token.MetaData.Hash, acc.Tokens[i].MetaData.Hash)
+				require.Equal(t, token.MetaData.URIs, acc.Tokens[i].MetaData.URIs)
+				require.Equal(t, token.MetaData.Attributes, acc.Tokens[i].MetaData.Attributes)
+
+				// Altered accounts - Account token data - Additional data.
+				require.Equal(t, token.AdditionalData.IsNFTCreate, acc.Tokens[i].AdditionalData.IsNFTCreate)
+			}
+		}
+
+		//  Altered accounts - Additional account data.
+		if account.AdditionalData != nil {
+			require.Equal(t, account.AdditionalData.IsSender, acc.AdditionalData.IsSender)
+			require.Equal(t, account.AdditionalData.BalanceChanged, acc.AdditionalData.BalanceChanged)
+			require.Equal(t, account.AdditionalData.CurrentOwner, acc.AdditionalData.CurrentOwner)
+			require.Equal(t, account.AdditionalData.UserName, acc.AdditionalData.UserName)
+			require.Equal(t, account.AdditionalData.DeveloperRewards, acc.AdditionalData.DeveloperRewards)
+			require.Equal(t, account.AdditionalData.CodeHash, acc.AdditionalData.CodeHash)
+			require.Equal(t, account.AdditionalData.RootHash, acc.AdditionalData.RootHash)
+			require.Equal(t, account.AdditionalData.CodeMetadata, acc.AdditionalData.CodeMetadata)
+		}
+	}
+}
+
+func checkFieldsV2(t *testing.T, outportBlock *outport.OutportBlock, fireOutportBlock fieldsGetterV2) {
+	// Asserting values.
+	require.Equal(t, outportBlock.ShardID, fireOutportBlock.GetShardID())
+	require.Equal(t, outportBlock.NotarizedHeadersHashes, fireOutportBlock.GetNotarizedHeadersHashes())
+	require.Equal(t, outportBlock.NumberOfShards, fireOutportBlock.GetNumberOfShards())
+	require.Equal(t, outportBlock.SignersIndexes, fireOutportBlock.GetSignersIndexes())
+	require.Equal(t, outportBlock.HighestFinalBlockNonce, fireOutportBlock.GetHighestFinalBlockNonce())
+	require.Equal(t, outportBlock.HighestFinalBlockHash, fireOutportBlock.GetHighestFinalBlockHash())
+
+	// Transaction pool - Transactions.
+	for k, v := range outportBlock.TransactionPool.Transactions {
+		// Transaction pool - Transactions. - TxInfo.
+		require.Equal(t, v.Transaction.Nonce, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Nonce)
+		require.Equal(t, mustCastBigInt(t, v.Transaction.Value), fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Value)
+		require.Equal(t, v.Transaction.RcvAddr, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.RcvAddr)
+		require.Equal(t, v.Transaction.RcvUserName, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.RcvUserName)
+		require.Equal(t, v.Transaction.SndAddr, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.SndAddr)
+		require.Equal(t, v.Transaction.GasPrice, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.GasPrice)
+		require.Equal(t, v.Transaction.GasLimit, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.GasLimit)
+		require.Equal(t, v.Transaction.Data, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Data)
+		require.Equal(t, v.Transaction.ChainID, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.ChainID)
+		require.Equal(t, v.Transaction.Version, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Version)
+		require.Equal(t, v.Transaction.Signature, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Signature)
+		require.Equal(t, v.Transaction.Options, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Options)
+		require.Equal(t, v.Transaction.GuardianAddr, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.GuardianAddr)
+		require.Equal(t, v.Transaction.GuardianSignature, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.GuardianSignature)
+
+		// Transaction pool - Transactions - Tx Info - Fee info.
+		require.Equal(t, v.FeeInfo.GasUsed, fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.GasUsed)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.InitialPaidFee)
+
+		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().Transactions[k].ExecutionOrder)
+	}
+
+	// Transaction pool - Smart Contract results.
+	for k, v := range outportBlock.TransactionPool.SmartContractResults {
+		tx := fireOutportBlock.GetTransactionPool().Transactions[k]
+		// Transaction pool - Smart Contract results - SmartContractResult.
+		require.Equal(t, v.SmartContractResult.Nonce, tx.SmartContractResults.SmartContractResult.Nonce)
+		require.Equal(t, mustCastBigInt(t, v.SmartContractResult.Value), tx.SmartContractResults.SmartContractResult.Value)
+		require.Equal(t, v.SmartContractResult.RcvAddr, tx.SmartContractResults.SmartContractResult.RcvAddr)
+		require.Equal(t, v.SmartContractResult.SndAddr, tx.SmartContractResults.SmartContractResult.SndAddr)
+		require.Equal(t, v.SmartContractResult.RelayerAddr, tx.SmartContractResults.SmartContractResult.RelayerAddr)
+		require.Equal(t, mustCastBigInt(t, v.SmartContractResult.RelayedValue), tx.SmartContractResults.SmartContractResult.RelayedValue)
+		require.Equal(t, v.SmartContractResult.Code, tx.SmartContractResults.SmartContractResult.Code)
+		require.Equal(t, v.SmartContractResult.Data, tx.SmartContractResults.SmartContractResult.Data)
+		require.Equal(t, v.SmartContractResult.PrevTxHash, tx.SmartContractResults.SmartContractResult.PrevTxHash)
+		require.Equal(t, v.SmartContractResult.OriginalTxHash, tx.SmartContractResults.SmartContractResult.OriginalTxHash)
+		require.Equal(t, v.SmartContractResult.GasLimit, tx.SmartContractResults.SmartContractResult.GasLimit)
+		require.Equal(t, v.SmartContractResult.GasPrice, tx.SmartContractResults.SmartContractResult.GasPrice)
+		require.Equal(t, int64(v.SmartContractResult.CallType), tx.SmartContractResults.SmartContractResult.CallType)
+		require.Equal(t, v.SmartContractResult.CodeMetadata, tx.SmartContractResults.SmartContractResult.CodeMetadata)
+		require.Equal(t, v.SmartContractResult.ReturnMessage, tx.SmartContractResults.SmartContractResult.ReturnMessage)
+		require.Equal(t, v.SmartContractResult.OriginalSender, tx.SmartContractResults.SmartContractResult.OriginalSender)
+
+		//TODO: check if these needs to be added too.
+		// Transaction pool - Smart Contract results - Fee info.
+		//require.Equal(t, v.FeeInfo.GasUsed, tx.SmartContractResults.SmartContractResult.GasUsed)
+		//require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), tx.SmartContractResults.SmartContractResult.Fee)
+		//require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), tx.SmartContractResults.SmartContractResult.FeeInfo.InitialPaidFee)
+		//
+		//// Transaction pool - Smart Contract results - Execution Order.
+		//require.Equal(t, v.ExecutionOrder, tx.SmartContractResults.SmartContractResult.ExecutionOrder)
 	}
 
 	// Transaction Pool - Rewards

@@ -7,6 +7,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	coreData "github.com/multiversx/mx-chain-core-go/data"
+	"github.com/multiversx/mx-chain-core-go/data/alteredAccount"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/marshal"
@@ -48,22 +49,18 @@ func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.
 		return nil, fmt.Errorf("cannot convert to shard outport block. header type: %s not supported", headerType)
 	}
 
-	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlockV2{
-		BlockData: &hyperOutportBlocks.BlockData{},
-	}
+	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlockV2{}
 	shardOutportBlock.ShardID = outportBlock.ShardID
-	blockData, err := o.handleBlockData(outportBlock.BlockData, shardOutportBlock.BlockData)
+	err := o.handleBlockData(outportBlock.BlockData, shardOutportBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate block data: %w", err)
 	}
-	err = o.handleTransactionPool(outportBlock.TransactionPool, shardOutportBlock.TransactionPool)
+	err = o.handleTransactionPool(outportBlock.TransactionPool, shardOutportBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate transacion pool: %w", err)
 	}
-	//TODO: add these
-	//handleHeaderGasConsumption()
-	//handleAlteredAccounts()
-	shardOutportBlock.BlockData = blockData
+	handleHeaderGasConsumption(outportBlock.HeaderGasConsumption, shardOutportBlock)
+	handleAlteredAccounts(outportBlock.AlteredAccounts, shardOutportBlock)
 
 	shardOutportBlock.NotarizedHeadersHashes = outportBlock.NotarizedHeadersHashes
 	shardOutportBlock.NumberOfShards = outportBlock.NumberOfShards
@@ -74,30 +71,39 @@ func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.
 	return shardOutportBlock, nil
 }
 
-func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, shardBlockData *hyperOutportBlocks.BlockData) (*hyperOutportBlocks.BlockData, error) {
-	shardBlockData.ShardID = blockData.ShardID
-	shardBlockData.HeaderType = blockData.HeaderType
-	shardBlockData.HeaderHash = blockData.HeaderHash
+func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) error {
+	if blockData == nil {
+		return nil
+	}
+
+	shardOutportBlock.BlockData = &hyperOutportBlocks.BlockData{
+		ShardID:              blockData.ShardID,
+		Header:               nil,
+		HeaderType:           blockData.HeaderType,
+		HeaderHash:           blockData.HeaderHash,
+		Body:                 nil,
+		IntraShardMiniBlocks: nil,
+	}
 
 	var err error
 	switch blockData.HeaderType {
 	case string(core.ShardHeaderV1):
-		err = o.handleHeaderV1(blockData.HeaderBytes, shardBlockData)
+		err = o.handleHeaderV1(blockData.HeaderBytes, shardOutportBlock.BlockData)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to handle header v1: %w", err)
 		}
 
 	case string(core.ShardHeaderV2):
-		err = o.handleHeaderV2(blockData.HeaderBytes, shardBlockData)
+		err = o.handleHeaderV2(blockData.HeaderBytes, shardOutportBlock.BlockData)
 		if err != nil {
-			return nil, err
+			return fmt.Errorf("failed to handle header v2: %w", err)
 		}
 
 	default:
-		return nil, fmt.Errorf("unknown header type [%s]", blockData.HeaderType)
+		return fmt.Errorf("unknown header type [%s]", blockData.HeaderType)
 	}
 
-	return shardBlockData, nil
+	return nil
 }
 
 func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockData *hyperOutportBlocks.BlockData) error {
@@ -107,6 +113,7 @@ func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockDat
 		return fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
+	shardBlockData.Header = &hyperOutportBlocks.Header{}
 	header := shardBlockData.Header
 	header.Nonce = blockHeader.Nonce
 	header.PrevHash = blockHeader.PrevHash
@@ -253,104 +260,117 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 	return nil
 }
 
-func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.TransactionPool, shardTxPool *hyperOutportBlocks.TransactionPoolV2) error {
-	transactions := make(map[string]*hyperOutportBlocks.TxInfoV2, 0)
-	var err error
+func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.TransactionPool, shardOutportBlockV2 *hyperOutportBlocks.ShardOutportBlockV2) error {
+	if outportTxPool == nil {
+		return nil
+	}
+
+	shardOutportBlockV2.TransactionPool = &hyperOutportBlocks.TransactionPoolV2{}
+
+	if outportTxPool.Transactions != nil {
+		shardOutportBlockV2.TransactionPool.Transactions = make(map[string]*hyperOutportBlocks.TxInfoV2, len(outportTxPool.Transactions))
+	}
+
+	if outportTxPool.Rewards != nil {
+		shardOutportBlockV2.TransactionPool.Rewards = make(map[string]*hyperOutportBlocks.RewardInfo, len(outportTxPool.Rewards))
+	}
+
+	if outportTxPool.Receipts != nil {
+		shardOutportBlockV2.TransactionPool.Receipts = make(map[string]*hyperOutportBlocks.Receipt, len(outportTxPool.Receipts))
+	}
+
+	if outportTxPool.InvalidTxs != nil {
+		shardOutportBlockV2.TransactionPool.InvalidTxs = make(map[string]*hyperOutportBlocks.TxInfo, len(outportTxPool.InvalidTxs))
+	}
+
+	shardOutportBlockV2.TransactionPool.ScheduledExecutedSCRSHashesPrevBlock = outportTxPool.ScheduledExecutedSCRSHashesPrevBlock
+	shardOutportBlockV2.TransactionPool.ScheduledExecutedInvalidTxsHashesPrevBlock = outportTxPool.ScheduledExecutedInvalidTxsHashesPrevBlock
+
 	for txHash, tx := range outportTxPool.Transactions {
 		txInfo := &hyperOutportBlocks.TxInfoV2{}
 
 		// TxInfo - Transaction
-		txInfo.Transaction.Nonce = tx.Transaction.Nonce
-		txInfo.Transaction.Value, err = o.castBigInt(tx.Transaction.Value)
-		if err != nil {
-			return fmt.Errorf("failed to cast transaction [%s] value: %w", txHash, err)
-		}
-		txInfo.Transaction.RcvAddr = tx.Transaction.RcvAddr
-		txInfo.Transaction.RcvUserName = tx.Transaction.RcvUserName
-		txInfo.Transaction.SndAddr = tx.Transaction.SndAddr
-		txInfo.Transaction.SndUserName = tx.Transaction.SndUserName
-		txInfo.Transaction.GasPrice = tx.Transaction.GasPrice
-		txInfo.Transaction.GasLimit = tx.Transaction.GasLimit
-		txInfo.Transaction.Data = tx.Transaction.Data
-		txInfo.Transaction.ChainID = tx.Transaction.ChainID
-		txInfo.Transaction.Version = tx.Transaction.Version
-		txInfo.Transaction.Signature = tx.Transaction.Signature
-		txInfo.Transaction.Options = tx.Transaction.Options
-		txInfo.Transaction.GuardianAddr = tx.Transaction.GuardianAddr
-		txInfo.Transaction.GuardianSignature = tx.Transaction.GuardianSignature
-
-		// TxInfo - FeeInfo
-		txInfo.FeeInfo.GasUsed = tx.FeeInfo.GasUsed
-		txInfo.FeeInfo.Fee, err = o.castBigInt(tx.FeeInfo.Fee)
-		if err != nil {
-			return fmt.Errorf("failed to cast transaction [%s] fee: %w", txHash, err)
-		}
-
-		txInfo.FeeInfo.InitialPaidFee, err = o.castBigInt(tx.FeeInfo.InitialPaidFee)
-		if err != nil {
-			return fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", txHash, err)
-		}
-
-		txInfo.ExecutionOrder = tx.ExecutionOrder
-
-		if sc, ok := outportTxPool.SmartContractResults[txHash]; ok {
-			txInfo.SmartContractResults.SmartContractResult.Nonce = sc.SmartContractResult.Nonce
-			txInfo.SmartContractResults.SmartContractResult.Value, err = o.castBigInt(sc.SmartContractResult.Value)
+		if tx.Transaction != nil {
+			value, err := o.castBigInt(tx.Transaction.Value)
 			if err != nil {
-				return fmt.Errorf("failed to cast transaction [%s] smart contract result value: %s", txHash, sc.SmartContractResult.Value)
-			}
-			txInfo.SmartContractResults.SmartContractResult.RcvAddr = sc.SmartContractResult.RcvAddr
-			txInfo.SmartContractResults.SmartContractResult.SndAddr = sc.SmartContractResult.SndAddr
-			txInfo.SmartContractResults.SmartContractResult.RelayerAddr = sc.SmartContractResult.RelayerAddr
-			txInfo.SmartContractResults.SmartContractResult.RelayedValue, err = o.castBigInt(sc.SmartContractResult.RelayedValue)
-			if err != nil {
-				return fmt.Errorf("failed to cast transaction [%s] smart contract result relayed value: %s", txHash, sc.SmartContractResult.Value)
-			}
-			txInfo.SmartContractResults.SmartContractResult.Code = sc.SmartContractResult.Code
-			txInfo.SmartContractResults.SmartContractResult.Data = sc.SmartContractResult.Data
-			txInfo.SmartContractResults.SmartContractResult.PrevTxHash = sc.SmartContractResult.PrevTxHash
-			txInfo.SmartContractResults.SmartContractResult.OriginalTxHash = sc.SmartContractResult.OriginalTxHash
-			txInfo.SmartContractResults.SmartContractResult.GasLimit = sc.SmartContractResult.GasLimit
-			txInfo.SmartContractResults.SmartContractResult.GasPrice = sc.SmartContractResult.GasPrice
-			txInfo.SmartContractResults.SmartContractResult.CallType = int64(sc.SmartContractResult.CallType)
-			txInfo.SmartContractResults.SmartContractResult.CodeMetadata = sc.SmartContractResult.CodeMetadata
-			txInfo.SmartContractResults.SmartContractResult.ReturnMessage = sc.SmartContractResult.ReturnMessage
-			txInfo.SmartContractResults.SmartContractResult.OriginalSender = sc.SmartContractResult.OriginalSender
-		}
-
-		// Logs
-		for _, logData := range outportTxPool.Logs {
-			events := make([]*hyperOutportBlocks.Event, len(logData.Log.Events))
-			for i, event := range logData.Log.Events {
-				e := &hyperOutportBlocks.Event{}
-
-				e.Address = event.Address
-				e.Identifier = event.Identifier
-				e.Topics = event.Topics
-				e.Data = event.Data
-				e.AdditionalData = event.AdditionalData
-
-				events[i] = e
+				return fmt.Errorf("failed to cast transaction [%s] value: %w", txHash, err)
 			}
 
-			ll := &hyperOutportBlocks.Log{
-				Address: logData.Log.Address,
-				Events:  events,
+			txInfo.Transaction = &hyperOutportBlocks.Transaction{
+				Nonce:             tx.Transaction.Nonce,
+				Value:             value,
+				RcvAddr:           tx.Transaction.RcvAddr,
+				RcvUserName:       tx.Transaction.RcvUserName,
+				SndAddr:           tx.Transaction.SndAddr,
+				SndUserName:       tx.Transaction.SndUserName,
+				GasPrice:          tx.Transaction.GasPrice,
+				GasLimit:          tx.Transaction.GasLimit,
+				Data:              tx.Transaction.Data,
+				ChainID:           tx.Transaction.ChainID,
+				Version:           tx.Transaction.Version,
+				Signature:         tx.Transaction.Signature,
+				Options:           tx.Transaction.Options,
+				GuardianAddr:      tx.Transaction.GuardianAddr,
+				GuardianSignature: tx.Transaction.GuardianSignature,
 			}
 
-			if transactions[logData.TxHash].Logs == nil {
-				transactions[logData.TxHash].Logs = make([]*hyperOutportBlocks.Log, 0)
+			// TxInfo - FeeInfo
+			if tx.FeeInfo != nil {
+				fee, err := o.castBigInt(tx.FeeInfo.Fee)
+				if err != nil {
+					return fmt.Errorf("failed to cast transaction [%s] fee: %w", txHash, err)
+				}
+
+				initialPaidFee, err := o.castBigInt(tx.FeeInfo.InitialPaidFee)
+				if err != nil {
+					return fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", txHash, err)
+				}
+
+				txInfo.FeeInfo = &hyperOutportBlocks.FeeInfo{
+					GasUsed:        tx.FeeInfo.GasUsed,
+					Fee:            fee,
+					InitialPaidFee: initialPaidFee,
+				}
 			}
 
-			transactions[logData.TxHash].Logs = append(transactions[logData.TxHash].Logs, ll)
-		}
+			txInfo.ExecutionOrder = tx.ExecutionOrder
 
-		transactions[txHash] = txInfo
+			if sc, ok := outportTxPool.SmartContractResults[txHash]; ok {
+				txInfo.SmartContractResults = &hyperOutportBlocks.SCRInfo{
+					SmartContractResult: &hyperOutportBlocks.SmartContractResult{},
+				}
+				txInfo.SmartContractResults.SmartContractResult.Nonce = sc.SmartContractResult.Nonce
+				txInfo.SmartContractResults.SmartContractResult.Value, err = o.castBigInt(sc.SmartContractResult.Value)
+				if err != nil {
+					return fmt.Errorf("failed to cast transaction [%s] smart contract result value: %s", txHash, sc.SmartContractResult.Value)
+				}
+				txInfo.SmartContractResults.SmartContractResult.RcvAddr = sc.SmartContractResult.RcvAddr
+				txInfo.SmartContractResults.SmartContractResult.SndAddr = sc.SmartContractResult.SndAddr
+				txInfo.SmartContractResults.SmartContractResult.RelayerAddr = sc.SmartContractResult.RelayerAddr
+				txInfo.SmartContractResults.SmartContractResult.RelayedValue, err = o.castBigInt(sc.SmartContractResult.RelayedValue)
+				if err != nil {
+					return fmt.Errorf("failed to cast transaction [%s] smart contract result relayed value: %s", txHash, sc.SmartContractResult.Value)
+				}
+				txInfo.SmartContractResults.SmartContractResult.Code = sc.SmartContractResult.Code
+				txInfo.SmartContractResults.SmartContractResult.Data = sc.SmartContractResult.Data
+				txInfo.SmartContractResults.SmartContractResult.PrevTxHash = sc.SmartContractResult.PrevTxHash
+				txInfo.SmartContractResults.SmartContractResult.OriginalTxHash = sc.SmartContractResult.OriginalTxHash
+				txInfo.SmartContractResults.SmartContractResult.GasLimit = sc.SmartContractResult.GasLimit
+				txInfo.SmartContractResults.SmartContractResult.GasPrice = sc.SmartContractResult.GasPrice
+				txInfo.SmartContractResults.SmartContractResult.CallType = int64(sc.SmartContractResult.CallType)
+				txInfo.SmartContractResults.SmartContractResult.CodeMetadata = sc.SmartContractResult.CodeMetadata
+				txInfo.SmartContractResults.SmartContractResult.ReturnMessage = sc.SmartContractResult.ReturnMessage
+				txInfo.SmartContractResults.SmartContractResult.OriginalSender = sc.SmartContractResult.OriginalSender
+			}
 
-		for _, l := range outportTxPool.Logs {
-			if _, ok := transactions[l.TxHash]; ok {
-				events := make([]*hyperOutportBlocks.Event, len(l.Log.Events))
-				for i, event := range l.Log.Events {
+			if outportTxPool.Logs != nil {
+				txInfo.Logs = make([]*hyperOutportBlocks.Log, len(outportTxPool.Logs))
+			}
+
+			// Logs
+			for i, logData := range outportTxPool.Logs {
+				events := make([]*hyperOutportBlocks.Event, len(logData.Log.Events))
+				for i, event := range logData.Log.Events {
 					e := &hyperOutportBlocks.Event{}
 
 					e.Address = event.Address
@@ -363,17 +383,114 @@ func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.Tra
 				}
 
 				ll := &hyperOutportBlocks.Log{
-					Address: l.Log.Address,
+					Address: logData.Log.Address,
 					Events:  events,
 				}
 
-				transactions[l.TxHash].Logs = append(transactions[l.TxHash].Logs, ll)
+				txInfo.Logs[i] = ll
 			}
+
+			shardOutportBlockV2.TransactionPool.Transactions[txHash] = txInfo
 		}
 	}
 
-	shardTxPool.Transactions = transactions
+	for txHash, reward := range outportTxPool.Rewards {
+		value, err := o.castBigInt(reward.Reward.Value)
+		if err != nil {
+			return fmt.Errorf("failed to cast reward tx value: %w", err)
+		}
+
+		shardOutportBlockV2.TransactionPool.Rewards[txHash] = &hyperOutportBlocks.RewardInfo{
+			Reward: &hyperOutportBlocks.RewardTx{
+				Round:   reward.Reward.Round,
+				Value:   value,
+				RcvAddr: reward.Reward.RcvAddr,
+				Epoch:   reward.Reward.Epoch,
+			},
+			ExecutionOrder: reward.ExecutionOrder,
+		}
+	}
+
+	for txHash, receipt := range outportTxPool.Receipts {
+		value, err := o.castBigInt(receipt.Value)
+		if err != nil {
+			return fmt.Errorf("failed to cast receipt tx value: %w", err)
+		}
+		shardOutportBlockV2.TransactionPool.Receipts[txHash] = &hyperOutportBlocks.Receipt{
+			Value:   value,
+			SndAddr: receipt.SndAddr,
+			Data:    receipt.Data,
+			TxHash:  receipt.TxHash,
+		}
+	}
+
+	//TODO: add invalid txs
+	//shardOutportBlockV2.TransactionPool.InvalidTxs = outportTxPool.InvalidTxs
+
 	return nil
+}
+
+func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAccount, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
+	if alteredAccounts == nil {
+		return
+	}
+
+	shardAlteredAccounts := make(map[string]*hyperOutportBlocks.AlteredAccount, len(alteredAccounts))
+	for key, alteredAcc := range alteredAccounts {
+		tokens := make([]*hyperOutportBlocks.AccountTokenData, len(alteredAcc.Tokens))
+		for i, tokenData := range alteredAcc.Tokens {
+			tokens[i] = &hyperOutportBlocks.AccountTokenData{
+				Nonce:      tokenData.Nonce,
+				Identifier: tokenData.Identifier,
+				Balance:    tokenData.Balance,
+				Properties: tokenData.Properties,
+				MetaData: &hyperOutportBlocks.TokenMetaData{
+					Nonce:      tokenData.MetaData.Nonce,
+					Name:       tokenData.MetaData.Name,
+					Creator:    tokenData.MetaData.Creator,
+					Royalties:  tokenData.MetaData.Royalties,
+					Hash:       tokenData.MetaData.Hash,
+					URIs:       tokenData.MetaData.URIs,
+					Attributes: tokenData.MetaData.Attributes,
+				},
+				AdditionalData: &hyperOutportBlocks.AdditionalAccountTokenData{
+					IsNFTCreate: tokenData.AdditionalData.IsNFTCreate,
+				},
+			}
+		}
+
+		shardAlteredAccounts[key] = &hyperOutportBlocks.AlteredAccount{
+			Address: alteredAcc.Address,
+			Nonce:   alteredAcc.Nonce,
+			Balance: alteredAcc.Balance,
+			Tokens:  tokens,
+			AdditionalData: &hyperOutportBlocks.AdditionalAccountData{
+				IsSender:         alteredAcc.AdditionalData.IsSender,
+				BalanceChanged:   alteredAcc.AdditionalData.BalanceChanged,
+				CurrentOwner:     alteredAcc.AdditionalData.CurrentOwner,
+				UserName:         alteredAcc.AdditionalData.UserName,
+				DeveloperRewards: alteredAcc.AdditionalData.DeveloperRewards,
+				CodeHash:         alteredAcc.AdditionalData.CodeHash,
+				RootHash:         alteredAcc.AdditionalData.RootHash,
+				CodeMetadata:     alteredAcc.AdditionalData.CodeMetadata,
+			},
+		}
+	}
+
+	shardOutportBlock.AlteredAccounts = shardAlteredAccounts
+}
+
+func handleHeaderGasConsumption(consumption *outport.HeaderGasConsumption, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
+	if consumption == nil {
+		return
+	}
+
+	shardOutportBlock.HeaderGasConsumption = &hyperOutportBlocks.HeaderGasConsumption{
+		GasProvided:    consumption.GasProvided,
+		GasRefunded:    consumption.GasRefunded,
+		GasPenalized:   consumption.GasPenalized,
+		MaxGasPerBlock: consumption.MaxGasPerBlock,
+	}
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.

@@ -328,7 +328,7 @@ func file_grpcBlockService_proto_init() {
 	if File_grpcBlockService_proto != nil {
 		return
 	}
-	file_data_hyperOutportBlocks_hyperOutportBlock_proto_init()
+	file_hyperOutportBlock_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_grpcBlockService_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BlockHashRequest); i {
