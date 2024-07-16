@@ -92,7 +92,7 @@ func (bp *blocksPool) GetMetaBlock(hash []byte) (*hyperOutportBlocks.MetaOutport
 	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
 	err = bp.marshaller.Unmarshal(metaOutportBlock, marshalledData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshall meta outport block: %w", err)
 	}
 
 	return metaOutportBlock, nil

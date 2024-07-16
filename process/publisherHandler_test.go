@@ -34,6 +34,7 @@ func createDefaultPublisherHandlerArgs() process.PublisherHandlerArgs {
 		DataAggregator:              &testscommon.DataAggregatorMock{},
 		Marshalizer:                 &testscommon.MarshallerMock{},
 		RetryDurationInMilliseconds: defaultRetryDuration,
+		FirstCommitableBlocks:       defaultFirstCommitableBlocks,
 	}
 }
 
@@ -82,6 +83,17 @@ func TestNewPublisherHandler(t *testing.T) {
 		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, ph)
 		require.Equal(t, process.ErrNilMarshaller, err)
+	})
+
+	t.Run("nil first commitable blocks", func(t *testing.T) {
+		t.Parallel()
+
+		args := createDefaultPublisherHandlerArgs()
+		args.FirstCommitableBlocks = nil
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, ph)
+		require.Equal(t, process.ErrNilFirstCommitableBlocks, err)
 	})
 
 	t.Run("invalid retry duration", func(t *testing.T) {
@@ -160,10 +172,54 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		require.True(t, wasCalled)
 	})
 
+	t.Run("should not process hyper block until first commitable block", func(t *testing.T) {
+		t.Parallel()
+
+		round := uint64(10)
+
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: round + 1,
+		}
+
+		metaOutportBlock := createMetaOutportBlock()
+		metaOutportBlock.BlockData.Header.Round = round
+		updateMetaStateCalled := uint32(0)
+
+		args := createDefaultPublisherHandlerArgs()
+		args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+			GetMetaBlockCalled: func(hash []byte) (*hyperOutportBlocks.MetaOutportBlock, error) {
+				return metaOutportBlock, nil
+			},
+			UpdateMetaStateCalled: func(checkpoint *data.BlockCheckpoint) error {
+				atomic.AddUint32(&updateMetaStateCalled, 1)
+				return nil
+			},
+		}
+		args.DataAggregator = &testscommon.DataAggregatorMock{
+			ProcessHyperBlockCalled: func(outportBlock *hyperOutportBlocks.MetaOutportBlock) (*hyperOutportBlocks.HyperOutportBlock, error) {
+				require.Fail(t, "should not have been called")
+				return nil, nil
+			},
+		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
+
+		ph, err := process.NewPublisherHandler(args)
+		require.Nil(t, err)
+
+		err = ph.PublishBlock([]byte("headerHash"))
+		require.Nil(t, err)
+
+		require.Equal(t, uint32(0), atomic.LoadUint32(&updateMetaStateCalled))
+	})
+
 	t.Run("should work", func(t *testing.T) {
 		t.Parallel()
 
 		round := uint64(10)
+
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: round - 1,
+		}
 
 		metaOutportBlock := createMetaOutportBlock()
 		metaOutportBlock.BlockData.Header.Round = round
@@ -187,6 +243,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 				return hyperOutportBlock, nil
 			},
 		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
 
 		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, err)
@@ -201,6 +258,10 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 		t.Parallel()
 
 		round := uint64(10)
+
+		firstCommitableBlocks := map[uint32]uint64{
+			core.MetachainShardId: round - 1,
+		}
 
 		metaOutportBlock := createMetaOutportBlock()
 		metaOutportBlock.BlockData.Header.Round = round
@@ -235,6 +296,7 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 				return nil
 			},
 		}
+		args.FirstCommitableBlocks = firstCommitableBlocks
 
 		ph, err := process.NewPublisherHandler(args)
 		require.Nil(t, err)
