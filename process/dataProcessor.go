@@ -101,13 +101,13 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
 	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
+	headerHash := metaOutportBlock.BlockData.GetHeaderHash()
 
 	log.Info("saving meta outport block",
-		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
+		"hash", headerHash,
 		"nonce", metaNonce,
 		"shardID", metaOutportBlock.ShardID)
 
-	headerHash := metaOutportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
@@ -148,12 +148,12 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	}
 	nonce := shardOutportBlock.BlockData.Header.GetNonce()
 
+	headerHash := shardOutportBlock.BlockData.GetHeaderHash()
+
 	log.Info("saving shard outport block",
-		"hash", shardOutportBlock.BlockData.GetHeaderHash(),
+		"hash", headerHash,
 		"nonce", nonce,
 		"shardID", shardOutportBlock.ShardID)
-
-	headerHash := outportBlock.BlockData.HeaderHash
 
 	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
 }

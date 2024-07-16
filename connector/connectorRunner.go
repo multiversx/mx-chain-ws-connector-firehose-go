@@ -101,6 +101,7 @@ func (cr *connectorRunner) Run() error {
 		DataAggregator:              dataAggregator,
 		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
 		Marshalizer:                 protoMarshaller,
+		FirstCommitableBlocks:       firstCommitableBlocks,
 	}
 
 	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)

@@ -108,7 +108,7 @@ func (bp *blocksPool) GetShardBlock(hash []byte) (*hyperOutportBlocks.ShardOutpo
 	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlock{}
 	err = bp.marshaller.Unmarshal(shardOutportBlock, marshalledData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshall shard outport block: %w", err)
 	}
 
 	return shardOutportBlock, nil
