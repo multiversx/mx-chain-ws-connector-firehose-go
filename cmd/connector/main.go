@@ -37,6 +37,7 @@ func main() {
 		disableAnsiColor,
 		dbMode,
 		enableGrpcServer,
+		resetCheckpoints,
 	}
 	app.Authors = []cli.Author{
 		{
@@ -82,7 +83,10 @@ func startConnector(ctx *cli.Context) error {
 	enableGrpcServer := ctx.GlobalBool(enableGrpcServer.Name)
 	log.Info("grpc server enabled", "enableGrpcServer", enableGrpcServer)
 
-	connectorRunner, err := connector.NewConnectorRunner(cfg, dbMode, enableGrpcServer)
+	resetCheckpoints := ctx.GlobalBool(resetCheckpoints.Name)
+	log.Info("reset checkpoint at start", "resetCheckpoints", resetCheckpoints)
+
+	connectorRunner, err := connector.NewConnectorRunner(cfg, dbMode, enableGrpcServer, resetCheckpoints)
 	if err != nil {
 		return fmt.Errorf("cannot create connector runner, error: %w", err)
 	}

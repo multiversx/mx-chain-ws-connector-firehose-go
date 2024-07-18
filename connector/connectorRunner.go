@@ -25,10 +25,11 @@ type connectorRunner struct {
 	config           *config.Config
 	dbMode           common.DBMode
 	enableGrpcServer bool
+	resetCheckpoints bool
 }
 
 // NewConnectorRunner will create a new connector runner instance
-func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool) (*connectorRunner, error) {
+func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool, resetCheckpoints bool) (*connectorRunner, error) {
 	if cfg == nil {
 		return nil, ErrNilConfig
 	}
@@ -37,6 +38,7 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 		config:           cfg,
 		dbMode:           common.DBMode(dbMode),
 		enableGrpcServer: enableGrpcServer,
+		resetCheckpoints: resetCheckpoints,
 	}, nil
 }
 
@@ -71,6 +73,7 @@ func (cr *connectorRunner) Run() error {
 		MaxDelta:              cr.config.DataPool.MaxDelta,
 		CleanupInterval:       cr.config.DataPool.PruningWindow,
 		FirstCommitableBlocks: firstCommitableBlocks,
+		ResetCheckpoints:      cr.resetCheckpoints,
 	}
 	dataPool, err := process.NewDataPool(argsBlocksPool)
 	if err != nil {

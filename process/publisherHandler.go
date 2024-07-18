@@ -26,6 +26,7 @@ type publisherHandler struct {
 	retryDuration         time.Duration
 	marshaller            marshal.Marshalizer
 	firstCommitableBlocks map[uint32]uint64
+	resetCheckpoints      bool
 
 	blocksChan chan []byte
 	cancelFunc func()
@@ -43,6 +44,7 @@ type PublisherHandlerArgs struct {
 	RetryDurationInMilliseconds uint64
 	Marshalizer                 marshal.Marshalizer
 	FirstCommitableBlocks       map[uint32]uint64
+	ResetCheckpoints            bool
 }
 
 // NewPublisherHandler creates a new publisher handler component
@@ -73,6 +75,7 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 		dataAggregator:        args.DataAggregator,
 		marshaller:            args.Marshalizer,
 		firstCommitableBlocks: args.FirstCommitableBlocks,
+		resetCheckpoints:      args.ResetCheckpoints,
 		retryDuration:         time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
 		checkpoint:            &data.PublishCheckpoint{},
 		blocksChan:            make(chan []byte),
@@ -152,6 +155,11 @@ func (ph *publisherHandler) updatePublishCheckpoint() {
 }
 
 func (ph *publisherHandler) handleLastCheckpointOnInit() error {
+	if ph.resetCheckpoints {
+		log.Debug("did not checked last publisher checkpoint on init")
+		return nil
+	}
+
 	checkpoint, err := ph.getLastPublishCheckpoint()
 	if err != nil {
 		return err
@@ -235,7 +243,7 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	if metaNonce < firstCommitableBlock {
 		// do not try to aggregate or publish hyper outport block
 
-		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
+		log.Trace("do not publish block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
 
 		return nil
 	}

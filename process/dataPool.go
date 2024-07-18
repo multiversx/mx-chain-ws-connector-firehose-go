@@ -27,6 +27,7 @@ type dataPool struct {
 	maxDelta              uint64
 	cleanupInterval       uint64
 	firstCommitableBlocks map[uint32]uint64
+	resetCheckpoints      bool
 
 	// soft checkpoint data is being used only at startup (without any previous data)
 	// until there is a valid hard checkpoint (set by publisher)
@@ -41,6 +42,7 @@ type DataPoolArgs struct {
 	MaxDelta              uint64
 	CleanupInterval       uint64
 	FirstCommitableBlocks map[uint32]uint64
+	ResetCheckpoints      bool
 }
 
 // NewDataPool will create a new data pool instance
@@ -64,6 +66,7 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 		maxDelta:              args.MaxDelta,
 		cleanupInterval:       args.CleanupInterval,
 		firstCommitableBlocks: args.FirstCommitableBlocks,
+		resetCheckpoints:      args.ResetCheckpoints,
 	}
 
 	bp.initIndexesMap()
@@ -72,6 +75,12 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 }
 
 func (bp *dataPool) initIndexesMap() {
+	if bp.resetCheckpoints {
+		log.Warn("initializing with reset checkpoints option, will set empty soft checkpoint")
+		bp.softCheckpointMap = make(map[uint32]uint64)
+		return
+	}
+
 	lastCheckpoint, err := bp.GetLastCheckpoint()
 	if err == nil {
 		log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
