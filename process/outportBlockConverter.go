@@ -614,12 +614,14 @@ func (o *outportBlockConverter) copyRewards(sourceRewards map[string]*outport.Re
 			return fmt.Errorf("failed to cast reward tx value: %w", err)
 		}
 
-		transactionPool.Transactions[hash].Transaction = &hyperOutportBlocks.WrappedTx{
-			Value:   value,
-			RcvAddr: reward.Reward.RcvAddr,
-			Round:   reward.Reward.Round,
-			Epoch:   reward.Reward.Epoch,
-			TxType:  hyperOutportBlocks.TxType_Reward,
+		transactionPool.Transactions[hash] = &hyperOutportBlocks.TxInfoV2{
+			Transaction: &hyperOutportBlocks.WrappedTx{
+				Value:   value,
+				RcvAddr: reward.Reward.RcvAddr,
+				Round:   reward.Reward.Round,
+				Epoch:   reward.Reward.Epoch,
+				TxType:  hyperOutportBlocks.TxType_Reward,
+			},
 		}
 	}
 
@@ -633,11 +635,13 @@ func (o *outportBlockConverter) copyReceipts(sourceReceipts map[string]*receipt.
 			return fmt.Errorf("failed to cast receipt tx value: %w", err)
 		}
 
-		transactionPool.Transactions[hash].Receipt = &hyperOutportBlocks.Receipt{
-			Value:   value,
-			SndAddr: r.SndAddr,
-			Data:    r.Data,
-			TxHash:  r.TxHash,
+		transactionPool.Transactions[hash] = &hyperOutportBlocks.TxInfoV2{
+			Receipt: &hyperOutportBlocks.Receipt{
+				Value:   value,
+				SndAddr: r.SndAddr,
+				Data:    r.Data,
+				TxHash:  r.TxHash,
+			},
 		}
 	}
 
@@ -651,23 +655,25 @@ func (o *outportBlockConverter) copyInvalidTxs(sourceInvalidTxs map[string]*outp
 			return fmt.Errorf("failed to cast receipt tx value: %w", err)
 		}
 
-		transactionPool.Transactions[txHash].Transaction = &hyperOutportBlocks.WrappedTx{
-			Nonce:             invalidTx.Transaction.Nonce,
-			Value:             value,
-			RcvAddr:           invalidTx.Transaction.RcvAddr,
-			RcvUserName:       invalidTx.Transaction.RcvUserName,
-			SndAddr:           invalidTx.Transaction.SndAddr,
-			SndUserName:       invalidTx.Transaction.SndUserName,
-			GasPrice:          invalidTx.Transaction.GasPrice,
-			GasLimit:          invalidTx.Transaction.GasLimit,
-			Data:              invalidTx.Transaction.Data,
-			ChainID:           invalidTx.Transaction.ChainID,
-			Version:           invalidTx.Transaction.Version,
-			Signature:         invalidTx.Transaction.Signature,
-			Options:           invalidTx.Transaction.Options,
-			GuardianAddr:      invalidTx.Transaction.GuardianAddr,
-			GuardianSignature: invalidTx.Transaction.GuardianSignature,
-			TxType:            hyperOutportBlocks.TxType_Invalid,
+		transactionPool.Transactions[txHash] = &hyperOutportBlocks.TxInfoV2{
+			Transaction: &hyperOutportBlocks.WrappedTx{
+				Nonce:             invalidTx.Transaction.Nonce,
+				Value:             value,
+				RcvAddr:           invalidTx.Transaction.RcvAddr,
+				RcvUserName:       invalidTx.Transaction.RcvUserName,
+				SndAddr:           invalidTx.Transaction.SndAddr,
+				SndUserName:       invalidTx.Transaction.SndUserName,
+				GasPrice:          invalidTx.Transaction.GasPrice,
+				GasLimit:          invalidTx.Transaction.GasLimit,
+				Data:              invalidTx.Transaction.Data,
+				ChainID:           invalidTx.Transaction.ChainID,
+				Version:           invalidTx.Transaction.Version,
+				Signature:         invalidTx.Transaction.Signature,
+				Options:           invalidTx.Transaction.Options,
+				GuardianAddr:      invalidTx.Transaction.GuardianAddr,
+				GuardianSignature: invalidTx.Transaction.GuardianSignature,
+				TxType:            hyperOutportBlocks.TxType_Invalid,
+			},
 		}
 	}
 
