@@ -79,20 +79,6 @@ func TestOutportBlockConverter(t *testing.T) {
 	checkHeaderV2ShardV2(t, header, shardOutportBlock)
 	checkFieldsV2(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
-
-	j, err := json.Marshal(shardOutportBlock)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("./shardoutport.json", j, 0655)
-	if err != nil {
-		panic(err)
-	}
-
-	jsonBytes, err = os.ReadFile(outportBlockHeaderV2JSONPath)
-	require.NoError(t, err, "failed to read test data")
-
 }
 
 func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
