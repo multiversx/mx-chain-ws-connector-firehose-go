@@ -139,12 +139,12 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 
 	//TODO: do not commit this
 	bytes1, _ := json.Marshal(outportBlock)
-	err = os.WriteFile("outportBlocks.json", bytes1, 0666)
+	err = os.WriteFile(fmt.Sprintf("outportBlocks_%s.json", shardOutportBlock.BlockData.GetHeaderHash()), bytes1, 0666)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	bytes, _ := json.Marshal(shardOutportBlock)
-	err = os.WriteFile("shardOutportBlocks.json", bytes, 0666)
+	err = os.WriteFile(fmt.Sprintf("shardOutportBlocks_%s.json", shardOutportBlock.BlockData.GetHeaderHash()), bytes, 0666)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

@@ -77,7 +77,10 @@ func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, sh
 		return nil
 	}
 
-	miniBlocks := copyMiniBlocks(blockData.Body.MiniBlocks)
+	var miniBlocks []*hyperOutportBlocks.MiniBlock
+	if blockData.Body != nil {
+		miniBlocks = copyMiniBlocks(blockData.Body.MiniBlocks)
+	}
 	intraShardMiniBlocks := copyMiniBlocks(blockData.IntraShardMiniBlocks)
 
 	shardOutportBlock.BlockData = &hyperOutportBlocks.BlockData{
