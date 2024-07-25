@@ -261,9 +261,8 @@ message TxInfoV2 {
   WrappedTx   Transaction    = 1;
   FeeInfo     FeeInfo        = 2;
   Receipt     Receipt        = 3;
-  uint32      ExecutionOrder = 4;
-  repeated    WrappedTx ResultTxs = 5;
-  repeated    Log Logs = 6;
+  repeated    WrappedTx ResultTxs = 4;
+  repeated    Log Logs = 5;
 }
 
 message WrappedTx {
@@ -297,8 +296,6 @@ message WrappedTx {
   uint32   Epoch   = 27;
 
   TxType TxType = 28;
-
-  // TODO: for RewardTx hardcode SndAddr = metachain
 }
 
 enum TxType {

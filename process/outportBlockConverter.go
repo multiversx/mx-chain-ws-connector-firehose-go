@@ -77,19 +77,8 @@ func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, sh
 		return nil
 	}
 
-	var miniBlocks []*hyperOutportBlocks.MiniBlock
-	if blockData.Body.MiniBlocks != nil {
-		miniBlocks = []*hyperOutportBlocks.MiniBlock{}
-		for _, mb := range blockData.Body.MiniBlocks {
-			miniBlocks = append(miniBlocks, &hyperOutportBlocks.MiniBlock{
-				TxHashes:        mb.TxHashes,
-				ReceiverShardID: mb.ReceiverShardID,
-				SenderShardID:   mb.SenderShardID,
-				Type:            hyperOutportBlocks.Type(mb.Type),
-				Reserved:        mb.Reserved,
-			})
-		}
-	}
+	miniBlocks := copyMiniBlocks(blockData.Body.MiniBlocks)
+	intraShardMiniBlocks := copyMiniBlocks(blockData.IntraShardMiniBlocks)
 
 	shardOutportBlock.BlockData = &hyperOutportBlocks.BlockData{
 		ShardID:    blockData.ShardID,
@@ -98,6 +87,7 @@ func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, sh
 		Body: &hyperOutportBlocks.Body{
 			MiniBlocks: miniBlocks,
 		},
+		IntraShardMiniBlocks: intraShardMiniBlocks,
 	}
 
 	var err error
@@ -311,7 +301,7 @@ func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.Tra
 		return fmt.Errorf("failed to copy receipts: %w", err)
 	}
 
-	err = o.copyInvalidTxs(outportTxPool.Transactions, shardOutportBlockV2.TransactionPool)
+	err = o.copyInvalidTxs(outportTxPool.InvalidTxs, shardOutportBlockV2.TransactionPool)
 	if err != nil {
 		return fmt.Errorf("failed to copy invalid txs: %w", err)
 	}
@@ -531,6 +521,7 @@ func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.T
 				Options:           txInfo.Transaction.Options,
 				GuardianAddr:      txInfo.Transaction.GuardianAddr,
 				GuardianSignature: txInfo.Transaction.GuardianSignature,
+				ExecutionOrder:    txInfo.ExecutionOrder,
 				TxType:            hyperOutportBlocks.TxType_UserTx,
 			}
 
@@ -552,8 +543,6 @@ func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.T
 					InitialPaidFee: initialPaidFee,
 				}
 			}
-
-			destTxInfo.ExecutionOrder = txInfo.ExecutionOrder
 
 			transactionPool.Transactions[txHash] = destTxInfo
 		}
@@ -591,11 +580,31 @@ func (o *outportBlockConverter) copySmartContractResults(sourceSCRs map[string]*
 			CodeMetadata:   scrInfo.SmartContractResult.CodeMetadata,
 			ReturnMessage:  scrInfo.SmartContractResult.ReturnMessage,
 			OriginalSender: scrInfo.SmartContractResult.OriginalSender,
+			ExecutionOrder: scrInfo.ExecutionOrder,
 			TxType:         hyperOutportBlocks.TxType_SCR,
 		}
 
+		fee, err := o.castBigInt(scrInfo.FeeInfo.Fee)
+		if err != nil {
+			return fmt.Errorf("failed to cast transaction [%s] fee: %w", scrHash, err)
+		}
+
+		initialPaidFee, err := o.castBigInt(scrInfo.FeeInfo.InitialPaidFee)
+		if err != nil {
+			return fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", scrHash, err)
+		}
+
+		txInfo := &hyperOutportBlocks.TxInfoV2{
+			Transaction: wrappedTx,
+			FeeInfo: &hyperOutportBlocks.FeeInfo{
+				GasUsed:        scrInfo.FeeInfo.GasUsed,
+				Fee:            fee,
+				InitialPaidFee: initialPaidFee,
+			},
+		}
+
 		if _, ok := transactionPool.Transactions[scrHash]; !ok {
-			transactionPool.Transactions[scrHash] = &hyperOutportBlocks.TxInfoV2{Transaction: wrappedTx}
+			transactionPool.Transactions[scrHash] = txInfo
 		} else {
 			if transactionPool.Transactions[scrHash].ResultTxs == nil {
 				transactionPool.Transactions[scrHash].ResultTxs = make([]*hyperOutportBlocks.WrappedTx, 0)
@@ -616,11 +625,13 @@ func (o *outportBlockConverter) copyRewards(sourceRewards map[string]*outport.Re
 
 		transactionPool.Transactions[hash] = &hyperOutportBlocks.TxInfoV2{
 			Transaction: &hyperOutportBlocks.WrappedTx{
-				Value:   value,
-				RcvAddr: reward.Reward.RcvAddr,
-				Round:   reward.Reward.Round,
-				Epoch:   reward.Reward.Epoch,
-				TxType:  hyperOutportBlocks.TxType_Reward,
+				Value:          value,
+				SndAddr:        []byte("metachain"),
+				RcvAddr:        reward.Reward.RcvAddr,
+				Round:          reward.Reward.Round,
+				Epoch:          reward.Reward.Epoch,
+				ExecutionOrder: reward.ExecutionOrder,
+				TxType:         hyperOutportBlocks.TxType_Reward,
 			},
 		}
 	}
@@ -672,6 +683,7 @@ func (o *outportBlockConverter) copyInvalidTxs(sourceInvalidTxs map[string]*outp
 				Options:           invalidTx.Transaction.Options,
 				GuardianAddr:      invalidTx.Transaction.GuardianAddr,
 				GuardianSignature: invalidTx.Transaction.GuardianSignature,
+				ExecutionOrder:    invalidTx.ExecutionOrder,
 				TxType:            hyperOutportBlocks.TxType_Invalid,
 			},
 		}
@@ -743,6 +755,24 @@ func (o *outportBlockConverter) castBigInt(i *big.Int) ([]byte, error) {
 	_, err := o.bigIntCaster.MarshalTo(i, buf)
 
 	return buf, err
+}
+
+func copyMiniBlocks(sourceMiniBlocks []*block.MiniBlock) []*hyperOutportBlocks.MiniBlock {
+	var destMiniBlocks []*hyperOutportBlocks.MiniBlock
+	if sourceMiniBlocks != nil {
+		destMiniBlocks = []*hyperOutportBlocks.MiniBlock{}
+		for _, mb := range sourceMiniBlocks {
+			destMiniBlocks = append(destMiniBlocks, &hyperOutportBlocks.MiniBlock{
+				TxHashes:        mb.TxHashes,
+				ReceiverShardID: mb.ReceiverShardID,
+				SenderShardID:   mb.SenderShardID,
+				Type:            hyperOutportBlocks.Type(mb.Type),
+				Reserved:        mb.Reserved,
+			})
+		}
+	}
+
+	return destMiniBlocks
 }
 
 // IsInterfaceNil returns nil if there is no value under the interface

@@ -1,7 +1,9 @@
 package process
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -134,6 +136,18 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 		"shardID", shardOutportBlock.ShardID)
 
 	headerHash := outportBlock.BlockData.HeaderHash
+
+	//TODO: do not commit this
+	bytes1, _ := json.Marshal(outportBlock)
+	err = os.WriteFile("outportBlocks.json", bytes1, 0666)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	bytes, _ := json.Marshal(shardOutportBlock)
+	err = os.WriteFile("shardOutportBlocks.json", bytes, 0666)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
 }

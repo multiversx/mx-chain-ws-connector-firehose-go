@@ -56,7 +56,44 @@ const (
 	outportBlockMetaBlockJSONPath = "../testscommon/testdata/outportBlockMetaBlock.json"
 )
 
-//TODO: be aware of the ExecutionOrder
+func TestOutportBlockConverter(t *testing.T) {
+	jsonBytes, err := os.ReadFile("../testscommon/testdata/outportBlocks.json")
+	require.NoError(t, err, "failed to read test data")
+
+	ob := &outport.OutportBlock{}
+	err = json.Unmarshal(jsonBytes, ob)
+	require.NoError(t, err, "failed to unmarshal test block")
+
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
+
+	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
+	if err != nil {
+		panic(err)
+	}
+
+	header := &block.HeaderV2{}
+	err = gogoProtoMarshaller.Unmarshal(header, ob.BlockData.HeaderBytes)
+	require.NoError(t, err, "failed to unmarshall outport block header bytes")
+
+	checkHeaderV2ShardV2(t, header, shardOutportBlock)
+	checkFieldsV2(t, ob, shardOutportBlock)
+	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
+
+	j, err := json.Marshal(shardOutportBlock)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.WriteFile("./shardoutport.json", j, 0655)
+	if err != nil {
+		panic(err)
+	}
+
+	jsonBytes, err = os.ReadFile(outportBlockHeaderV2JSONPath)
+	require.NoError(t, err, "failed to read test data")
+
+}
 
 func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	t.Parallel()
@@ -707,8 +744,6 @@ func checkFieldsV2(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 		require.Equal(t, v.FeeInfo.GasUsed, fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.GasUsed)
 		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.Fee)
 		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.InitialPaidFee)
-
-		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().Transactions[k].ExecutionOrder)
 	}
 
 	// Transaction pool - Smart Contract results.
@@ -733,14 +768,12 @@ func checkFieldsV2(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 		require.Equal(t, v.SmartContractResult.OriginalSender, tx.Transaction.OriginalSender)
 		require.Equal(t, data.TxType_SCR, tx.Transaction.TxType)
 
-		//TODO: check if these needs to be added too.
-		// Transaction pool - Smart Contract results - Fee info.
-		//require.Equal(t, v.FeeInfo.GasUsed, tx.SmartContractResults.SmartContractResult.GasUsed)
-		//require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), tx.SmartContractResults.SmartContractResult.Fee)
-		//require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), tx.SmartContractResults.SmartContractResult.FeeInfo.InitialPaidFee)
-		//
-		//// Transaction pool - Smart Contract results - Execution Order.
-		//require.Equal(t, v.ExecutionOrder, tx.SmartContractResults.SmartContractResult.ExecutionOrder)
+		require.Equal(t, v.FeeInfo.GasUsed, tx.FeeInfo.GasUsed)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), tx.FeeInfo.Fee)
+		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), tx.FeeInfo.InitialPaidFee)
+
+		// Transaction pool - Smart Contract results - Execution Order.
+		require.Equal(t, v.ExecutionOrder, tx.Transaction.ExecutionOrder)
 	}
 
 	// Transaction Pool - Rewards
@@ -750,6 +783,7 @@ func checkFieldsV2(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 		require.Equal(t, mustCastBigInt(t, v.Reward.Value), fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Value)
 		require.Equal(t, v.Reward.RcvAddr, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.RcvAddr)
 		require.Equal(t, v.Reward.Epoch, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.Epoch)
+		require.Equal(t, []byte("metachain"), fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.SndAddr)
 
 		// Transaction Pool - Rewards - Execution Order
 		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().Transactions[k].Transaction.ExecutionOrder)
@@ -789,8 +823,6 @@ func checkFieldsV2(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 		require.Equal(t, v.FeeInfo.GasUsed, fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.GasUsed)
 		require.Equal(t, mustCastBigInt(t, v.FeeInfo.Fee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.Fee)
 		require.Equal(t, mustCastBigInt(t, v.FeeInfo.InitialPaidFee), fireOutportBlock.GetTransactionPool().Transactions[k].FeeInfo.InitialPaidFee)
-
-		require.Equal(t, v.ExecutionOrder, fireOutportBlock.GetTransactionPool().Transactions[k].ExecutionOrder)
 	}
 
 	// Transaction Pool - Logs
