@@ -51,8 +51,7 @@ func NewDataProcessor(
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
-		outport.TopicSaveBlock:          dp.saveBlock,
-		outport.TopicRevertIndexedBlock: dp.revertBlock,
+		outport.TopicSaveBlock: dp.saveBlock,
 	}
 
 	return dp, nil
@@ -156,21 +155,6 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 		"shardID", shardOutportBlock.ShardID)
 
 	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
-}
-
-func (dp *dataProcessor) revertBlock(marshalledData []byte) error {
-	blockData := &outport.BlockData{}
-	err := dp.marshaller.Unmarshal(blockData, marshalledData)
-	if err != nil {
-		return err
-	}
-
-	err = dp.publisher.PublishBlock(blockData.HeaderHash)
-	if err != nil {
-		return fmt.Errorf("failed to publish block: %w", err)
-	}
-
-	return nil
 }
 
 // Close will close the internal writer
