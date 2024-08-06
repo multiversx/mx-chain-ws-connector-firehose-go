@@ -282,8 +282,11 @@ func (ph *publisherHandler) getLastBlockCheckpoint(hyperOutportBlock *hyperOutpo
 		return nil, err
 	}
 
-	checkpoint := &data.BlockCheckpoint{
-		LastNonces: make(map[uint32]uint64),
+	checkpoint, err := ph.outportBlocksPool.GetLastCheckpoint()
+	if err != nil {
+		checkpoint = &data.BlockCheckpoint{
+			LastNonces: make(map[uint32]uint64),
+		}
 	}
 
 	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
