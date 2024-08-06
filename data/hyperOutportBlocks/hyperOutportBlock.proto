@@ -8,13 +8,13 @@ option go_package = "github.com/multiversx/mx-chain-ws-connector-firehose-go/dat
 // TODO: move proto definition file in a shared space.
 
 message HyperOutportBlock {
-  MetaOutportBlock                        MetaOutportBlock            = 1;
-  repeated NotarizedHeaderOutportData NotarizedHeadersOutportData     = 2;
+  MetaOutportBlock                        MetaOutportBlock                = 1;
+  repeated NotarizedHeaderOutportData     NotarizedHeadersOutportData     = 2;
 }
 
 message NotarizedHeaderOutportData {
-  string            NotarizedHeaderHash = 1;
-  ShardOutportBlock OutportBlock        = 2;
+  string              NotarizedHeaderHash = 1;
+  ShardOutportBlockV2 OutportBlock        = 2;
 }
 
 message MetaOutportBlock {
@@ -92,10 +92,10 @@ message Header  {
 }
 
 message MetaHeader {
-  uint64            Nonce                    = 1;
-  uint32            Epoch                    = 2;
-  uint64            Round                    = 3;
-  uint64            TimeStamp                = 4;
+  uint64                   Nonce                    = 1;
+  uint32                   Epoch                    = 2;
+  uint64                   Round                    = 3;
+  uint64                   TimeStamp                = 4;
   repeated ShardData       ShardInfo         = 5;
   repeated PeerData        PeerInfo          = 6;
   bytes             Signature                = 7;

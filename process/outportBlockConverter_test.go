@@ -68,9 +68,7 @@ func TestOutportBlockConverter(t *testing.T) {
 	require.Nil(t, err)
 
 	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
-	if err != nil {
-		panic(err)
-	}
+	require.Nil(t, err)
 
 	header := &block.HeaderV2{}
 	err = gogoProtoMarshaller.Unmarshal(header, ob.BlockData.HeaderBytes)
@@ -95,9 +93,7 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	require.Nil(t, err)
 
 	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
-	if err != nil {
-		panic(err)
-	}
+	require.Nil(t, err)
 
 	header := &block.Header{}
 	err = gogoProtoMarshaller.Unmarshal(header, ob.BlockData.HeaderBytes)
@@ -106,16 +102,6 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	checkHeaderV1ShardV2(t, header, shardOutportBlock)
 	checkFieldsV2(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
-
-	j, err := json.Marshal(shardOutportBlock)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("./shardoutport.json", j, 0655)
-	if err != nil {
-		panic(err)
-	}
 
 	jsonBytes, err = os.ReadFile(outportBlockHeaderV2JSONPath)
 	require.NoError(t, err, "failed to read test data")
@@ -128,9 +114,7 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	require.Nil(t, err)
 
 	shardOutportBlock, err = converter.HandleShardOutportBlockV2(ob)
-	if err != nil {
-		panic(err)
-	}
+	require.Nil(t, err)
 
 	headerV2 := &block.HeaderV2{}
 	err = gogoProtoMarshaller.Unmarshal(headerV2, ob.BlockData.HeaderBytes)
@@ -139,17 +123,6 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	checkHeaderV2ShardV2(t, headerV2, shardOutportBlock)
 	checkFieldsV2(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
-
-	j, err = json.Marshal(shardOutportBlock)
-	if err != nil {
-		panic(err)
-	}
-
-	err = os.WriteFile("./shardoutpor2.json", j, 0655)
-	if err != nil {
-		panic(err)
-	}
-
 }
 
 func TestHeaderConverter(t *testing.T) {

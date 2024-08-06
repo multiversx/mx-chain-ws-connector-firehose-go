@@ -14,6 +14,7 @@ func (x *ShardOutportBlock) GetHeaderNonce() (uint64, error) {
 	return x.BlockData.Header.Nonce, nil
 }
 
+// GetHeaderNonce will return header nonce
 func (y *ShardOutportBlockV2) GetHeaderNonce() (uint64, error) {
 	if y.BlockData == nil {
 		return 0, fmt.Errorf("shard outport block: nil block data")

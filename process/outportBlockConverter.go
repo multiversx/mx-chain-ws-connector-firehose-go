@@ -74,7 +74,7 @@ func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.
 
 func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) error {
 	if blockData == nil {
-		return nil
+		return ErrNilBlockData
 	}
 
 	var miniBlocks []*hyperOutportBlocks.MiniBlock
@@ -93,16 +93,15 @@ func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, sh
 		IntraShardMiniBlocks: intraShardMiniBlocks,
 	}
 
-	var err error
 	switch blockData.HeaderType {
 	case string(core.ShardHeaderV1):
-		err = o.handleHeaderV1(blockData.HeaderBytes, shardOutportBlock.BlockData)
+		err := o.handleHeaderV1(blockData.HeaderBytes, shardOutportBlock.BlockData)
 		if err != nil {
 			return fmt.Errorf("failed to handle header v1: %w", err)
 		}
 
 	case string(core.ShardHeaderV2):
-		err = o.handleHeaderV2(blockData.HeaderBytes, shardOutportBlock.BlockData)
+		err := o.handleHeaderV2(blockData.HeaderBytes, shardOutportBlock.BlockData)
 		if err != nil {
 			return fmt.Errorf("failed to handle header v2: %w", err)
 		}
@@ -121,9 +120,7 @@ func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockDat
 		return fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	shardBlockData.Header = &hyperOutportBlocks.Header{}
-	header := shardBlockData.Header
-
+	header := &hyperOutportBlocks.Header{}
 	header.Nonce = blockHeader.Nonce
 	header.PrevHash = blockHeader.PrevHash
 	header.PrevRandSeed = blockHeader.PrevRandSeed
@@ -183,6 +180,8 @@ func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockDat
 	header.AccumulatedFees = accumulatedFees
 	header.DeveloperFees = developerFees
 
+	shardBlockData.Header = header
+
 	return nil
 }
 
@@ -193,8 +192,7 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 		return fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	shardBlockData.Header = &hyperOutportBlocks.Header{}
-	header := shardBlockData.Header
+	header := &hyperOutportBlocks.Header{}
 	header.Nonce = blockHeader.Header.Nonce
 	header.PrevHash = blockHeader.Header.PrevHash
 	header.PrevRandSeed = blockHeader.Header.PrevRandSeed
@@ -266,6 +264,8 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 	shardBlockData.ScheduledGasProvided = blockHeader.ScheduledGasProvided
 	shardBlockData.ScheduledGasPenalized = blockHeader.ScheduledGasPenalized
 	shardBlockData.ScheduledGasRefunded = blockHeader.ScheduledGasRefunded
+
+	shardBlockData.Header = header
 
 	return nil
 }
@@ -502,53 +502,56 @@ func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.T
 		destTxInfo := &hyperOutportBlocks.TxInfoV2{}
 
 		// TxInfo - Transaction
-		if txInfo.Transaction != nil {
-			value, err := o.castBigInt(txInfo.Transaction.Value)
-			if err != nil {
-				return fmt.Errorf("failed to cast transaction [%s] value: %w", txHash, err)
-			}
-
-			destTxInfo.Transaction = &hyperOutportBlocks.WrappedTx{
-				Nonce:             txInfo.Transaction.Nonce,
-				Value:             value,
-				RcvAddr:           txInfo.Transaction.RcvAddr,
-				RcvUserName:       txInfo.Transaction.RcvUserName,
-				SndAddr:           txInfo.Transaction.SndAddr,
-				SndUserName:       txInfo.Transaction.SndUserName,
-				GasPrice:          txInfo.Transaction.GasPrice,
-				GasLimit:          txInfo.Transaction.GasLimit,
-				Data:              txInfo.Transaction.Data,
-				ChainID:           txInfo.Transaction.ChainID,
-				Version:           txInfo.Transaction.Version,
-				Signature:         txInfo.Transaction.Signature,
-				Options:           txInfo.Transaction.Options,
-				GuardianAddr:      txInfo.Transaction.GuardianAddr,
-				GuardianSignature: txInfo.Transaction.GuardianSignature,
-				ExecutionOrder:    txInfo.ExecutionOrder,
-				TxType:            hyperOutportBlocks.TxType_UserTx,
-			}
-
-			// TxInfo - FeeInfo
-			if txInfo.FeeInfo != nil {
-				fee, err := o.castBigInt(txInfo.FeeInfo.Fee)
-				if err != nil {
-					return fmt.Errorf("failed to cast transaction [%s] fee: %w", txHash, err)
-				}
-
-				initialPaidFee, err := o.castBigInt(txInfo.FeeInfo.InitialPaidFee)
-				if err != nil {
-					return fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", txHash, err)
-				}
-
-				destTxInfo.FeeInfo = &hyperOutportBlocks.FeeInfo{
-					GasUsed:        txInfo.FeeInfo.GasUsed,
-					Fee:            fee,
-					InitialPaidFee: initialPaidFee,
-				}
-			}
-
-			transactionPool.Transactions[txHash] = destTxInfo
+		if txInfo.Transaction == nil {
+			continue
 		}
+		value, err := o.castBigInt(txInfo.Transaction.Value)
+		if err != nil {
+			return fmt.Errorf("failed to cast transaction [%s] value: %w", txHash, err)
+		}
+
+		destTxInfo.Transaction = &hyperOutportBlocks.WrappedTx{
+			Nonce:             txInfo.Transaction.Nonce,
+			Value:             value,
+			RcvAddr:           txInfo.Transaction.RcvAddr,
+			RcvUserName:       txInfo.Transaction.RcvUserName,
+			SndAddr:           txInfo.Transaction.SndAddr,
+			SndUserName:       txInfo.Transaction.SndUserName,
+			GasPrice:          txInfo.Transaction.GasPrice,
+			GasLimit:          txInfo.Transaction.GasLimit,
+			Data:              txInfo.Transaction.Data,
+			ChainID:           txInfo.Transaction.ChainID,
+			Version:           txInfo.Transaction.Version,
+			Signature:         txInfo.Transaction.Signature,
+			Options:           txInfo.Transaction.Options,
+			GuardianAddr:      txInfo.Transaction.GuardianAddr,
+			GuardianSignature: txInfo.Transaction.GuardianSignature,
+			ExecutionOrder:    txInfo.ExecutionOrder,
+			TxType:            hyperOutportBlocks.TxType_UserTx,
+		}
+
+		// TxInfo - FeeInfo
+		if txInfo.FeeInfo == nil {
+			continue
+		}
+
+		fee, err := o.castBigInt(txInfo.FeeInfo.Fee)
+		if err != nil {
+			return fmt.Errorf("failed to cast transaction [%s] fee: %w", txHash, err)
+		}
+
+		initialPaidFee, err := o.castBigInt(txInfo.FeeInfo.InitialPaidFee)
+		if err != nil {
+			return fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", txHash, err)
+		}
+
+		destTxInfo.FeeInfo = &hyperOutportBlocks.FeeInfo{
+			GasUsed:        txInfo.FeeInfo.GasUsed,
+			Fee:            fee,
+			InitialPaidFee: initialPaidFee,
+		}
+
+		transactionPool.Transactions[txHash] = destTxInfo
 	}
 
 	return nil
