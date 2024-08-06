@@ -14,7 +14,7 @@ message HyperOutportBlock {
 
 message NotarizedHeaderOutportData {
   string              NotarizedHeaderHash = 1;
-  ShardOutportBlockV2 OutportBlock        = 2;
+  ShardOutportBlock   OutportBlock        = 2;
 }
 
 message MetaOutportBlock {
