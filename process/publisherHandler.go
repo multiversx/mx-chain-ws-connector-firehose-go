@@ -156,7 +156,7 @@ func (ph *publisherHandler) updatePublishCheckpoint() {
 
 func (ph *publisherHandler) handleLastCheckpointOnInit() error {
 	if ph.resetCheckpoints {
-		log.Debug("did not checked last publisher checkpoint on init")
+		log.Debug("did not check last publisher checkpoint on init")
 		return nil
 	}
 

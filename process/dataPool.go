@@ -239,9 +239,19 @@ func (bp *dataPool) getCheckpointData(checkpointKey string) (*data.BlockCheckpoi
 	return checkpoint, nil
 }
 
+func deepCopyMap(originalMap map[uint32]uint64) map[uint32]uint64 {
+	newMap := make(map[uint32]uint64)
+
+	for key, value := range originalMap {
+		newMap[key] = value
+	}
+
+	return newMap
+}
+
 func (bp *dataPool) saveLastSoftCheckpoint() error {
 	bp.mutMap.RLock()
-	softCheckpointMap := bp.softCheckpointMap
+	softCheckpointMap := deepCopyMap(bp.softCheckpointMap)
 	bp.mutMap.RUnlock()
 
 	softCheckpoint := &data.BlockCheckpoint{}
