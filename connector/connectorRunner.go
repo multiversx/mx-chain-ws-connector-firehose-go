@@ -25,10 +25,11 @@ type connectorRunner struct {
 	config           *config.Config
 	dbMode           common.DBMode
 	enableGrpcServer bool
+	resetCheckpoints bool
 }
 
 // NewConnectorRunner will create a new connector runner instance
-func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool) (*connectorRunner, error) {
+func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool, resetCheckpoints bool) (*connectorRunner, error) {
 	if cfg == nil {
 		return nil, ErrNilConfig
 	}
@@ -37,6 +38,7 @@ func NewConnectorRunner(cfg *config.Config, dbMode string, enableGrpcServer bool
 		config:           cfg,
 		dbMode:           common.DBMode(dbMode),
 		enableGrpcServer: enableGrpcServer,
+		resetCheckpoints: resetCheckpoints,
 	}, nil
 }
 
@@ -70,7 +72,8 @@ func (cr *connectorRunner) Run() error {
 		Marshaller:            protoMarshaller,
 		MaxDelta:              cr.config.DataPool.MaxDelta,
 		CleanupInterval:       cr.config.DataPool.PruningWindow,
-		FirstCommitableBlocks: firstCommitableBlocks,
+		FirstCommitableBlocks: common.DeepCopyNoncesMap(firstCommitableBlocks),
+		ResetCheckpoints:      cr.resetCheckpoints,
 	}
 	dataPool, err := process.NewDataPool(argsBlocksPool)
 	if err != nil {
@@ -101,7 +104,7 @@ func (cr *connectorRunner) Run() error {
 		DataAggregator:              dataAggregator,
 		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
 		Marshalizer:                 protoMarshaller,
-		FirstCommitableBlocks:       firstCommitableBlocks,
+		FirstCommitableBlocks:       common.DeepCopyNoncesMap(firstCommitableBlocks),
 	}
 
 	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
@@ -114,6 +117,7 @@ func (cr *connectorRunner) Run() error {
 		gogoProtoMarshaller,
 		blocksPool,
 		outportBlockConverter,
+		common.DeepCopyNoncesMap(firstCommitableBlocks),
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)

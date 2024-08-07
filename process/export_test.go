@@ -4,6 +4,8 @@ import (
 	"math/big"
 
 	"github.com/multiversx/mx-chain-storage-go/types"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
 
 const (
@@ -41,4 +43,9 @@ func (ps *pruningStorer) GetPersisterPaths() ([]string, error) {
 // CastBigInt -
 func (o *outportBlockConverter) CastBigInt(i *big.Int) ([]byte, error) {
 	return o.castBigInt(i)
+}
+
+// GetLastBlockCheckpoint -
+func (ph *publisherHandler) GetLastBlockCheckpoint(hyperOutportBlock *hyperOutportBlocks.HyperOutportBlock) (*data.BlockCheckpoint, error) {
+	return ph.getLastBlockCheckpoint(hyperOutportBlock)
 }

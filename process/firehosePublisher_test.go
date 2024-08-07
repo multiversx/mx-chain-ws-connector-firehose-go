@@ -30,7 +30,7 @@ func createHyperOutportBlock() *data.HyperOutportBlock {
 			ShardID: 1,
 			BlockData: &data.MetaBlockData{
 				Header: &data.MetaHeader{
-					Nonce:     1,
+					Nonce:     16,
 					PrevHash:  []byte("prev hash"),
 					TimeStamp: 100,
 				},
@@ -43,7 +43,41 @@ func createHyperOutportBlock() *data.HyperOutportBlock {
 			HighestFinalBlockNonce: 0,
 			HighestFinalBlockHash:  []byte{},
 		},
-		NotarizedHeadersOutportData: []*data.NotarizedHeaderOutportData{},
+		NotarizedHeadersOutportData: []*data.NotarizedHeaderOutportData{
+			&data.NotarizedHeaderOutportData{
+				OutportBlock: &data.ShardOutportBlock{
+					ShardID: 0,
+					BlockData: &data.BlockData{
+						ShardID: 0,
+						Header: &data.Header{
+							Nonce: 10,
+						},
+					},
+				},
+			},
+			&data.NotarizedHeaderOutportData{
+				OutportBlock: &data.ShardOutportBlock{
+					ShardID: 2,
+					BlockData: &data.BlockData{
+						ShardID: 2,
+						Header: &data.Header{
+							Nonce: 12,
+						},
+					},
+				},
+			},
+			&data.NotarizedHeaderOutportData{
+				OutportBlock: &data.ShardOutportBlock{
+					ShardID: 1,
+					BlockData: &data.BlockData{
+						ShardID: 1,
+						Header: &data.Header{
+							Nonce: 11,
+						},
+					},
+				},
+			},
+		},
 	}
 
 	return hyperOutportBlock

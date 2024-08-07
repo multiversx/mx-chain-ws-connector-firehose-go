@@ -15,6 +15,7 @@ type dataProcessor struct {
 	publisher             Publisher
 	outportBlocksPool     BlocksPool
 	outportBlockConverter OutportBlockConverter
+	firstCommitableBlocks map[uint32]uint64
 }
 
 // NewDataProcessor creates a data processor able to receive data from a ws outport driver and handle blocks
@@ -23,6 +24,7 @@ func NewDataProcessor(
 	marshaller marshal.Marshalizer,
 	blocksPool BlocksPool,
 	outportBlockConverter OutportBlockConverter,
+	firstCommitableBlocks map[uint32]uint64,
 ) (DataProcessor, error) {
 	if check.IfNil(publisher) {
 		return nil, ErrNilPublisher
@@ -36,17 +38,20 @@ func NewDataProcessor(
 	if check.IfNil(outportBlockConverter) {
 		return nil, ErrNilOutportBlocksConverter
 	}
+	if firstCommitableBlocks == nil {
+		return nil, ErrNilFirstCommitableBlocks
+	}
 
 	dp := &dataProcessor{
 		marshaller:            marshaller,
 		publisher:             publisher,
 		outportBlocksPool:     blocksPool,
 		outportBlockConverter: outportBlockConverter,
+		firstCommitableBlocks: firstCommitableBlocks,
 	}
 
 	dp.operationHandlers = map[string]func(marshalledData []byte) error{
-		outport.TopicSaveBlock:          dp.saveBlock,
-		outport.TopicRevertIndexedBlock: dp.revertBlock,
+		outport.TopicSaveBlock: dp.saveBlock,
 	}
 
 	return dp, nil
@@ -95,16 +100,30 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 		return fmt.Errorf("%w for blockData header", ErrInvalidOutportBlock)
 	}
 	metaNonce := metaOutportBlock.BlockData.Header.GetNonce()
+	headerHash := metaOutportBlock.BlockData.GetHeaderHash()
 
 	log.Info("saving meta outport block",
-		"hash", metaOutportBlock.BlockData.GetHeaderHash(),
+		"hash", headerHash,
 		"nonce", metaNonce,
 		"shardID", metaOutportBlock.ShardID)
 
-	headerHash := metaOutportBlock.BlockData.HeaderHash
 	err = dp.outportBlocksPool.PutBlock(headerHash, metaOutportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to put metablock: %w", err)
+	}
+
+	shardID := metaOutportBlock.GetShardID()
+	firstCommitableBlock, ok := dp.firstCommitableBlocks[shardID]
+	if !ok {
+		return fmt.Errorf("failed to get first commitable block for shard %d", shardID)
+	}
+
+	if metaNonce < firstCommitableBlock {
+		// do not try to aggregate or publish hyper outport block
+
+		log.Trace("do not publish block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
+
+		return nil
 	}
 
 	err = dp.publisher.PublishBlock(headerHash)
@@ -128,29 +147,14 @@ func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBl
 	}
 	nonce := shardOutportBlock.BlockData.Header.GetNonce()
 
+	headerHash := shardOutportBlock.BlockData.GetHeaderHash()
+
 	log.Info("saving shard outport block",
-		"hash", shardOutportBlock.BlockData.GetHeaderHash(),
+		"hash", headerHash,
 		"nonce", nonce,
 		"shardID", shardOutportBlock.ShardID)
 
-	headerHash := outportBlock.BlockData.HeaderHash
-
 	return dp.outportBlocksPool.PutBlock(headerHash, shardOutportBlock)
-}
-
-func (dp *dataProcessor) revertBlock(marshalledData []byte) error {
-	blockData := &outport.BlockData{}
-	err := dp.marshaller.Unmarshal(blockData, marshalledData)
-	if err != nil {
-		return err
-	}
-
-	err = dp.publisher.PublishBlock(blockData.HeaderHash)
-	if err != nil {
-		return fmt.Errorf("failed to publish block: %w", err)
-	}
-
-	return nil
 }
 
 // Close will close the internal writer

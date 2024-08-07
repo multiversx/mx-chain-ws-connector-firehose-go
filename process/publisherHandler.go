@@ -26,6 +26,7 @@ type publisherHandler struct {
 	retryDuration         time.Duration
 	marshaller            marshal.Marshalizer
 	firstCommitableBlocks map[uint32]uint64
+	resetCheckpoints      bool
 
 	blocksChan chan []byte
 	cancelFunc func()
@@ -43,6 +44,7 @@ type PublisherHandlerArgs struct {
 	RetryDurationInMilliseconds uint64
 	Marshalizer                 marshal.Marshalizer
 	FirstCommitableBlocks       map[uint32]uint64
+	ResetCheckpoints            bool
 }
 
 // NewPublisherHandler creates a new publisher handler component
@@ -72,8 +74,9 @@ func NewPublisherHandler(args PublisherHandlerArgs) (*publisherHandler, error) {
 		outportBlocksPool:     args.OutportBlocksPool,
 		dataAggregator:        args.DataAggregator,
 		marshaller:            args.Marshalizer,
-		retryDuration:         time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
 		firstCommitableBlocks: args.FirstCommitableBlocks,
+		resetCheckpoints:      args.ResetCheckpoints,
+		retryDuration:         time.Duration(args.RetryDurationInMilliseconds) * time.Millisecond,
 		checkpoint:            &data.PublishCheckpoint{},
 		blocksChan:            make(chan []byte),
 		closeChan:             make(chan struct{}),
@@ -152,6 +155,11 @@ func (ph *publisherHandler) updatePublishCheckpoint() {
 }
 
 func (ph *publisherHandler) handleLastCheckpointOnInit() error {
+	if ph.resetCheckpoints {
+		log.Debug("did not check last publisher checkpoint on init")
+		return nil
+	}
+
 	checkpoint, err := ph.getLastPublishCheckpoint()
 	if err != nil {
 		return err
@@ -235,7 +243,7 @@ func (ph *publisherHandler) handlerHyperOutportBlock(headerHash []byte) error {
 	if metaNonce < firstCommitableBlock {
 		// do not try to aggregate or publish hyper outport block
 
-		log.Trace("do not commit block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
+		log.Trace("do not publish block", "currentNonce", metaNonce, "firstCommitableNonce", firstCommitableBlock)
 
 		return nil
 	}
@@ -274,8 +282,11 @@ func (ph *publisherHandler) getLastBlockCheckpoint(hyperOutportBlock *hyperOutpo
 		return nil, err
 	}
 
-	checkpoint := &data.BlockCheckpoint{
-		LastNonces: make(map[uint32]uint64),
+	checkpoint, err := ph.outportBlocksPool.GetLastCheckpoint()
+	if err != nil {
+		checkpoint = &data.BlockCheckpoint{
+			LastNonces: make(map[uint32]uint64),
+		}
 	}
 
 	metaBlock := hyperOutportBlock.MetaOutportBlock.BlockData.Header
@@ -317,7 +328,9 @@ func (ph *publisherHandler) Close() error {
 
 	ph.cancelFunc()
 
-	close(ph.closeChan)
+	if ph.closeChan != nil {
+		close(ph.closeChan)
+	}
 
 	return nil
 }
