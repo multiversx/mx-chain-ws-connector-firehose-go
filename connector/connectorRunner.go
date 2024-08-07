@@ -72,7 +72,7 @@ func (cr *connectorRunner) Run() error {
 		Marshaller:            protoMarshaller,
 		MaxDelta:              cr.config.DataPool.MaxDelta,
 		CleanupInterval:       cr.config.DataPool.PruningWindow,
-		FirstCommitableBlocks: firstCommitableBlocks,
+		FirstCommitableBlocks: common.DeepCopyNoncesMap(firstCommitableBlocks),
 		ResetCheckpoints:      cr.resetCheckpoints,
 	}
 	dataPool, err := process.NewDataPool(argsBlocksPool)
@@ -104,7 +104,7 @@ func (cr *connectorRunner) Run() error {
 		DataAggregator:              dataAggregator,
 		RetryDurationInMilliseconds: cr.config.Publisher.RetryDurationInMiliseconds,
 		Marshalizer:                 protoMarshaller,
-		FirstCommitableBlocks:       firstCommitableBlocks,
+		FirstCommitableBlocks:       common.DeepCopyNoncesMap(firstCommitableBlocks),
 	}
 
 	publisherHandler, err := process.NewPublisherHandler(publisherHandlerArgs)
@@ -117,7 +117,7 @@ func (cr *connectorRunner) Run() error {
 		gogoProtoMarshaller,
 		blocksPool,
 		outportBlockConverter,
-		firstCommitableBlocks,
+		common.DeepCopyNoncesMap(firstCommitableBlocks),
 	)
 	if err != nil {
 		return fmt.Errorf("cannot create ws firehose data processor, error: %w", err)

@@ -8,6 +8,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 )
 
@@ -239,19 +240,9 @@ func (bp *dataPool) getCheckpointData(checkpointKey string) (*data.BlockCheckpoi
 	return checkpoint, nil
 }
 
-func deepCopyMap(originalMap map[uint32]uint64) map[uint32]uint64 {
-	newMap := make(map[uint32]uint64)
-
-	for key, value := range originalMap {
-		newMap[key] = value
-	}
-
-	return newMap
-}
-
 func (bp *dataPool) saveLastSoftCheckpoint() error {
 	bp.mutMap.RLock()
-	softCheckpointMap := deepCopyMap(bp.softCheckpointMap)
+	softCheckpointMap := common.DeepCopyNoncesMap(bp.softCheckpointMap)
 	bp.mutMap.RUnlock()
 
 	softCheckpoint := &data.BlockCheckpoint{}
