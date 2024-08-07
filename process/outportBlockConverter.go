@@ -42,6 +42,7 @@ func NewOutportBlockConverter(
 	}, nil
 }
 
+// HandleShardOutportBlockV2 will convert an outport.OutportBlock to hyperOutportBlocks.ShardOutportBlockV2
 func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlockV2, error) {
 	headerType := outportBlock.BlockData.HeaderType
 
