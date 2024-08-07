@@ -121,6 +121,7 @@ func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockDat
 	}
 
 	header := &hyperOutportBlocks.Header{}
+	shardBlockData.Header = header
 	header.Nonce = blockHeader.Nonce
 	header.PrevHash = blockHeader.PrevHash
 	header.PrevRandSeed = blockHeader.PrevRandSeed
@@ -180,8 +181,6 @@ func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockDat
 	header.AccumulatedFees = accumulatedFees
 	header.DeveloperFees = developerFees
 
-	shardBlockData.Header = header
-
 	return nil
 }
 
@@ -193,6 +192,7 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 	}
 
 	header := &hyperOutportBlocks.Header{}
+	shardBlockData.Header = header
 	header.Nonce = blockHeader.Header.Nonce
 	header.PrevHash = blockHeader.Header.PrevHash
 	header.PrevRandSeed = blockHeader.Header.PrevRandSeed
@@ -264,8 +264,6 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 	shardBlockData.ScheduledGasProvided = blockHeader.ScheduledGasProvided
 	shardBlockData.ScheduledGasPenalized = blockHeader.ScheduledGasPenalized
 	shardBlockData.ScheduledGasRefunded = blockHeader.ScheduledGasRefunded
-
-	shardBlockData.Header = header
 
 	return nil
 }
