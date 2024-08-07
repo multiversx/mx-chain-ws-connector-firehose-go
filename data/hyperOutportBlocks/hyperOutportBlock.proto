@@ -8,13 +8,13 @@ option go_package = "github.com/multiversx/mx-chain-ws-connector-firehose-go/dat
 // TODO: move proto definition file in a shared space.
 
 message HyperOutportBlock {
-  MetaOutportBlock                        MetaOutportBlock            = 1;
-  repeated NotarizedHeaderOutportData NotarizedHeadersOutportData     = 2;
+  MetaOutportBlock                        MetaOutportBlock                = 1;
+  repeated NotarizedHeaderOutportData     NotarizedHeadersOutportData     = 2;
 }
 
 message NotarizedHeaderOutportData {
-  string       NotarizedHeaderHash = 1;
-  ShardOutportBlock OutportBlock        = 2 ;
+  string              NotarizedHeaderHash = 1;
+  ShardOutportBlock   OutportBlock        = 2;
 }
 
 message MetaOutportBlock {
@@ -41,6 +41,25 @@ message ShardOutportBlock {
   repeated uint64              SignersIndexes         = 8;
   uint64                       HighestFinalBlockNonce = 9;
   bytes                        HighestFinalBlockHash  = 10;
+}
+
+message ShardOutportBlockV2 {
+  uint32                       ShardID                = 1;
+  BlockData                    BlockData              = 2;
+  TransactionPoolV2            TransactionPool        = 3;
+  HeaderGasConsumption         HeaderGasConsumption   = 4;
+  map <string, AlteredAccount> AlteredAccounts        = 5;
+  repeated string              NotarizedHeadersHashes = 6;
+  uint32                       NumberOfShards         = 7;
+  repeated uint64              SignersIndexes         = 8;
+  uint64                       HighestFinalBlockNonce = 9;
+  bytes                        HighestFinalBlockHash  = 10;
+}
+
+message TransactionPoolV2 {
+  map<string, TxInfoV2>   Transactions                               = 1;
+  repeated string         ScheduledExecutedSCRSHashesPrevBlock       = 2;
+  repeated string         ScheduledExecutedInvalidTxsHashesPrevBlock = 3;
 }
 
 // Header holds the metadata of a block. This is the part that is being hashed and run through consensus.
@@ -73,29 +92,29 @@ message Header  {
 }
 
 message MetaHeader {
-  uint64            Nonce                    = 1;
-  uint32            Epoch                    = 2;
-  uint64            Round                    = 3;
-  uint64            TimeStamp                = 4;
+  uint64                   Nonce                    = 1;
+  uint32                   Epoch                    = 2;
+  uint64                   Round                    = 3;
+  uint64                   TimeStamp                = 4;
   repeated ShardData       ShardInfo         = 5;
   repeated PeerData        PeerInfo          = 6;
   bytes             Signature                = 7;
   bytes             LeaderSignature          = 8;
   bytes             PubKeysBitmap            = 9;
   bytes             PrevHash                 = 10;
-  bytes             PrevRandSeed             = 11 ;
-  bytes             RandSeed                 = 12 ;
-  bytes             RootHash                 = 13 ;
-  bytes             ValidatorStatsRootHash   = 14 ;
-  repeated MiniBlockHeader MiniBlockHeaders  = 16 ;
-  bytes             ReceiptsHash             = 17 ;
-  EpochStart        EpochStart               = 18 ;
+  bytes             PrevRandSeed             = 11;
+  bytes             RandSeed                 = 12;
+  bytes             RootHash                 = 13;
+  bytes             ValidatorStatsRootHash   = 14;
+  repeated MiniBlockHeader MiniBlockHeaders  = 16;
+  bytes             ReceiptsHash             = 17;
+  EpochStart        EpochStart               = 18;
   bytes             ChainID                  = 19;
   bytes             SoftwareVersion          = 20;
   bytes             AccumulatedFees          = 21;
   bytes             AccumulatedFeesInEpoch   = 22;
   bytes             DeveloperFees            = 23;
-  bytes             DevFeesInEpoch            = 24;
+  bytes             DevFeesInEpoch           = 24;
   uint32            TxCount                  = 25;
   bytes             Reserved                 = 26;
 }
@@ -238,6 +257,54 @@ message TxInfo {
   uint32      ExecutionOrder = 3;
 }
 
+message TxInfoV2 {
+  WrappedTx   Transaction    = 1;
+  FeeInfo     FeeInfo        = 2;
+  Receipt     Receipt        = 3;
+  repeated    WrappedTx ResultTxs = 4;
+  repeated    Log Logs = 5;
+}
+
+message WrappedTx {
+  uint64   Nonce             = 1;
+  bytes    Value             = 2;
+  bytes    RcvAddr           = 3;
+  bytes    RcvUserName       = 4;
+  bytes    SndAddr           = 5;
+  bytes    SndUserName       = 6;
+  uint64   GasPrice          = 7;
+  uint64   GasLimit          = 8;
+  bytes    Data              = 9;
+  bytes    ChainID           = 10;
+  uint32   Version           = 11;
+  bytes    Signature         = 12;
+  uint32   Options           = 13;
+  bytes    GuardianAddr      = 14;
+  bytes    GuardianSignature = 15;
+  bytes    RelayerAddr    = 16;
+  bytes    RelayedValue   = 17;
+  bytes    Code           = 18;
+  bytes    PrevTxHash     = 19;
+  bytes    OriginalTxHash = 20;
+  int64    CallType       = 21;
+  bytes    CodeMetadata   = 22;
+  bytes    ReturnMessage  = 23;
+  bytes    OriginalSender = 24;
+  uint32   ExecutionOrder = 25;
+
+  uint64   Round   = 26;
+  uint32   Epoch   = 27;
+
+  TxType TxType = 28;
+}
+
+enum TxType {
+  SCR = 0;
+  Invalid = 1;
+  UserTx = 2;
+  Reward = 3;
+}
+
 message SCRInfo {
   SmartContractResult SmartContractResult = 1;
   FeeInfo             FeeInfo             = 2;
@@ -377,9 +444,9 @@ message Event {
 
 message RewardTx {
   uint64   Round   = 1;
+  uint32   Epoch   = 2;
   bytes    Value   = 3;
   bytes    RcvAddr = 4;
-  uint32   Epoch   = 2;
 }
 
 enum Type {

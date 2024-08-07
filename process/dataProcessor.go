@@ -135,7 +135,7 @@ func (dp *dataProcessor) handleMetaOutportBlock(outportBlock *outport.OutportBlo
 }
 
 func (dp *dataProcessor) handleShardOutportBlock(outportBlock *outport.OutportBlock) error {
-	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlock(outportBlock)
+	shardOutportBlock, err := dp.outportBlockConverter.HandleShardOutportBlockV2(outportBlock)
 	if err != nil {
 		return fmt.Errorf("failed to handle shardOutportBlock: %w", err)
 	}
