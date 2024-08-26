@@ -6,6 +6,7 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
+
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 
 	data "github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
@@ -38,7 +39,7 @@ func (da *dataAggregator) ProcessHyperBlock(metaOutportBlock *hyperOutportBlocks
 	hyperOutportBlock := &data.HyperOutportBlock{}
 	hyperOutportBlock.MetaOutportBlock = metaOutportBlock
 
-	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0)
+	notarizedShardOutportBlocks := make([]*data.NotarizedHeaderOutportData, 0, len(metaOutportBlock.NotarizedHeadersHashes))
 
 	log.Info("dataAggregator: notarizedHashes", "block hash", metaOutportBlock.BlockData.HeaderHash,
 		"num notarizedHashes", len(metaOutportBlock.NotarizedHeadersHashes))
