@@ -8,12 +8,15 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
 	"github.com/multiversx/mx-chain-core-go/marshal"
+	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 )
 
 const (
 	// MetaCheckpointKey defines the meta checkpoint key
 	MetaCheckpointKey = "lastMetaIndex"
+
+	softMetaCheckpointKey = "softLastCheckpoint"
 
 	initIndex = 0
 	minDelta  = 3
@@ -25,9 +28,12 @@ type dataPool struct {
 	maxDelta              uint64
 	cleanupInterval       uint64
 	firstCommitableBlocks map[uint32]uint64
+	resetCheckpoints      bool
 
-	previousIndexesMap map[uint32]uint64
-	mutMap             sync.RWMutex
+	// soft checkpoint data is being used only at startup (without any previous data)
+	// until there is a valid hard checkpoint (set by publisher)
+	softCheckpointMap map[uint32]uint64
+	mutMap            sync.RWMutex
 }
 
 // DataPoolArgs defines the arguments needed to create the blocks pool component
@@ -37,6 +43,7 @@ type DataPoolArgs struct {
 	MaxDelta              uint64
 	CleanupInterval       uint64
 	FirstCommitableBlocks map[uint32]uint64
+	ResetCheckpoints      bool
 }
 
 // NewDataPool will create a new data pool instance
@@ -60,6 +67,7 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 		maxDelta:              args.MaxDelta,
 		cleanupInterval:       args.CleanupInterval,
 		firstCommitableBlocks: args.FirstCommitableBlocks,
+		resetCheckpoints:      args.ResetCheckpoints,
 	}
 
 	bp.initIndexesMap()
@@ -68,22 +76,30 @@ func NewDataPool(args DataPoolArgs) (*dataPool, error) {
 }
 
 func (bp *dataPool) initIndexesMap() {
-	lastCheckpoint, err := bp.GetLastCheckpoint()
-	if err != nil || lastCheckpoint == nil || lastCheckpoint.LastNonces == nil {
-		log.Warn("failed to get last checkpoint, will set empty indexes map", "error", err)
-
-		indexesMap := make(map[uint32]uint64)
-		bp.previousIndexesMap = indexesMap
+	if bp.resetCheckpoints {
+		log.Warn("initializing with reset checkpoints option, will set empty soft checkpoint")
+		bp.softCheckpointMap = make(map[uint32]uint64)
 		return
 	}
 
-	log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
-
-	indexesMap := make(map[uint32]uint64, len(lastCheckpoint.LastNonces))
-	for shardID, nonce := range lastCheckpoint.LastNonces {
-		indexesMap[shardID] = nonce
+	lastCheckpoint, err := bp.GetLastCheckpoint()
+	if err == nil {
+		log.Info("initIndexesMap", "lastCheckpoint", lastCheckpoint)
+		bp.softCheckpointMap = lastCheckpoint.GetLastNonces()
+		return
 	}
-	bp.previousIndexesMap = indexesMap
+
+	log.Warn("failed to get last checkpoint, will try to set soft last checkpoint", "error", err)
+
+	softCheckpoint, err := bp.getLastSoftCheckpoint()
+	if err == nil {
+		log.Info("initIndexesMap", "softCheckpoint", softCheckpoint)
+		bp.softCheckpointMap = softCheckpoint.GetLastNonces()
+		return
+	}
+
+	log.Warn("failed to get last soft checkpoint, will set empty soft checkpoint", "error", err)
+	bp.softCheckpointMap = make(map[uint32]uint64)
 }
 
 // Put will put value into storer
@@ -136,7 +152,7 @@ func (bp *dataPool) getLastIndex(shardID uint32) uint64 {
 		}
 	}
 
-	lastIndex, ok := bp.previousIndexesMap[shardID]
+	lastIndex, ok := bp.softCheckpointMap[shardID]
 	if !ok {
 		return initIndex
 	}
@@ -161,7 +177,7 @@ func (bp *dataPool) PutBlock(hash []byte, value []byte, newIndex uint64, shardID
 
 	lastIndex := bp.getLastIndex(shardID)
 	if lastIndex == initIndex {
-		bp.previousIndexesMap[shardID] = newIndex
+		bp.softCheckpointMap[shardID] = newIndex
 		return bp.storer.Put(hash, value)
 	}
 
@@ -198,27 +214,58 @@ func (bp *dataPool) setCheckpoint(checkpoint *data.BlockCheckpoint) error {
 
 // GetLastCheckpoint returns last checkpoint data
 func (bp *dataPool) GetLastCheckpoint() (*data.BlockCheckpoint, error) {
-	checkpointBytes, err := bp.storer.Get([]byte(MetaCheckpointKey))
+	return bp.getCheckpointData(MetaCheckpointKey)
+}
+
+func (bp *dataPool) getLastSoftCheckpoint() (*data.BlockCheckpoint, error) {
+	return bp.getCheckpointData(softMetaCheckpointKey)
+}
+
+func (bp *dataPool) getCheckpointData(checkpointKey string) (*data.BlockCheckpoint, error) {
+	checkpointBytes, err := bp.storer.Get([]byte(checkpointKey))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get checkpoint data from storer: %w", err)
+		return nil, fmt.Errorf("failed to get checkpoint data (key = %s) from storer: %w", checkpointKey, err)
 	}
 
 	checkpoint := &data.BlockCheckpoint{}
 	err = bp.marshaller.Unmarshal(checkpoint, checkpointBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshall checkpoint data: %w", err)
+		return nil, fmt.Errorf("failed to unmarshall checkpoint (key = %s) data: %w", checkpointKey, err)
 	}
 
 	if checkpoint == nil || checkpoint.LastNonces == nil {
-		return nil, fmt.Errorf("nil checkpoint data has been provided")
+		return nil, fmt.Errorf("nil checkpoint data (key = %s) has been provided", checkpointKey)
 	}
 
 	return checkpoint, nil
 }
 
+func (bp *dataPool) saveLastSoftCheckpoint() error {
+	bp.mutMap.RLock()
+	softCheckpointMap := common.DeepCopyNoncesMap(bp.softCheckpointMap)
+	bp.mutMap.RUnlock()
+
+	softCheckpoint := &data.BlockCheckpoint{}
+	softCheckpoint.LastNonces = softCheckpointMap
+
+	checkpointBytes, err := bp.marshaller.Marshal(softCheckpoint)
+	if err != nil {
+		return fmt.Errorf("failed to marshall publish soft checkpoint data: %w", err)
+	}
+
+	log.Debug("saveLastSoftCheckpoint", "previousIndexesMap", softCheckpointMap)
+
+	return bp.storer.Put([]byte(softMetaCheckpointKey), checkpointBytes)
+}
+
 // Close will trigger close on blocks pool component
 func (bp *dataPool) Close() error {
-	err := bp.storer.Close()
+	err := bp.saveLastSoftCheckpoint()
+	if err != nil {
+		return err
+	}
+
+	err = bp.storer.Close()
 	if err != nil {
 		return err
 	}

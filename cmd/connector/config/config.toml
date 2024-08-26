@@ -57,7 +57,7 @@
     [OutportBlocksStorage.Cache]
         Name = "OutportBlocksStorage"
         # Cache capacity and size has to be higher than max allowed deltas per shards in total
-        Capacity = 100
+        Capacity = 160
         Type = "SizeLRU"
         SizeInBytes = 209715200 # 200MB
     [OutportBlocksStorage.DB]

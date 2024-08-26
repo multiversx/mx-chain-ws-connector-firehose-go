@@ -67,3 +67,6 @@ var ErrNilBlockServiceContext = errors.New("nil block service context")
 
 // ErrInvalidValue signals that an invalid value was provded
 var ErrInvalidValue = errors.New("invalid value provided")
+
+// ErrNilBlockData signals than a block data is nil
+var ErrNilBlockData = errors.New("nil block data")

@@ -36,3 +36,14 @@ func ConvertFirstCommitableBlocks(blocks []config.FirstCommitableBlock) (map[uin
 
 	return newBlocks, nil
 }
+
+// DeepCopyNoncesMap will deep copy nonces map
+func DeepCopyNoncesMap(originalMap map[uint32]uint64) map[uint32]uint64 {
+	newMap := make(map[uint32]uint64)
+
+	for key, value := range originalMap {
+		newMap[key] = value
+	}
+
+	return newMap
+}

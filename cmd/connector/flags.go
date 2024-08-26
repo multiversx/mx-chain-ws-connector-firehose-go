@@ -38,11 +38,16 @@ var (
 	dbMode = cli.StringFlag{
 		Name:  "db-mode",
 		Usage: "Option for specifying db mode. Available options: `full-persister`, `import-db`, `optimized-persister`",
-		Value: "optimized-persister",
+		Value: "full-persister",
 	}
 
 	enableGrpcServer = cli.BoolFlag{
 		Name:  "enable-grpc-server",
 		Usage: "Option for enabling grpc server",
+	}
+
+	resetCheckpoints = cli.BoolFlag{
+		Name:  "reset-checkpoints",
+		Usage: "Option for resetting state checkpoints",
 	}
 )

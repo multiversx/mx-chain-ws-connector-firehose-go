@@ -6,6 +6,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
+
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
 )
@@ -101,6 +102,7 @@ type PruningStorer interface {
 // OutportBlockConverter handles the conversion between gogo and google proto buffer definitions.
 type OutportBlockConverter interface {
 	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error)
+	HandleShardOutportBlockV2(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlockV2, error)
 	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error)
 	IsInterfaceNil() bool
 }

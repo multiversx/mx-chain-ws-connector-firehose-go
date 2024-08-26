@@ -320,6 +320,88 @@ func TestPublisherHandler_PublishBlock(t *testing.T) {
 	})
 }
 
+func TestPublisherHandler_GetLastBlockCheckpoint(t *testing.T) {
+	t.Parallel()
+
+	args := createDefaultPublisherHandlerArgs()
+
+	hyperOutportBlock := &hyperOutportBlocks.HyperOutportBlock{
+		MetaOutportBlock: &hyperOutportBlocks.MetaOutportBlock{
+			ShardID: 1,
+			BlockData: &hyperOutportBlocks.MetaBlockData{
+				Header: &hyperOutportBlocks.MetaHeader{
+					Nonce:     16,
+					PrevHash:  []byte("prev hash"),
+					TimeStamp: 100,
+				},
+				HeaderType: string(core.ShardHeaderV1),
+				HeaderHash: []byte("hash"),
+			},
+			NotarizedHeadersHashes: []string{},
+			NumberOfShards:         0,
+			SignersIndexes:         []uint64{},
+			HighestFinalBlockNonce: 0,
+			HighestFinalBlockHash:  []byte{},
+		},
+		NotarizedHeadersOutportData: []*hyperOutportBlocks.NotarizedHeaderOutportData{
+			&hyperOutportBlocks.NotarizedHeaderOutportData{
+				OutportBlock: &hyperOutportBlocks.ShardOutportBlock{
+					ShardID: 0,
+					BlockData: &hyperOutportBlocks.BlockData{
+						ShardID: 0,
+						Header: &hyperOutportBlocks.Header{
+							Nonce: 11,
+						},
+					},
+				},
+			},
+			&hyperOutportBlocks.NotarizedHeaderOutportData{
+				OutportBlock: &hyperOutportBlocks.ShardOutportBlock{
+					ShardID: 2,
+					BlockData: &hyperOutportBlocks.BlockData{
+						ShardID: 2,
+						Header: &hyperOutportBlocks.Header{
+							Nonce: 13,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	args.OutportBlocksPool = &testscommon.HyperBlocksPoolMock{
+		GetLastCheckpointCalled: func() (*data.BlockCheckpoint, error) {
+			return &data.BlockCheckpoint{
+				LastNonces: map[uint32]uint64{
+					core.MetachainShardId: 15,
+					0:                     10,
+					1:                     11,
+					2:                     12,
+				},
+			}, nil
+		},
+	}
+
+	ph, err := process.NewPublisherHandler(args)
+	require.Nil(t, err)
+	require.NotNil(t, ph)
+
+	// shard 1 nonce is taken from last block checkpoint since it was missing from hyper outport block
+	expectedCheckpoint := &data.BlockCheckpoint{
+		LastNonces: map[uint32]uint64{
+			core.MetachainShardId: 16,
+			0:                     11,
+			1:                     11,
+			2:                     13,
+		},
+	}
+
+	lastCheckpoint, err := ph.GetLastBlockCheckpoint(hyperOutportBlock)
+	require.Nil(t, err)
+
+	require.Equal(t, expectedCheckpoint, lastCheckpoint)
+}
+
 func TestPublisherHandler_Close(t *testing.T) {
 	t.Parallel()
 
