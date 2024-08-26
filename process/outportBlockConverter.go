@@ -418,7 +418,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		return nil, fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	miniBlockHeaders := make([]*data.MiniBlockHeader, 0, len(header.Header.MiniBlockHeaders))
+	miniBlockHeaders := make([]*hyperOutportBlocks.MiniBlockHeader, 0, len(header.Header.MiniBlockHeaders))
 	for _, miniBlockHeader := range header.Header.MiniBlockHeaders {
 		mb := &hyperOutportBlocks.MiniBlockHeader{
 			Hash:            miniBlockHeader.Hash,
@@ -431,7 +431,7 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 		miniBlockHeaders = append(miniBlockHeaders, mb)
 	}
 
-	peerChanges := make([]*data.PeerChange, 0, len(header.Header.PeerChanges))
+	peerChanges := make([]*hyperOutportBlocks.PeerChange, 0, len(header.Header.PeerChanges))
 	for _, peerChange := range header.Header.PeerChanges {
 		pc := &hyperOutportBlocks.PeerChange{
 			PubKey:      peerChange.PubKey,
@@ -746,8 +746,6 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 	}
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
-	metaOutportBlock := &data.MetaOutportBlock{}
-	err = o.protoMarshalizer.Unmarshal(metaOutportBlock, bytes)
 	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
 	err = o.protoMarshaller.Unmarshal(metaOutportBlock, bytes)
 	if err != nil {
