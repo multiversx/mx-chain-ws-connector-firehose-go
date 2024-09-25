@@ -518,18 +518,31 @@ message StateChanges {
   repeated StateChange StateChanges = 1;
 }
 
+enum ActionType {
+  Read = 0;
+  Write = 1;
+}
+
+enum Operation {
+  GetCode         = 0;
+  SaveAccount     = 1;
+  GetAccount      = 2;
+  WriteCode       = 3;
+  RemoveDataTrie  = 4;
+}
+
 message StateChange {
-  string Type = 1;
-  int32 Index = 2;
-  bytes TxHash = 3;
-  bytes MainTrieKey = 4;
-  bytes MainTrieVal = 5;
-  string Operation = 6;
-  repeated DataTrieChange DataTrieChanges = 7;
+  ActionType Type  = 1;
+  int32      Index = 2;
+  bytes      TxHash = 3;
+  bytes      MainTrieKey = 4;
+  bytes      MainTrieVal = 5;
+  Operation  Operation = 6;
+  repeated   DataTrieChange DataTrieChanges = 7;
 }
 
 message DataTrieChange {
-  string Type = 1;
+  ActionType Type  = 1;
   bytes Key = 2;
   bytes Val = 3;
 }

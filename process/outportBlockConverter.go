@@ -391,37 +391,36 @@ func handleStateChanges(stateChanges map[string]*stateChange.StateChanges, shard
 		return
 	}
 
-	shardStateChanges := make(map[string]*hyperOutportBlocks.StateChanges, len(stateChanges))
+	shardStateChangesMap := make(map[string]*hyperOutportBlocks.StateChanges, len(stateChanges))
 	for key, scs := range stateChanges {
-		ss := make([]*hyperOutportBlocks.StateChange, len(scs.StateChanges))
+		shardStateChanges := make([]*hyperOutportBlocks.StateChange, len(scs.StateChanges))
 
 		for i, sc := range scs.StateChanges {
-			dtc := make([]*hyperOutportBlocks.DataTrieChange, len(sc.DataTrieChanges))
+			shardDataTrieChanges := make([]*hyperOutportBlocks.DataTrieChange, len(sc.DataTrieChanges))
 
 			for j, dataTrieChange := range sc.DataTrieChanges {
-				dtc[j] = &hyperOutportBlocks.DataTrieChange{
-					Type: dataTrieChange.Type,
+				shardDataTrieChanges[j] = &hyperOutportBlocks.DataTrieChange{
+					Type: hyperOutportBlocks.ActionType(dataTrieChange.Type),
 					Key:  dataTrieChange.Key,
 					Val:  dataTrieChange.Val,
 				}
 			}
 
-			ss[i] = &hyperOutportBlocks.StateChange{
-				Type:            sc.Type,
+			shardStateChanges[i] = &hyperOutportBlocks.StateChange{
+				Type:            hyperOutportBlocks.ActionType(sc.Type),
 				Index:           sc.Index,
 				TxHash:          sc.TxHash,
 				MainTrieKey:     sc.MainTrieKey,
 				MainTrieVal:     sc.MainTrieVal,
-				Operation:       sc.Operation,
-				DataTrieChanges: dtc,
+				Operation:       hyperOutportBlocks.Operation(sc.Operation),
+				DataTrieChanges: shardDataTrieChanges,
 			}
 		}
 
-		s := &hyperOutportBlocks.StateChanges{StateChanges: ss}
-		shardStateChanges[key] = s
+		shardStateChangesMap[key] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
 	}
 
-	shardOutportBlock.StateChanges = shardStateChanges
+	shardOutportBlock.StateChanges = shardStateChangesMap
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.

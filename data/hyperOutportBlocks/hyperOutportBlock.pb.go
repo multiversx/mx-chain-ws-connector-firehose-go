@@ -7,10 +7,11 @@
 package hyperOutportBlocks
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
+	"reflect"
+	"sync"
+
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -196,6 +197,107 @@ func (x Type) Number() protoreflect.EnumNumber {
 // Deprecated: Use Type.Descriptor instead.
 func (Type) EnumDescriptor() ([]byte, []int) {
 	return file_hyperOutportBlock_proto_rawDescGZIP(), []int{2}
+}
+
+type ActionType int32
+
+const (
+	ActionType_Read  ActionType = 0
+	ActionType_Write ActionType = 1
+)
+
+// Enum value maps for ActionType.
+var (
+	ActionType_name = map[int32]string{
+		0: "Read",
+		1: "Write",
+	}
+	ActionType_value = map[string]int32{
+		"Read":  0,
+		"Write": 1,
+	}
+)
+
+func (x ActionType) Enum() *ActionType {
+	p := new(ActionType)
+	*p = x
+	return p
+}
+
+func (x ActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_hyperOutportBlock_proto_enumTypes[3].Descriptor()
+}
+
+func (ActionType) Type() protoreflect.EnumType {
+	return &file_hyperOutportBlock_proto_enumTypes[3]
+}
+
+func (x ActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActionType.Descriptor instead.
+func (ActionType) EnumDescriptor() ([]byte, []int) {
+	return file_hyperOutportBlock_proto_rawDescGZIP(), []int{3}
+}
+
+type Operation int32
+
+const (
+	Operation_GetCode        Operation = 0
+	Operation_SaveAccount    Operation = 1
+	Operation_GetAccount     Operation = 2
+	Operation_WriteCode      Operation = 3
+	Operation_RemoveDataTrie Operation = 4
+)
+
+// Enum value maps for Operation.
+var (
+	Operation_name = map[int32]string{
+		0: "GetCode",
+		1: "SaveAccount",
+		2: "GetAccount",
+		3: "WriteCode",
+		4: "RemoveDataTrie",
+	}
+	Operation_value = map[string]int32{
+		"GetCode":        0,
+		"SaveAccount":    1,
+		"GetAccount":     2,
+		"WriteCode":      3,
+		"RemoveDataTrie": 4,
+	}
+)
+
+func (x Operation) Enum() *Operation {
+	p := new(Operation)
+	*p = x
+	return p
+}
+
+func (x Operation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Operation) Descriptor() protoreflect.EnumDescriptor {
+	return file_hyperOutportBlock_proto_enumTypes[4].Descriptor()
+}
+
+func (Operation) Type() protoreflect.EnumType {
+	return &file_hyperOutportBlock_proto_enumTypes[4]
+}
+
+func (x Operation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Operation.Descriptor instead.
+func (Operation) EnumDescriptor() ([]byte, []int) {
+	return file_hyperOutportBlock_proto_rawDescGZIP(), []int{4}
 }
 
 type HyperOutportBlock struct {
@@ -4729,12 +4831,12 @@ type StateChange struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Type            string            `protobuf:"bytes,1,opt,name=Type,proto3" json:"Type,omitempty"`
+	Type            ActionType        `protobuf:"varint,1,opt,name=Type,proto3,enum=proto.ActionType" json:"Type,omitempty"`
 	Index           int32             `protobuf:"varint,2,opt,name=Index,proto3" json:"Index,omitempty"`
 	TxHash          []byte            `protobuf:"bytes,3,opt,name=TxHash,proto3" json:"TxHash,omitempty"`
 	MainTrieKey     []byte            `protobuf:"bytes,4,opt,name=MainTrieKey,proto3" json:"MainTrieKey,omitempty"`
 	MainTrieVal     []byte            `protobuf:"bytes,5,opt,name=MainTrieVal,proto3" json:"MainTrieVal,omitempty"`
-	Operation       string            `protobuf:"bytes,6,opt,name=Operation,proto3" json:"Operation,omitempty"`
+	Operation       Operation         `protobuf:"varint,6,opt,name=Operation,proto3,enum=proto.Operation" json:"Operation,omitempty"`
 	DataTrieChanges []*DataTrieChange `protobuf:"bytes,7,rep,name=DataTrieChanges,proto3" json:"DataTrieChanges,omitempty"`
 }
 
@@ -4770,11 +4872,11 @@ func (*StateChange) Descriptor() ([]byte, []int) {
 	return file_hyperOutportBlock_proto_rawDescGZIP(), []int{50}
 }
 
-func (x *StateChange) GetType() string {
+func (x *StateChange) GetType() ActionType {
 	if x != nil {
 		return x.Type
 	}
-	return ""
+	return ActionType_Read
 }
 
 func (x *StateChange) GetIndex() int32 {
@@ -4805,11 +4907,11 @@ func (x *StateChange) GetMainTrieVal() []byte {
 	return nil
 }
 
-func (x *StateChange) GetOperation() string {
+func (x *StateChange) GetOperation() Operation {
 	if x != nil {
 		return x.Operation
 	}
-	return ""
+	return Operation_GetCode
 }
 
 func (x *StateChange) GetDataTrieChanges() []*DataTrieChange {
@@ -4824,9 +4926,9 @@ type DataTrieChange struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Type string `protobuf:"bytes,1,opt,name=Type,proto3" json:"Type,omitempty"`
-	Key  []byte `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
-	Val  []byte `protobuf:"bytes,3,opt,name=Val,proto3" json:"Val,omitempty"`
+	Type ActionType `protobuf:"varint,1,opt,name=Type,proto3,enum=proto.ActionType" json:"Type,omitempty"`
+	Key  []byte     `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
+	Val  []byte     `protobuf:"bytes,3,opt,name=Val,proto3" json:"Val,omitempty"`
 }
 
 func (x *DataTrieChange) Reset() {
@@ -4861,11 +4963,11 @@ func (*DataTrieChange) Descriptor() ([]byte, []int) {
 	return file_hyperOutportBlock_proto_rawDescGZIP(), []int{51}
 }
 
-func (x *DataTrieChange) GetType() string {
+func (x *DataTrieChange) GetType() ActionType {
 	if x != nil {
 		return x.Type
 	}
-	return ""
+	return ActionType_Read
 }
 
 func (x *DataTrieChange) GetKey() []byte {
@@ -5805,56 +5907,67 @@ var file_hyperOutportBlock_proto_rawDesc = []byte{
 	0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x12, 0x36, 0x0a, 0x0c, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43,
 	0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65,
-	0x52, 0x0c, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x22, 0xf2,
-	0x01, 0x0a, 0x0b, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x12,
-	0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x54, 0x79,
-	0x70, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x05, 0x52, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x16, 0x0a, 0x06, 0x54, 0x78, 0x48, 0x61,
-	0x73, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x54, 0x78, 0x48, 0x61, 0x73, 0x68,
-	0x12, 0x20, 0x0a, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69, 0x65, 0x4b, 0x65, 0x79, 0x18,
-	0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69, 0x65, 0x4b,
-	0x65, 0x79, 0x12, 0x20, 0x0a, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69, 0x65, 0x56, 0x61,
-	0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69,
-	0x65, 0x56, 0x61, 0x6c, 0x12, 0x1c, 0x0a, 0x09, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x3f, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69, 0x65, 0x43, 0x68,
-	0x61, 0x6e, 0x67, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69, 0x65, 0x43, 0x68, 0x61, 0x6e,
-	0x67, 0x65, 0x52, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69, 0x65, 0x43, 0x68, 0x61, 0x6e,
-	0x67, 0x65, 0x73, 0x22, 0x48, 0x0a, 0x0e, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69, 0x65, 0x43,
-	0x68, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x4b, 0x65, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x56,
-	0x61, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x56, 0x61, 0x6c, 0x2a, 0xa4, 0x01,
-	0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d,
-	0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x00, 0x12,
-	0x14, 0x0a, 0x10, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x10, 0x01, 0x12, 0x11, 0x0a, 0x0d, 0x50, 0x65, 0x65, 0x72, 0x55, 0x6e, 0x73,
-	0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x10, 0x02, 0x12, 0x16, 0x0a, 0x12, 0x50, 0x65, 0x65, 0x72,
-	0x44, 0x65, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x03,
-	0x12, 0x0e, 0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x4a, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x10, 0x04,
-	0x12, 0x10, 0x0a, 0x0c, 0x50, 0x65, 0x65, 0x72, 0x55, 0x6e, 0x4a, 0x61, 0x69, 0x6c, 0x65, 0x64,
-	0x10, 0x05, 0x12, 0x0f, 0x0a, 0x0b, 0x50, 0x65, 0x65, 0x72, 0x53, 0x6c, 0x61, 0x73, 0x68, 0x65,
-	0x64, 0x10, 0x06, 0x12, 0x0f, 0x0a, 0x0b, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x53, 0x74, 0x61,
-	0x6b, 0x65, 0x10, 0x07, 0x2a, 0x36, 0x0a, 0x06, 0x54, 0x78, 0x54, 0x79, 0x70, 0x65, 0x12, 0x07,
-	0x0a, 0x03, 0x53, 0x43, 0x52, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x49, 0x6e, 0x76, 0x61, 0x6c,
-	0x69, 0x64, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x55, 0x73, 0x65, 0x72, 0x54, 0x78, 0x10, 0x02,
-	0x12, 0x0a, 0x0a, 0x06, 0x52, 0x65, 0x77, 0x61, 0x72, 0x64, 0x10, 0x03, 0x2a, 0x88, 0x01, 0x0a,
-	0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x54, 0x78, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x53, 0x74, 0x61, 0x74, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x10, 0x1e, 0x12, 0x0d, 0x0a, 0x09, 0x50, 0x65, 0x65, 0x72, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10,
-	0x3c, 0x12, 0x1c, 0x0a, 0x18, 0x53, 0x6d, 0x61, 0x72, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61,
-	0x63, 0x74, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x5a, 0x12,
-	0x10, 0x0a, 0x0c, 0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10,
-	0x78, 0x12, 0x11, 0x0a, 0x0c, 0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x10, 0x96, 0x01, 0x12, 0x11, 0x0a, 0x0c, 0x52, 0x65, 0x77, 0x61, 0x72, 0x64, 0x73, 0x42,
-	0x6c, 0x6f, 0x63, 0x6b, 0x10, 0xff, 0x01, 0x42, 0x51, 0x5a, 0x4f, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x76, 0x65, 0x72, 0x73, 0x78,
-	0x2f, 0x6d, 0x78, 0x2d, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x2d, 0x77, 0x73, 0x2d, 0x63, 0x6f, 0x6e,
-	0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x2d, 0x66, 0x69, 0x72, 0x65, 0x68, 0x6f, 0x73, 0x65, 0x2d,
-	0x67, 0x6f, 0x2f, 0x64, 0x61, 0x74, 0x61, 0x2f, 0x68, 0x79, 0x70, 0x65, 0x72, 0x4f, 0x75, 0x74,
-	0x70, 0x6f, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x52, 0x0c, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x22, 0x97,
+	0x02, 0x0a, 0x0b, 0x53, 0x74, 0x61, 0x74, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x25,
+	0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x11, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x52,
+	0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x16, 0x0a, 0x06, 0x54,
+	0x78, 0x48, 0x61, 0x73, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x54, 0x78, 0x48,
+	0x61, 0x73, 0x68, 0x12, 0x20, 0x0a, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69, 0x65, 0x4b,
+	0x65, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72,
+	0x69, 0x65, 0x4b, 0x65, 0x79, 0x12, 0x20, 0x0a, 0x0b, 0x4d, 0x61, 0x69, 0x6e, 0x54, 0x72, 0x69,
+	0x65, 0x56, 0x61, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0b, 0x4d, 0x61, 0x69, 0x6e,
+	0x54, 0x72, 0x69, 0x65, 0x56, 0x61, 0x6c, 0x12, 0x2e, 0x0a, 0x09, 0x4f, 0x70, 0x65, 0x72, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x10, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x09, 0x4f, 0x70,
+	0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3f, 0x0a, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x54,
+	0x72, 0x69, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69,
+	0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x0f, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69,
+	0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x73, 0x22, 0x5b, 0x0a, 0x0e, 0x44, 0x61, 0x74, 0x61,
+	0x54, 0x72, 0x69, 0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x25, 0x0a, 0x04, 0x54, 0x79,
+	0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x11, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x54, 0x79, 0x70,
+	0x65, 0x12, 0x10, 0x0a, 0x03, 0x4b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03,
+	0x4b, 0x65, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x56, 0x61, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x03, 0x56, 0x61, 0x6c, 0x2a, 0xa4, 0x01, 0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x41, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x41,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x00, 0x12, 0x14, 0x0a, 0x10, 0x50, 0x65, 0x65, 0x72, 0x52,
+	0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x01, 0x12, 0x11, 0x0a,
+	0x0d, 0x50, 0x65, 0x65, 0x72, 0x55, 0x6e, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x10, 0x02,
+	0x12, 0x16, 0x0a, 0x12, 0x50, 0x65, 0x65, 0x72, 0x44, 0x65, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x10, 0x03, 0x12, 0x0e, 0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72,
+	0x4a, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x10, 0x04, 0x12, 0x10, 0x0a, 0x0c, 0x50, 0x65, 0x65, 0x72,
+	0x55, 0x6e, 0x4a, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x10, 0x05, 0x12, 0x0f, 0x0a, 0x0b, 0x50, 0x65,
+	0x65, 0x72, 0x53, 0x6c, 0x61, 0x73, 0x68, 0x65, 0x64, 0x10, 0x06, 0x12, 0x0f, 0x0a, 0x0b, 0x50,
+	0x65, 0x65, 0x72, 0x52, 0x65, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x10, 0x07, 0x2a, 0x36, 0x0a, 0x06,
+	0x54, 0x78, 0x54, 0x79, 0x70, 0x65, 0x12, 0x07, 0x0a, 0x03, 0x53, 0x43, 0x52, 0x10, 0x00, 0x12,
+	0x0b, 0x0a, 0x07, 0x49, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06,
+	0x55, 0x73, 0x65, 0x72, 0x54, 0x78, 0x10, 0x02, 0x12, 0x0a, 0x0a, 0x06, 0x52, 0x65, 0x77, 0x61,
+	0x72, 0x64, 0x10, 0x03, 0x2a, 0x88, 0x01, 0x0a, 0x04, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0b, 0x0a,
+	0x07, 0x54, 0x78, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x00, 0x12, 0x0e, 0x0a, 0x0a, 0x53, 0x74,
+	0x61, 0x74, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x1e, 0x12, 0x0d, 0x0a, 0x09, 0x50, 0x65,
+	0x65, 0x72, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x3c, 0x12, 0x1c, 0x0a, 0x18, 0x53, 0x6d, 0x61,
+	0x72, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
+	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x5a, 0x12, 0x10, 0x0a, 0x0c, 0x49, 0x6e, 0x76, 0x61, 0x6c,
+	0x69, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x78, 0x12, 0x11, 0x0a, 0x0c, 0x52, 0x65, 0x63,
+	0x65, 0x69, 0x70, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0x96, 0x01, 0x12, 0x11, 0x0a, 0x0c,
+	0x52, 0x65, 0x77, 0x61, 0x72, 0x64, 0x73, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x10, 0xff, 0x01, 0x2a,
+	0x21, 0x0a, 0x0a, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x79, 0x70, 0x65, 0x12, 0x08, 0x0a,
+	0x04, 0x52, 0x65, 0x61, 0x64, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x57, 0x72, 0x69, 0x74, 0x65,
+	0x10, 0x01, 0x2a, 0x5c, 0x0a, 0x09, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x0b, 0x0a, 0x07, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x64, 0x65, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b,
+	0x53, 0x61, 0x76, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x10, 0x01, 0x12, 0x0e, 0x0a,
+	0x0a, 0x47, 0x65, 0x74, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x10, 0x02, 0x12, 0x0d, 0x0a,
+	0x09, 0x57, 0x72, 0x69, 0x74, 0x65, 0x43, 0x6f, 0x64, 0x65, 0x10, 0x03, 0x12, 0x12, 0x0a, 0x0e,
+	0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x44, 0x61, 0x74, 0x61, 0x54, 0x72, 0x69, 0x65, 0x10, 0x04,
+	0x42, 0x51, 0x5a, 0x4f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6d,
+	0x75, 0x6c, 0x74, 0x69, 0x76, 0x65, 0x72, 0x73, 0x78, 0x2f, 0x6d, 0x78, 0x2d, 0x63, 0x68, 0x61,
+	0x69, 0x6e, 0x2d, 0x77, 0x73, 0x2d, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x2d,
+	0x66, 0x69, 0x72, 0x65, 0x68, 0x6f, 0x73, 0x65, 0x2d, 0x67, 0x6f, 0x2f, 0x64, 0x61, 0x74, 0x61,
+	0x2f, 0x68, 0x79, 0x70, 0x65, 0x72, 0x4f, 0x75, 0x74, 0x70, 0x6f, 0x72, 0x74, 0x42, 0x6c, 0x6f,
+	0x63, 0x6b, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5869,165 +5982,170 @@ func file_hyperOutportBlock_proto_rawDescGZIP() []byte {
 	return file_hyperOutportBlock_proto_rawDescData
 }
 
-var file_hyperOutportBlock_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_hyperOutportBlock_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_hyperOutportBlock_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_hyperOutportBlock_proto_goTypes = []interface{}{
 	(PeerAction)(0),                    // 0: proto.PeerAction
 	(TxType)(0),                        // 1: proto.TxType
 	(Type)(0),                          // 2: proto.Type
-	(*HyperOutportBlock)(nil),          // 3: proto.HyperOutportBlock
-	(*NotarizedHeaderOutportData)(nil), // 4: proto.NotarizedHeaderOutportData
-	(*MetaOutportBlock)(nil),           // 5: proto.MetaOutportBlock
-	(*ShardOutportBlock)(nil),          // 6: proto.ShardOutportBlock
-	(*ShardOutportBlockV2)(nil),        // 7: proto.ShardOutportBlockV2
-	(*TransactionPoolV2)(nil),          // 8: proto.TransactionPoolV2
-	(*Header)(nil),                     // 9: proto.Header
-	(*MetaHeader)(nil),                 // 10: proto.MetaHeader
-	(*MiniBlockHeader)(nil),            // 11: proto.MiniBlockHeader
-	(*PeerChange)(nil),                 // 12: proto.PeerChange
-	(*BlockData)(nil),                  // 13: proto.BlockData
-	(*MetaBlockData)(nil),              // 14: proto.MetaBlockData
-	(*ShardData)(nil),                  // 15: proto.ShardData
-	(*EpochStart)(nil),                 // 16: proto.EpochStart
-	(*EpochStartShardData)(nil),        // 17: proto.EpochStartShardData
-	(*Economics)(nil),                  // 18: proto.Economics
-	(*PeerData)(nil),                   // 19: proto.PeerData
-	(*TransactionPool)(nil),            // 20: proto.TransactionPool
-	(*FeeInfo)(nil),                    // 21: proto.FeeInfo
-	(*TxInfo)(nil),                     // 22: proto.TxInfo
-	(*TxInfoV2)(nil),                   // 23: proto.TxInfoV2
-	(*WrappedTx)(nil),                  // 24: proto.WrappedTx
-	(*SCRInfo)(nil),                    // 25: proto.SCRInfo
-	(*LogData)(nil),                    // 26: proto.LogData
-	(*RewardInfo)(nil),                 // 27: proto.RewardInfo
-	(*HeaderGasConsumption)(nil),       // 28: proto.HeaderGasConsumption
-	(*ValidatorRatingInfo)(nil),        // 29: proto.ValidatorRatingInfo
-	(*ValidatorsRating)(nil),           // 30: proto.ValidatorsRating
-	(*RoundInfo)(nil),                  // 31: proto.RoundInfo
-	(*RoundsInfo)(nil),                 // 32: proto.RoundsInfo
-	(*PubKeys)(nil),                    // 33: proto.PubKeys
-	(*ValidatorsPubKeys)(nil),          // 34: proto.ValidatorsPubKeys
-	(*Accounts)(nil),                   // 35: proto.Accounts
-	(*FinalizedBlock)(nil),             // 36: proto.FinalizedBlock
-	(*Shard)(nil),                      // 37: proto.Shard
-	(*Body)(nil),                       // 38: proto.Body
-	(*MiniBlock)(nil),                  // 39: proto.MiniBlock
-	(*Transaction)(nil),                // 40: proto.Transaction
-	(*SmartContractResult)(nil),        // 41: proto.SmartContractResult
-	(*Log)(nil),                        // 42: proto.Log
-	(*Event)(nil),                      // 43: proto.Event
-	(*RewardTx)(nil),                   // 44: proto.RewardTx
-	(*AlteredAccount)(nil),             // 45: proto.AlteredAccount
-	(*AccountTokenData)(nil),           // 46: proto.AccountTokenData
-	(*TokenMetaData)(nil),              // 47: proto.TokenMetaData
-	(*AdditionalAccountTokenData)(nil), // 48: proto.AdditionalAccountTokenData
-	(*AdditionalAccountData)(nil),      // 49: proto.AdditionalAccountData
-	(*Receipt)(nil),                    // 50: proto.Receipt
-	(*BigInt)(nil),                     // 51: proto.BigInt
-	(*StateChanges)(nil),               // 52: proto.StateChanges
-	(*StateChange)(nil),                // 53: proto.StateChange
-	(*DataTrieChange)(nil),             // 54: proto.DataTrieChange
-	nil,                                // 55: proto.MetaOutportBlock.AlteredAccountsEntry
-	nil,                                // 56: proto.MetaOutportBlock.StateChangesEntry
-	nil,                                // 57: proto.ShardOutportBlock.AlteredAccountsEntry
-	nil,                                // 58: proto.ShardOutportBlockV2.AlteredAccountsEntry
-	nil,                                // 59: proto.ShardOutportBlockV2.StateChangesEntry
-	nil,                                // 60: proto.TransactionPoolV2.TransactionsEntry
-	nil,                                // 61: proto.TransactionPool.TransactionsEntry
-	nil,                                // 62: proto.TransactionPool.SmartContractResultsEntry
-	nil,                                // 63: proto.TransactionPool.RewardsEntry
-	nil,                                // 64: proto.TransactionPool.ReceiptsEntry
-	nil,                                // 65: proto.TransactionPool.InvalidTxsEntry
-	nil,                                // 66: proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry
-	nil,                                // 67: proto.Accounts.AlteredAccountsEntry
+	(ActionType)(0),                    // 3: proto.ActionType
+	(Operation)(0),                     // 4: proto.Operation
+	(*HyperOutportBlock)(nil),          // 5: proto.HyperOutportBlock
+	(*NotarizedHeaderOutportData)(nil), // 6: proto.NotarizedHeaderOutportData
+	(*MetaOutportBlock)(nil),           // 7: proto.MetaOutportBlock
+	(*ShardOutportBlock)(nil),          // 8: proto.ShardOutportBlock
+	(*ShardOutportBlockV2)(nil),        // 9: proto.ShardOutportBlockV2
+	(*TransactionPoolV2)(nil),          // 10: proto.TransactionPoolV2
+	(*Header)(nil),                     // 11: proto.Header
+	(*MetaHeader)(nil),                 // 12: proto.MetaHeader
+	(*MiniBlockHeader)(nil),            // 13: proto.MiniBlockHeader
+	(*PeerChange)(nil),                 // 14: proto.PeerChange
+	(*BlockData)(nil),                  // 15: proto.BlockData
+	(*MetaBlockData)(nil),              // 16: proto.MetaBlockData
+	(*ShardData)(nil),                  // 17: proto.ShardData
+	(*EpochStart)(nil),                 // 18: proto.EpochStart
+	(*EpochStartShardData)(nil),        // 19: proto.EpochStartShardData
+	(*Economics)(nil),                  // 20: proto.Economics
+	(*PeerData)(nil),                   // 21: proto.PeerData
+	(*TransactionPool)(nil),            // 22: proto.TransactionPool
+	(*FeeInfo)(nil),                    // 23: proto.FeeInfo
+	(*TxInfo)(nil),                     // 24: proto.TxInfo
+	(*TxInfoV2)(nil),                   // 25: proto.TxInfoV2
+	(*WrappedTx)(nil),                  // 26: proto.WrappedTx
+	(*SCRInfo)(nil),                    // 27: proto.SCRInfo
+	(*LogData)(nil),                    // 28: proto.LogData
+	(*RewardInfo)(nil),                 // 29: proto.RewardInfo
+	(*HeaderGasConsumption)(nil),       // 30: proto.HeaderGasConsumption
+	(*ValidatorRatingInfo)(nil),        // 31: proto.ValidatorRatingInfo
+	(*ValidatorsRating)(nil),           // 32: proto.ValidatorsRating
+	(*RoundInfo)(nil),                  // 33: proto.RoundInfo
+	(*RoundsInfo)(nil),                 // 34: proto.RoundsInfo
+	(*PubKeys)(nil),                    // 35: proto.PubKeys
+	(*ValidatorsPubKeys)(nil),          // 36: proto.ValidatorsPubKeys
+	(*Accounts)(nil),                   // 37: proto.Accounts
+	(*FinalizedBlock)(nil),             // 38: proto.FinalizedBlock
+	(*Shard)(nil),                      // 39: proto.Shard
+	(*Body)(nil),                       // 40: proto.Body
+	(*MiniBlock)(nil),                  // 41: proto.MiniBlock
+	(*Transaction)(nil),                // 42: proto.Transaction
+	(*SmartContractResult)(nil),        // 43: proto.SmartContractResult
+	(*Log)(nil),                        // 44: proto.Log
+	(*Event)(nil),                      // 45: proto.Event
+	(*RewardTx)(nil),                   // 46: proto.RewardTx
+	(*AlteredAccount)(nil),             // 47: proto.AlteredAccount
+	(*AccountTokenData)(nil),           // 48: proto.AccountTokenData
+	(*TokenMetaData)(nil),              // 49: proto.TokenMetaData
+	(*AdditionalAccountTokenData)(nil), // 50: proto.AdditionalAccountTokenData
+	(*AdditionalAccountData)(nil),      // 51: proto.AdditionalAccountData
+	(*Receipt)(nil),                    // 52: proto.Receipt
+	(*BigInt)(nil),                     // 53: proto.BigInt
+	(*StateChanges)(nil),               // 54: proto.StateChanges
+	(*StateChange)(nil),                // 55: proto.StateChange
+	(*DataTrieChange)(nil),             // 56: proto.DataTrieChange
+	nil,                                // 57: proto.MetaOutportBlock.AlteredAccountsEntry
+	nil,                                // 58: proto.MetaOutportBlock.StateChangesEntry
+	nil,                                // 59: proto.ShardOutportBlock.AlteredAccountsEntry
+	nil,                                // 60: proto.ShardOutportBlockV2.AlteredAccountsEntry
+	nil,                                // 61: proto.ShardOutportBlockV2.StateChangesEntry
+	nil,                                // 62: proto.TransactionPoolV2.TransactionsEntry
+	nil,                                // 63: proto.TransactionPool.TransactionsEntry
+	nil,                                // 64: proto.TransactionPool.SmartContractResultsEntry
+	nil,                                // 65: proto.TransactionPool.RewardsEntry
+	nil,                                // 66: proto.TransactionPool.ReceiptsEntry
+	nil,                                // 67: proto.TransactionPool.InvalidTxsEntry
+	nil,                                // 68: proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry
+	nil,                                // 69: proto.Accounts.AlteredAccountsEntry
 }
 var file_hyperOutportBlock_proto_depIdxs = []int32{
-	5,  // 0: proto.HyperOutportBlock.MetaOutportBlock:type_name -> proto.MetaOutportBlock
-	4,  // 1: proto.HyperOutportBlock.NotarizedHeadersOutportData:type_name -> proto.NotarizedHeaderOutportData
-	6,  // 2: proto.NotarizedHeaderOutportData.OutportBlock:type_name -> proto.ShardOutportBlock
-	14, // 3: proto.MetaOutportBlock.BlockData:type_name -> proto.MetaBlockData
-	20, // 4: proto.MetaOutportBlock.TransactionPool:type_name -> proto.TransactionPool
-	28, // 5: proto.MetaOutportBlock.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
-	55, // 6: proto.MetaOutportBlock.AlteredAccounts:type_name -> proto.MetaOutportBlock.AlteredAccountsEntry
-	56, // 7: proto.MetaOutportBlock.StateChanges:type_name -> proto.MetaOutportBlock.StateChangesEntry
-	13, // 8: proto.ShardOutportBlock.BlockData:type_name -> proto.BlockData
-	20, // 9: proto.ShardOutportBlock.TransactionPool:type_name -> proto.TransactionPool
-	28, // 10: proto.ShardOutportBlock.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
-	57, // 11: proto.ShardOutportBlock.AlteredAccounts:type_name -> proto.ShardOutportBlock.AlteredAccountsEntry
-	13, // 12: proto.ShardOutportBlockV2.BlockData:type_name -> proto.BlockData
-	8,  // 13: proto.ShardOutportBlockV2.TransactionPool:type_name -> proto.TransactionPoolV2
-	28, // 14: proto.ShardOutportBlockV2.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
-	58, // 15: proto.ShardOutportBlockV2.AlteredAccounts:type_name -> proto.ShardOutportBlockV2.AlteredAccountsEntry
-	59, // 16: proto.ShardOutportBlockV2.StateChanges:type_name -> proto.ShardOutportBlockV2.StateChangesEntry
-	60, // 17: proto.TransactionPoolV2.Transactions:type_name -> proto.TransactionPoolV2.TransactionsEntry
+	7,  // 0: proto.HyperOutportBlock.MetaOutportBlock:type_name -> proto.MetaOutportBlock
+	6,  // 1: proto.HyperOutportBlock.NotarizedHeadersOutportData:type_name -> proto.NotarizedHeaderOutportData
+	8,  // 2: proto.NotarizedHeaderOutportData.OutportBlock:type_name -> proto.ShardOutportBlock
+	16, // 3: proto.MetaOutportBlock.BlockData:type_name -> proto.MetaBlockData
+	22, // 4: proto.MetaOutportBlock.TransactionPool:type_name -> proto.TransactionPool
+	30, // 5: proto.MetaOutportBlock.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
+	57, // 6: proto.MetaOutportBlock.AlteredAccounts:type_name -> proto.MetaOutportBlock.AlteredAccountsEntry
+	58, // 7: proto.MetaOutportBlock.StateChanges:type_name -> proto.MetaOutportBlock.StateChangesEntry
+	15, // 8: proto.ShardOutportBlock.BlockData:type_name -> proto.BlockData
+	22, // 9: proto.ShardOutportBlock.TransactionPool:type_name -> proto.TransactionPool
+	30, // 10: proto.ShardOutportBlock.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
+	59, // 11: proto.ShardOutportBlock.AlteredAccounts:type_name -> proto.ShardOutportBlock.AlteredAccountsEntry
+	15, // 12: proto.ShardOutportBlockV2.BlockData:type_name -> proto.BlockData
+	10, // 13: proto.ShardOutportBlockV2.TransactionPool:type_name -> proto.TransactionPoolV2
+	30, // 14: proto.ShardOutportBlockV2.HeaderGasConsumption:type_name -> proto.HeaderGasConsumption
+	60, // 15: proto.ShardOutportBlockV2.AlteredAccounts:type_name -> proto.ShardOutportBlockV2.AlteredAccountsEntry
+	61, // 16: proto.ShardOutportBlockV2.StateChanges:type_name -> proto.ShardOutportBlockV2.StateChangesEntry
+	62, // 17: proto.TransactionPoolV2.Transactions:type_name -> proto.TransactionPoolV2.TransactionsEntry
 	2,  // 18: proto.Header.BlockBodyType:type_name -> proto.Type
-	11, // 19: proto.Header.MiniBlockHeaders:type_name -> proto.MiniBlockHeader
-	12, // 20: proto.Header.PeerChanges:type_name -> proto.PeerChange
-	15, // 21: proto.MetaHeader.ShardInfo:type_name -> proto.ShardData
-	19, // 22: proto.MetaHeader.PeerInfo:type_name -> proto.PeerData
-	11, // 23: proto.MetaHeader.MiniBlockHeaders:type_name -> proto.MiniBlockHeader
-	16, // 24: proto.MetaHeader.EpochStart:type_name -> proto.EpochStart
+	13, // 19: proto.Header.MiniBlockHeaders:type_name -> proto.MiniBlockHeader
+	14, // 20: proto.Header.PeerChanges:type_name -> proto.PeerChange
+	17, // 21: proto.MetaHeader.ShardInfo:type_name -> proto.ShardData
+	21, // 22: proto.MetaHeader.PeerInfo:type_name -> proto.PeerData
+	13, // 23: proto.MetaHeader.MiniBlockHeaders:type_name -> proto.MiniBlockHeader
+	18, // 24: proto.MetaHeader.EpochStart:type_name -> proto.EpochStart
 	2,  // 25: proto.MiniBlockHeader.Type:type_name -> proto.Type
-	9,  // 26: proto.BlockData.Header:type_name -> proto.Header
-	38, // 27: proto.BlockData.Body:type_name -> proto.Body
-	39, // 28: proto.BlockData.IntraShardMiniBlocks:type_name -> proto.MiniBlock
-	10, // 29: proto.MetaBlockData.Header:type_name -> proto.MetaHeader
-	38, // 30: proto.MetaBlockData.Body:type_name -> proto.Body
-	39, // 31: proto.MetaBlockData.IntraShardMiniBlocks:type_name -> proto.MiniBlock
-	11, // 32: proto.ShardData.ShardMiniBlockHeaders:type_name -> proto.MiniBlockHeader
-	17, // 33: proto.EpochStart.LastFinalizedHeaders:type_name -> proto.EpochStartShardData
-	18, // 34: proto.EpochStart.Economics:type_name -> proto.Economics
-	11, // 35: proto.EpochStartShardData.PendingMiniBlockHeaders:type_name -> proto.MiniBlockHeader
+	11, // 26: proto.BlockData.Header:type_name -> proto.Header
+	40, // 27: proto.BlockData.Body:type_name -> proto.Body
+	41, // 28: proto.BlockData.IntraShardMiniBlocks:type_name -> proto.MiniBlock
+	12, // 29: proto.MetaBlockData.Header:type_name -> proto.MetaHeader
+	40, // 30: proto.MetaBlockData.Body:type_name -> proto.Body
+	41, // 31: proto.MetaBlockData.IntraShardMiniBlocks:type_name -> proto.MiniBlock
+	13, // 32: proto.ShardData.ShardMiniBlockHeaders:type_name -> proto.MiniBlockHeader
+	19, // 33: proto.EpochStart.LastFinalizedHeaders:type_name -> proto.EpochStartShardData
+	20, // 34: proto.EpochStart.Economics:type_name -> proto.Economics
+	13, // 35: proto.EpochStartShardData.PendingMiniBlockHeaders:type_name -> proto.MiniBlockHeader
 	0,  // 36: proto.PeerData.Action:type_name -> proto.PeerAction
-	61, // 37: proto.TransactionPool.Transactions:type_name -> proto.TransactionPool.TransactionsEntry
-	62, // 38: proto.TransactionPool.SmartContractResults:type_name -> proto.TransactionPool.SmartContractResultsEntry
-	63, // 39: proto.TransactionPool.Rewards:type_name -> proto.TransactionPool.RewardsEntry
-	64, // 40: proto.TransactionPool.Receipts:type_name -> proto.TransactionPool.ReceiptsEntry
-	65, // 41: proto.TransactionPool.InvalidTxs:type_name -> proto.TransactionPool.InvalidTxsEntry
-	26, // 42: proto.TransactionPool.Logs:type_name -> proto.LogData
-	40, // 43: proto.TxInfo.Transaction:type_name -> proto.Transaction
-	21, // 44: proto.TxInfo.FeeInfo:type_name -> proto.FeeInfo
-	24, // 45: proto.TxInfoV2.Transaction:type_name -> proto.WrappedTx
-	21, // 46: proto.TxInfoV2.FeeInfo:type_name -> proto.FeeInfo
-	50, // 47: proto.TxInfoV2.Receipt:type_name -> proto.Receipt
-	24, // 48: proto.TxInfoV2.ResultTxs:type_name -> proto.WrappedTx
-	42, // 49: proto.TxInfoV2.Logs:type_name -> proto.Log
+	63, // 37: proto.TransactionPool.Transactions:type_name -> proto.TransactionPool.TransactionsEntry
+	64, // 38: proto.TransactionPool.SmartContractResults:type_name -> proto.TransactionPool.SmartContractResultsEntry
+	65, // 39: proto.TransactionPool.Rewards:type_name -> proto.TransactionPool.RewardsEntry
+	66, // 40: proto.TransactionPool.Receipts:type_name -> proto.TransactionPool.ReceiptsEntry
+	67, // 41: proto.TransactionPool.InvalidTxs:type_name -> proto.TransactionPool.InvalidTxsEntry
+	28, // 42: proto.TransactionPool.Logs:type_name -> proto.LogData
+	42, // 43: proto.TxInfo.Transaction:type_name -> proto.Transaction
+	23, // 44: proto.TxInfo.FeeInfo:type_name -> proto.FeeInfo
+	26, // 45: proto.TxInfoV2.Transaction:type_name -> proto.WrappedTx
+	23, // 46: proto.TxInfoV2.FeeInfo:type_name -> proto.FeeInfo
+	52, // 47: proto.TxInfoV2.Receipt:type_name -> proto.Receipt
+	26, // 48: proto.TxInfoV2.ResultTxs:type_name -> proto.WrappedTx
+	44, // 49: proto.TxInfoV2.Logs:type_name -> proto.Log
 	1,  // 50: proto.WrappedTx.TxType:type_name -> proto.TxType
-	41, // 51: proto.SCRInfo.SmartContractResult:type_name -> proto.SmartContractResult
-	21, // 52: proto.SCRInfo.FeeInfo:type_name -> proto.FeeInfo
-	42, // 53: proto.LogData.Log:type_name -> proto.Log
-	44, // 54: proto.RewardInfo.Reward:type_name -> proto.RewardTx
-	29, // 55: proto.ValidatorsRating.ValidatorsRatingInfo:type_name -> proto.ValidatorRatingInfo
-	31, // 56: proto.RoundsInfo.RoundsInfo:type_name -> proto.RoundInfo
-	66, // 57: proto.ValidatorsPubKeys.ShardValidatorsPubKeys:type_name -> proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry
-	67, // 58: proto.Accounts.AlteredAccounts:type_name -> proto.Accounts.AlteredAccountsEntry
-	39, // 59: proto.Body.MiniBlocks:type_name -> proto.MiniBlock
+	43, // 51: proto.SCRInfo.SmartContractResult:type_name -> proto.SmartContractResult
+	23, // 52: proto.SCRInfo.FeeInfo:type_name -> proto.FeeInfo
+	44, // 53: proto.LogData.Log:type_name -> proto.Log
+	46, // 54: proto.RewardInfo.Reward:type_name -> proto.RewardTx
+	31, // 55: proto.ValidatorsRating.ValidatorsRatingInfo:type_name -> proto.ValidatorRatingInfo
+	33, // 56: proto.RoundsInfo.RoundsInfo:type_name -> proto.RoundInfo
+	68, // 57: proto.ValidatorsPubKeys.ShardValidatorsPubKeys:type_name -> proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry
+	69, // 58: proto.Accounts.AlteredAccounts:type_name -> proto.Accounts.AlteredAccountsEntry
+	41, // 59: proto.Body.MiniBlocks:type_name -> proto.MiniBlock
 	2,  // 60: proto.MiniBlock.Type:type_name -> proto.Type
-	43, // 61: proto.Log.Events:type_name -> proto.Event
-	46, // 62: proto.AlteredAccount.Tokens:type_name -> proto.AccountTokenData
-	49, // 63: proto.AlteredAccount.AdditionalData:type_name -> proto.AdditionalAccountData
-	47, // 64: proto.AccountTokenData.MetaData:type_name -> proto.TokenMetaData
-	48, // 65: proto.AccountTokenData.AdditionalData:type_name -> proto.AdditionalAccountTokenData
-	53, // 66: proto.StateChanges.StateChanges:type_name -> proto.StateChange
-	54, // 67: proto.StateChange.DataTrieChanges:type_name -> proto.DataTrieChange
-	45, // 68: proto.MetaOutportBlock.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
-	52, // 69: proto.MetaOutportBlock.StateChangesEntry.value:type_name -> proto.StateChanges
-	45, // 70: proto.ShardOutportBlock.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
-	45, // 71: proto.ShardOutportBlockV2.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
-	52, // 72: proto.ShardOutportBlockV2.StateChangesEntry.value:type_name -> proto.StateChanges
-	23, // 73: proto.TransactionPoolV2.TransactionsEntry.value:type_name -> proto.TxInfoV2
-	22, // 74: proto.TransactionPool.TransactionsEntry.value:type_name -> proto.TxInfo
-	25, // 75: proto.TransactionPool.SmartContractResultsEntry.value:type_name -> proto.SCRInfo
-	27, // 76: proto.TransactionPool.RewardsEntry.value:type_name -> proto.RewardInfo
-	50, // 77: proto.TransactionPool.ReceiptsEntry.value:type_name -> proto.Receipt
-	22, // 78: proto.TransactionPool.InvalidTxsEntry.value:type_name -> proto.TxInfo
-	33, // 79: proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry.value:type_name -> proto.PubKeys
-	45, // 80: proto.Accounts.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
-	81, // [81:81] is the sub-list for method output_type
-	81, // [81:81] is the sub-list for method input_type
-	81, // [81:81] is the sub-list for extension type_name
-	81, // [81:81] is the sub-list for extension extendee
-	0,  // [0:81] is the sub-list for field type_name
+	45, // 61: proto.Log.Events:type_name -> proto.Event
+	48, // 62: proto.AlteredAccount.Tokens:type_name -> proto.AccountTokenData
+	51, // 63: proto.AlteredAccount.AdditionalData:type_name -> proto.AdditionalAccountData
+	49, // 64: proto.AccountTokenData.MetaData:type_name -> proto.TokenMetaData
+	50, // 65: proto.AccountTokenData.AdditionalData:type_name -> proto.AdditionalAccountTokenData
+	55, // 66: proto.StateChanges.StateChanges:type_name -> proto.StateChange
+	3,  // 67: proto.StateChange.Type:type_name -> proto.ActionType
+	4,  // 68: proto.StateChange.Operation:type_name -> proto.Operation
+	56, // 69: proto.StateChange.DataTrieChanges:type_name -> proto.DataTrieChange
+	3,  // 70: proto.DataTrieChange.Type:type_name -> proto.ActionType
+	47, // 71: proto.MetaOutportBlock.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
+	54, // 72: proto.MetaOutportBlock.StateChangesEntry.value:type_name -> proto.StateChanges
+	47, // 73: proto.ShardOutportBlock.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
+	47, // 74: proto.ShardOutportBlockV2.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
+	54, // 75: proto.ShardOutportBlockV2.StateChangesEntry.value:type_name -> proto.StateChanges
+	25, // 76: proto.TransactionPoolV2.TransactionsEntry.value:type_name -> proto.TxInfoV2
+	24, // 77: proto.TransactionPool.TransactionsEntry.value:type_name -> proto.TxInfo
+	27, // 78: proto.TransactionPool.SmartContractResultsEntry.value:type_name -> proto.SCRInfo
+	29, // 79: proto.TransactionPool.RewardsEntry.value:type_name -> proto.RewardInfo
+	52, // 80: proto.TransactionPool.ReceiptsEntry.value:type_name -> proto.Receipt
+	24, // 81: proto.TransactionPool.InvalidTxsEntry.value:type_name -> proto.TxInfo
+	35, // 82: proto.ValidatorsPubKeys.ShardValidatorsPubKeysEntry.value:type_name -> proto.PubKeys
+	47, // 83: proto.Accounts.AlteredAccountsEntry.value:type_name -> proto.AlteredAccount
+	84, // [84:84] is the sub-list for method output_type
+	84, // [84:84] is the sub-list for method input_type
+	84, // [84:84] is the sub-list for extension type_name
+	84, // [84:84] is the sub-list for extension extendee
+	0,  // [0:84] is the sub-list for field type_name
 }
 
 func init() { file_data_hyperOutportBlocks_hyperOutportBlock_proto_init() }
@@ -6666,7 +6784,7 @@ func file_data_hyperOutportBlocks_hyperOutportBlock_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_hyperOutportBlock_proto_rawDesc,
-			NumEnums:      3,
+			NumEnums:      5,
 			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core/check"
+	"github.com/multiversx/mx-chain-storage-go/common"
 	"github.com/multiversx/mx-chain-storage-go/leveldb"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
 	"github.com/multiversx/mx-chain-storage-go/types"
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
@@ -111,11 +111,11 @@ func getIndexFromPath(path string) (uint64, error) {
 }
 
 func (ps *pruningStorer) createPersister(path string) (types.Persister, error) {
-	var dbType = storageUnit.DBType(ps.dbConf.Type)
+	var dbType = common.DBType(ps.dbConf.Type)
 	switch dbType {
-	case storageUnit.LvlDB:
+	case common.LvlDB:
 		return leveldb.NewDB(path, ps.dbConf.BatchDelaySeconds, ps.dbConf.MaxBatchSize, ps.dbConf.MaxOpenFiles)
-	case storageUnit.LvlDBSerial:
+	case common.LvlDBSerial:
 		return leveldb.NewSerialDB(path, ps.dbConf.BatchDelaySeconds, ps.dbConf.MaxBatchSize, ps.dbConf.MaxOpenFiles)
 	default:
 		return nil, ErrNotSupportedDBType
