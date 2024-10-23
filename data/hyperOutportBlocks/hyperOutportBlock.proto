@@ -28,6 +28,7 @@ message MetaOutportBlock {
   repeated uint64              SignersIndexes         = 8;
   uint64                       HighestFinalBlockNonce = 9;
   bytes                        HighestFinalBlockHash  = 10;
+  map <string, StateChanges>   StateChanges           = 11;
 }
 
 message ShardOutportBlock {
@@ -54,6 +55,7 @@ message ShardOutportBlockV2 {
   repeated uint64              SignersIndexes         = 8;
   uint64                       HighestFinalBlockNonce = 9;
   bytes                        HighestFinalBlockHash  = 10;
+  map <string, StateChanges>   StateChanges           = 11;
 }
 
 message TransactionPoolV2 {
@@ -510,4 +512,37 @@ message Receipt {
 
 message BigInt {
   bytes bytes = 1;
+}
+
+message StateChanges {
+  repeated StateChange StateChanges = 1;
+}
+
+enum ActionType {
+  Read = 0;
+  Write = 1;
+}
+
+enum Operation {
+  GetCode         = 0;
+  SaveAccount     = 1;
+  GetAccount      = 2;
+  WriteCode       = 3;
+  RemoveDataTrie  = 4;
+}
+
+message StateChange {
+  ActionType Type  = 1;
+  int32      Index = 2;
+  bytes      TxHash = 3;
+  bytes      MainTrieKey = 4;
+  bytes      MainTrieVal = 5;
+  Operation  Operation = 6;
+  repeated   DataTrieChange DataTrieChanges = 7;
+}
+
+message DataTrieChange {
+  ActionType Type  = 1;
+  bytes Key = 2;
+  bytes Val = 3;
 }

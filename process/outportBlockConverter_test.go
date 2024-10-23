@@ -34,6 +34,7 @@ type fieldsGetterV1 interface {
 type fieldsGetterV2 interface {
 	fieldsGetter
 	GetTransactionPool() *data.TransactionPoolV2
+	GetStateChanges() map[string]*data.StateChanges
 }
 
 type blockDataGetter interface {
@@ -51,9 +52,11 @@ type blockDataGetter interface {
 }
 
 const (
-	outportBlockHeaderV1JSONPath  = "../testscommon/testdata/outportBlockHeaderV1.json"
-	outportBlockHeaderV2JSONPath  = "../testscommon/testdata/outportBlockHeaderV2.json"
-	outportBlockMetaBlockJSONPath = "../testscommon/testdata/outportBlockMetaBlock.json"
+	outportBlockHeaderV1JSONPath                   = "../testscommon/testdata/outportBlockHeaderV1.json"
+	outportBlockHeaderV2JSONPath                   = "../testscommon/testdata/outportBlockHeaderV2.json"
+	outportBlockMetaBlockJSONPath                  = "../testscommon/testdata/outportBlockMetaBlock.json"
+	outportBlockMetaBlockWithStateChangesJSONPath  = "../testscommon/testdata/stateChanges.json"
+	outportBlockShardBlockWithStateChangesJSONPath = "../testscommon/testdata/stateChanges_shard.json"
 )
 
 func TestOutportBlockConverter(t *testing.T) {
@@ -123,6 +126,73 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	checkHeaderV2ShardV2(t, headerV2, shardOutportBlock)
 	checkFieldsV2(t, ob, shardOutportBlock)
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
+}
+
+func TestStateChangesMetaBlock(t *testing.T) {
+	t.Parallel()
+
+	jsonBytes, err := os.ReadFile(outportBlockMetaBlockWithStateChangesJSONPath)
+	require.NoError(t, err, "failed to read test data")
+
+	ob := &outport.OutportBlock{}
+	err = json.Unmarshal(jsonBytes, ob)
+	require.NoError(t, err, "failed to unmarshal test block")
+
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.Nil(t, err)
+	metaOutportBlock, err := converter.HandleMetaOutportBlock(ob)
+	require.NoError(t, err, "failed to marshal to standard outport")
+
+	for hash, stateChanges := range ob.StateChanges {
+		for i, sc := range stateChanges.StateChanges {
+			require.Equal(t, data.ActionType(sc.Type), metaOutportBlock.StateChanges[hash].StateChanges[i].Type, "type is not the same")
+			require.Equal(t, sc.Index, metaOutportBlock.StateChanges[hash].StateChanges[i].Index, "index is not the same")
+			require.Equal(t, sc.TxHash, metaOutportBlock.StateChanges[hash].StateChanges[i].TxHash, "hash is not the same")
+			require.Equal(t, sc.MainTrieKey, metaOutportBlock.StateChanges[hash].StateChanges[i].MainTrieKey, "main trie key is not the same")
+			require.Equal(t, sc.MainTrieVal, metaOutportBlock.StateChanges[hash].StateChanges[i].MainTrieVal, "main trie val is not the same")
+			require.Equal(t, data.Operation(sc.Operation), metaOutportBlock.StateChanges[hash].StateChanges[i].Operation, "operation is not the same")
+
+			for j, dtc := range sc.DataTrieChanges {
+				require.Equal(t, data.ActionType(dtc.Type), metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
+				require.Equal(t, dtc.Key, metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
+				require.Equal(t, dtc.Val, metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
+			}
+		}
+	}
+}
+
+func TestStateChangesShardBlock(t *testing.T) {
+	t.Parallel()
+
+	jsonBytes, err := os.ReadFile(outportBlockShardBlockWithStateChangesJSONPath)
+	require.NoError(t, err, "failed to read test data")
+
+	ob := &outport.OutportBlock{}
+	err = json.Unmarshal(jsonBytes, ob)
+	require.NoError(t, err, "failed to unmarshal test block")
+
+	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
+	require.NoError(t, err)
+
+	shardOutportBlockV2, err := converter.HandleShardOutportBlockV2(ob)
+	require.NoError(t, err, "failed to marshal to standard outport")
+
+	for hash, stateChanges := range ob.StateChanges {
+		for i, sc := range stateChanges.StateChanges {
+			require.Equal(t, data.ActionType(sc.Type), shardOutportBlockV2.StateChanges[hash].StateChanges[i].Type, "type is not the same")
+			require.Equal(t, sc.Index, shardOutportBlockV2.StateChanges[hash].StateChanges[i].Index, "index is not the same")
+			require.Equal(t, sc.TxHash, shardOutportBlockV2.StateChanges[hash].StateChanges[i].TxHash, "hash is not the same")
+			require.Equal(t, sc.MainTrieKey, shardOutportBlockV2.StateChanges[hash].StateChanges[i].MainTrieKey, "main trie key is not the same")
+			require.Equal(t, sc.MainTrieVal, shardOutportBlockV2.StateChanges[hash].StateChanges[i].MainTrieVal, "main trie val is not the same")
+			require.Equal(t, data.Operation(sc.Operation), shardOutportBlockV2.StateChanges[hash].StateChanges[i].Operation, "operation is not the same")
+
+			for j, dtc := range sc.DataTrieChanges {
+				require.Equal(t, data.ActionType(dtc.Type), shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
+				require.Equal(t, dtc.Key, shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
+				require.Equal(t, dtc.Val, shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
+			}
+		}
+	}
 }
 
 func TestHeaderConverter(t *testing.T) {

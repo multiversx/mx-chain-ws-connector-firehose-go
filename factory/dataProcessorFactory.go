@@ -5,7 +5,9 @@ import (
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/data/block"
-	"github.com/multiversx/mx-chain-storage-go/storageUnit"
+	storageCommon "github.com/multiversx/mx-chain-storage-go/common"
+	"github.com/multiversx/mx-chain-storage-go/factory"
+
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/common"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/config"
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/process"
@@ -36,13 +38,13 @@ func CreateBlockContainer() (process.BlockContainerHandler, error) {
 
 // CreateStorer will create a new pruning storer instace
 func CreateStorer(cfg config.Config, dbMode common.DBMode) (process.PruningStorer, error) {
-	cacheConfig := storageUnit.CacheConfig{
-		Type:        storageUnit.CacheType(cfg.OutportBlocksStorage.Cache.Type),
+	cacheConfig := storageCommon.CacheConfig{
+		Type:        storageCommon.CacheType(cfg.OutportBlocksStorage.Cache.Type),
 		SizeInBytes: cfg.OutportBlocksStorage.Cache.SizeInBytes,
 		Capacity:    cfg.OutportBlocksStorage.Cache.Capacity,
 	}
 
-	cacher, err := storageUnit.NewCache(cacheConfig)
+	cacher, err := factory.NewCache(cacheConfig)
 	if err != nil {
 		return nil, err
 	}

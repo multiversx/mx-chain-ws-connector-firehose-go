@@ -11,6 +11,7 @@ import (
 	"github.com/multiversx/mx-chain-core-go/data/block"
 	"github.com/multiversx/mx-chain-core-go/data/outport"
 	"github.com/multiversx/mx-chain-core-go/data/receipt"
+	"github.com/multiversx/mx-chain-core-go/data/stateChange"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 
 	"github.com/multiversx/mx-chain-ws-connector-firehose-go/data/hyperOutportBlocks"
@@ -63,6 +64,7 @@ func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.
 	}
 	handleHeaderGasConsumption(outportBlock.HeaderGasConsumption, shardOutportBlock)
 	handleAlteredAccounts(outportBlock.AlteredAccounts, shardOutportBlock)
+	handleStateChanges(outportBlock.StateChanges, shardOutportBlock)
 
 	shardOutportBlock.NotarizedHeadersHashes = outportBlock.NotarizedHeadersHashes
 	shardOutportBlock.NumberOfShards = outportBlock.NumberOfShards
@@ -382,6 +384,43 @@ func handleHeaderGasConsumption(consumption *outport.HeaderGasConsumption, shard
 		GasPenalized:   consumption.GasPenalized,
 		MaxGasPerBlock: consumption.MaxGasPerBlock,
 	}
+}
+
+func handleStateChanges(stateChanges map[string]*stateChange.StateChanges, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
+	if stateChanges == nil {
+		return
+	}
+
+	shardStateChangesMap := make(map[string]*hyperOutportBlocks.StateChanges, len(stateChanges))
+	for key, scs := range stateChanges {
+		shardStateChanges := make([]*hyperOutportBlocks.StateChange, len(scs.StateChanges))
+
+		for i, sc := range scs.StateChanges {
+			shardDataTrieChanges := make([]*hyperOutportBlocks.DataTrieChange, len(sc.DataTrieChanges))
+
+			for j, dataTrieChange := range sc.DataTrieChanges {
+				shardDataTrieChanges[j] = &hyperOutportBlocks.DataTrieChange{
+					Type: hyperOutportBlocks.ActionType(dataTrieChange.Type),
+					Key:  dataTrieChange.Key,
+					Val:  dataTrieChange.Val,
+				}
+			}
+
+			shardStateChanges[i] = &hyperOutportBlocks.StateChange{
+				Type:            hyperOutportBlocks.ActionType(sc.Type),
+				Index:           sc.Index,
+				TxHash:          sc.TxHash,
+				MainTrieKey:     sc.MainTrieKey,
+				MainTrieVal:     sc.MainTrieVal,
+				Operation:       hyperOutportBlocks.Operation(sc.Operation),
+				DataTrieChanges: shardDataTrieChanges,
+			}
+		}
+
+		shardStateChangesMap[key] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
+	}
+
+	shardOutportBlock.StateChanges = shardStateChangesMap
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.
