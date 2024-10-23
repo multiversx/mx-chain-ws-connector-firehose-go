@@ -1,20 +1,71 @@
-[web_socket]
+[WebSocket]
     # IP with port used to recieve data via ws. Should be compatible with the one from node. See [HostDriverConfig].URL
     # from https://github.com/multiversx/mx-chain-go/blob/master/cmd/node/config/external.toml.
-    url = "localhost:22111"
+    URL = "localhost:22111"
+
     # Possible values: json, gogo protobuf. Should be compatible with [HostDriverConfig].MarshallerType
-    marshaller_type = "gogo protobuf"
+    MarshallerType = "gogo protobuf"
+
     # This flag describes the mode to start the WebSocket connector. Can be "client" or "server"
-    mode = "client"
+    Mode = "server"
+
     # Retry duration (receive/send data/acknowledge) in seconds
-    retry_duration = 5
+    RetryDurationInSec = 5
+
     # This flag specifies if we should send an acknowledge signal upon recieving data
-    with_acknowledge = true
+    WithAcknowledge = true
+
     # The duration in seconds to wait for an acknowledgement message
-    acknowledge_timeout_in_sec = 5
+    AcknowledgeTimeoutInSec = 5
+
     # Signals if in case of data payload processing error, we should send the ack signal or not. If you want to block
     # incoming data in case of a local error, this should be set to true.
-    blocking_ack_on_error = true
+    BlockingAckOnError = true
+
     # This flag specifies if we should drop messages if there is no connection to the host
-    drop_messages_if_no_connection = false
-    version = 1
+    DropMessagesIfNoConnection = false
+
+    # Version specifies payload version (default = 1)
+    Version = 1
+
+[DataPool]
+    # Should be smaller then PruningWindow
+    MaxDelta = 50
+
+    # Defines the number of block that will be added until a new persister will be created
+    PruningWindow = 1000
+
+    # Defines the number of active persisters to keep open
+    NumPersistersToKeep = 2
+
+    # Defines the first commitable blocks per shard.
+    # The nonces have to be setup based on metachain shard, they can be fetched by interogating
+    # this gateway endpoint `https://gateway.multiversx.com/block/4294967295/by-nonce/<metachain nonce here>`
+    FirstCommitableBlocks = [
+        { ShardID = "metachain", Nonce = 0 },
+        { ShardID = "0", Nonce = 0 },
+        { ShardID = "1", Nonce = 0 },
+        { ShardID = "2", Nonce = 0 }
+    ]
+
+[Publisher]
+    # RetryDurationInMiliseconds defines the retry duration for common publisher
+    # handler when there is an error on publish
+    RetryDurationInMiliseconds = 1000
+
+[OutportBlocksStorage]
+    [OutportBlocksStorage.Cache]
+        Name = "OutportBlocksStorage"
+        # Cache capacity and size has to be higher than max allowed deltas per shards in total
+        Capacity = 160
+        Type = "SizeLRU"
+        SizeInBytes = 209715200 # 200MB
+    [OutportBlocksStorage.DB]
+        FilePath = "OutportBlocks"
+        Type = "LvlDBSerial"
+        BatchDelaySeconds = 2
+        MaxBatchSize = 100
+        MaxOpenFiles = 10
+
+[GRPC]
+    URL = "localhost:8000"
