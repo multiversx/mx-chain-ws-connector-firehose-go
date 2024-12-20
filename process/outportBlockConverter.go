@@ -1,6 +1,7 @@
 package process
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -555,7 +556,7 @@ func handleStateChanges(outportStateChanges map[string]*stateChange.StateChanges
 			}
 		}
 
-		stateChangesMap[key] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
+		stateChangesMap[hex.EncodeToString([]byte(key))] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
 	}
 
 	return stateChangesMap
