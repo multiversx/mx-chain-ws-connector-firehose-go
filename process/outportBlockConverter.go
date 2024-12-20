@@ -352,12 +352,9 @@ func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAcc
 			}
 		}
 
-		shardAlteredAccounts[key] = &hyperOutportBlocks.AlteredAccount{
-			Address: alteredAcc.Address,
-			Nonce:   alteredAcc.Nonce,
-			Balance: alteredAcc.Balance,
-			Tokens:  tokens,
-			AdditionalData: &hyperOutportBlocks.AdditionalAccountData{
+		var additionalAccData *hyperOutportBlocks.AdditionalAccountData
+		if alteredAcc.AdditionalData != nil {
+			additionalAccData = &hyperOutportBlocks.AdditionalAccountData{
 				IsSender:         alteredAcc.AdditionalData.IsSender,
 				BalanceChanged:   alteredAcc.AdditionalData.BalanceChanged,
 				CurrentOwner:     alteredAcc.AdditionalData.CurrentOwner,
@@ -366,7 +363,15 @@ func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAcc
 				CodeHash:         alteredAcc.AdditionalData.CodeHash,
 				RootHash:         alteredAcc.AdditionalData.RootHash,
 				CodeMetadata:     alteredAcc.AdditionalData.CodeMetadata,
-			},
+			}
+		}
+
+		shardAlteredAccounts[key] = &hyperOutportBlocks.AlteredAccount{
+			Address:        alteredAcc.Address,
+			Nonce:          alteredAcc.Nonce,
+			Balance:        alteredAcc.Balance,
+			Tokens:         tokens,
+			AdditionalData: additionalAccData,
 		}
 	}
 
