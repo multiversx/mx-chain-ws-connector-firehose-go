@@ -1,6 +1,7 @@
 package process_test
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"os"
@@ -144,18 +145,19 @@ func TestStateChangesMetaBlock(t *testing.T) {
 	require.NoError(t, err, "failed to marshal to standard outport")
 
 	for hash, stateChanges := range ob.StateChanges {
+		hexEncodedHash := hex.EncodeToString([]byte(hash))
 		for i, sc := range stateChanges.StateChanges {
-			require.Equal(t, data.ActionType(sc.Type), metaOutportBlock.StateChanges[hash].StateChanges[i].Type, "type is not the same")
-			require.Equal(t, sc.Index, metaOutportBlock.StateChanges[hash].StateChanges[i].Index, "index is not the same")
-			require.Equal(t, sc.TxHash, metaOutportBlock.StateChanges[hash].StateChanges[i].TxHash, "hash is not the same")
-			require.Equal(t, sc.MainTrieKey, metaOutportBlock.StateChanges[hash].StateChanges[i].MainTrieKey, "main trie key is not the same")
-			require.Equal(t, sc.MainTrieVal, metaOutportBlock.StateChanges[hash].StateChanges[i].MainTrieVal, "main trie val is not the same")
-			require.Equal(t, data.Operation(sc.Operation), metaOutportBlock.StateChanges[hash].StateChanges[i].Operation, "operation is not the same")
+			require.Equal(t, data.ActionType(sc.Type), metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].Type, "type is not the same")
+			require.Equal(t, sc.Index, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].Index, "index is not the same")
+			require.Equal(t, sc.TxHash, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].TxHash, "hash is not the same")
+			require.Equal(t, sc.MainTrieKey, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].MainTrieKey, "main trie key is not the same")
+			require.Equal(t, sc.MainTrieVal, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].MainTrieVal, "main trie val is not the same")
+			require.Equal(t, data.Operation(sc.Operation), metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].Operation, "operation is not the same")
 
 			for j, dtc := range sc.DataTrieChanges {
-				require.Equal(t, data.ActionType(dtc.Type), metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
-				require.Equal(t, dtc.Key, metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
-				require.Equal(t, dtc.Val, metaOutportBlock.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
+				require.Equal(t, data.ActionType(dtc.Type), metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
+				require.Equal(t, dtc.Key, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
+				require.Equal(t, dtc.Val, metaOutportBlock.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
 			}
 		}
 	}
@@ -179,17 +181,18 @@ func TestStateChangesShardBlock(t *testing.T) {
 
 	for hash, stateChanges := range ob.StateChanges {
 		for i, sc := range stateChanges.StateChanges {
-			require.Equal(t, data.ActionType(sc.Type), shardOutportBlockV2.StateChanges[hash].StateChanges[i].Type, "type is not the same")
-			require.Equal(t, sc.Index, shardOutportBlockV2.StateChanges[hash].StateChanges[i].Index, "index is not the same")
-			require.Equal(t, sc.TxHash, shardOutportBlockV2.StateChanges[hash].StateChanges[i].TxHash, "hash is not the same")
-			require.Equal(t, sc.MainTrieKey, shardOutportBlockV2.StateChanges[hash].StateChanges[i].MainTrieKey, "main trie key is not the same")
-			require.Equal(t, sc.MainTrieVal, shardOutportBlockV2.StateChanges[hash].StateChanges[i].MainTrieVal, "main trie val is not the same")
-			require.Equal(t, data.Operation(sc.Operation), shardOutportBlockV2.StateChanges[hash].StateChanges[i].Operation, "operation is not the same")
+			hexEncodedHash := hex.EncodeToString([]byte(hash))
+			require.Equal(t, data.ActionType(sc.Type), shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].Type, "type is not the same")
+			require.Equal(t, sc.Index, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].Index, "index is not the same")
+			require.Equal(t, sc.TxHash, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].TxHash, "hash is not the same")
+			require.Equal(t, sc.MainTrieKey, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].MainTrieKey, "main trie key is not the same")
+			require.Equal(t, sc.MainTrieVal, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].MainTrieVal, "main trie val is not the same")
+			require.Equal(t, data.Operation(sc.Operation), shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].Operation, "operation is not the same")
 
 			for j, dtc := range sc.DataTrieChanges {
-				require.Equal(t, data.ActionType(dtc.Type), shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
-				require.Equal(t, dtc.Key, shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
-				require.Equal(t, dtc.Val, shardOutportBlockV2.StateChanges[hash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
+				require.Equal(t, data.ActionType(dtc.Type), shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Type, "data trie change type is not the same")
+				require.Equal(t, dtc.Key, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Key, "data trie change key is not the same")
+				require.Equal(t, dtc.Val, shardOutportBlockV2.StateChanges[hexEncodedHash].StateChanges[i].DataTrieChanges[j].Val, "data trie val is not the same")
 			}
 		}
 	}
