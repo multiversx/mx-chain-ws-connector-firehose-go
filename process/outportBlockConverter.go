@@ -43,6 +43,45 @@ func NewOutportBlockConverter(
 	}, nil
 }
 
+// HandleMetaOutportBlock will convert an outport.OutportBlock to data.MetaOutportBlock.
+func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error) {
+	headerType := outportBlock.BlockData.HeaderType
+
+	// check if the header type is supported by this function.
+	if headerType != string(core.MetaHeader) {
+		return nil, fmt.Errorf("cannot convert to meta outport block. header type: %s not supported", outportBlock.BlockData.HeaderType)
+	}
+
+	// unmarshall into google protobuf. This is the proto that will be used in firehose.
+	blockData, err := o.handleMetaBlockData(outportBlock.BlockData)
+	if err != nil {
+		return nil, fmt.Errorf("cannot handle meta block data: %w", err)
+	}
+
+	txPool, err := o.handleTransactionPool(outportBlock.TransactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate transaction pool: %w", err)
+	}
+
+	headerGasConsumption := handleHeaderGasConsumption(outportBlock.HeaderGasConsumption)
+	alteredAccounts := handleAlteredAccounts(outportBlock.AlteredAccounts)
+	stateChanges := handleStateChanges(outportBlock.StateChanges)
+
+	return &hyperOutportBlocks.MetaOutportBlock{
+		ShardID:                outportBlock.ShardID,
+		BlockData:              blockData,
+		TransactionPool:        txPool,
+		HeaderGasConsumption:   headerGasConsumption,
+		AlteredAccounts:        alteredAccounts,
+		NotarizedHeadersHashes: outportBlock.NotarizedHeadersHashes,
+		NumberOfShards:         outportBlock.NumberOfShards,
+		SignersIndexes:         outportBlock.SignersIndexes,
+		HighestFinalBlockNonce: outportBlock.HighestFinalBlockNonce,
+		HighestFinalBlockHash:  outportBlock.HighestFinalBlockHash,
+		StateChanges:           stateChanges,
+	}, nil
+}
+
 // HandleShardOutportBlockV2 will convert an outport.OutportBlock to hyperOutportBlocks.ShardOutportBlockV2
 func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlockV2, error) {
 	headerType := outportBlock.BlockData.HeaderType
@@ -52,68 +91,101 @@ func (o *outportBlockConverter) HandleShardOutportBlockV2(outportBlock *outport.
 		return nil, fmt.Errorf("cannot convert to shard outport block. header type: %s not supported", headerType)
 	}
 
-	shardOutportBlock := &hyperOutportBlocks.ShardOutportBlockV2{}
-	shardOutportBlock.ShardID = outportBlock.ShardID
-	err := o.handleBlockData(outportBlock.BlockData, shardOutportBlock)
+	blockData, err := o.handleBlockData(outportBlock.BlockData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate block data: %w", err)
 	}
-	err = o.handleTransactionPool(outportBlock.TransactionPool, shardOutportBlock)
+	txPool, err := o.handleTransactionPoolV2(outportBlock.TransactionPool)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate transacion pool: %w", err)
 	}
-	handleHeaderGasConsumption(outportBlock.HeaderGasConsumption, shardOutportBlock)
-	handleAlteredAccounts(outportBlock.AlteredAccounts, shardOutportBlock)
-	handleStateChanges(outportBlock.StateChanges, shardOutportBlock)
+	headerGasConsumption := handleHeaderGasConsumption(outportBlock.HeaderGasConsumption)
+	alteredAccounts := handleAlteredAccounts(outportBlock.AlteredAccounts)
+	stateChanges := handleStateChanges(outportBlock.StateChanges)
 
-	shardOutportBlock.NotarizedHeadersHashes = outportBlock.NotarizedHeadersHashes
-	shardOutportBlock.NumberOfShards = outportBlock.NumberOfShards
-	shardOutportBlock.SignersIndexes = outportBlock.SignersIndexes
-	shardOutportBlock.HighestFinalBlockNonce = outportBlock.HighestFinalBlockNonce
-	shardOutportBlock.HighestFinalBlockHash = outportBlock.HighestFinalBlockHash
-
-	return shardOutportBlock, nil
+	return &hyperOutportBlocks.ShardOutportBlockV2{
+		ShardID:                outportBlock.ShardID,
+		BlockData:              blockData,
+		TransactionPool:        txPool,
+		HeaderGasConsumption:   headerGasConsumption,
+		AlteredAccounts:        alteredAccounts,
+		NotarizedHeadersHashes: outportBlock.NotarizedHeadersHashes,
+		NumberOfShards:         outportBlock.NumberOfShards,
+		SignersIndexes:         outportBlock.SignersIndexes,
+		HighestFinalBlockNonce: outportBlock.HighestFinalBlockNonce,
+		HighestFinalBlockHash:  outportBlock.HighestFinalBlockHash,
+		StateChanges:           stateChanges,
+	}, nil
 }
 
-func (o *outportBlockConverter) handleBlockData(blockData *outport.BlockData, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) error {
-	if blockData == nil {
-		return ErrNilBlockData
+func (o *outportBlockConverter) handleBlockData(outportBlockData *outport.BlockData) (*hyperOutportBlocks.BlockData, error) {
+	if outportBlockData == nil {
+		return nil, ErrNilBlockData
 	}
 
 	var miniBlocks []*hyperOutportBlocks.MiniBlock
-	if blockData.Body != nil {
-		miniBlocks = copyMiniBlocks(blockData.Body.MiniBlocks)
+	if outportBlockData.Body != nil {
+		miniBlocks = copyMiniBlocks(outportBlockData.Body.MiniBlocks)
 	}
-	intraShardMiniBlocks := copyMiniBlocks(blockData.IntraShardMiniBlocks)
+	intraShardMiniBlocks := copyMiniBlocks(outportBlockData.IntraShardMiniBlocks)
 
-	shardOutportBlock.BlockData = &hyperOutportBlocks.BlockData{
-		ShardID:    blockData.ShardID,
-		HeaderType: blockData.HeaderType,
-		HeaderHash: blockData.HeaderHash,
+	blockData := &hyperOutportBlocks.BlockData{
+		ShardID:    outportBlockData.ShardID,
+		HeaderType: outportBlockData.HeaderType,
+		HeaderHash: outportBlockData.HeaderHash,
 		Body: &hyperOutportBlocks.Body{
 			MiniBlocks: miniBlocks,
 		},
 		IntraShardMiniBlocks: intraShardMiniBlocks,
 	}
 
-	switch blockData.HeaderType {
+	switch outportBlockData.HeaderType {
 	case string(core.ShardHeaderV1):
-		err := o.handleHeaderV1(blockData.HeaderBytes, shardOutportBlock.BlockData)
+		err := o.handleHeaderV1(outportBlockData.HeaderBytes, blockData)
 		if err != nil {
-			return fmt.Errorf("failed to handle header v1: %w", err)
+			return nil, fmt.Errorf("failed to handle header v1: %w", err)
 		}
 
 	case string(core.ShardHeaderV2):
-		err := o.handleHeaderV2(blockData.HeaderBytes, shardOutportBlock.BlockData)
+		err := o.handleHeaderV2(outportBlockData.HeaderBytes, blockData)
 		if err != nil {
-			return fmt.Errorf("failed to handle header v2: %w", err)
+			return nil, fmt.Errorf("failed to handle header v2: %w", err)
 		}
 
 	default:
-		return fmt.Errorf("unknown header type [%s]", blockData.HeaderType)
+		return nil, fmt.Errorf("unknown header type [%s]", outportBlockData.HeaderType)
 	}
 
-	return nil
+	return blockData, nil
+}
+
+func (o *outportBlockConverter) handleMetaBlockData(outportBlockData *outport.BlockData) (*hyperOutportBlocks.MetaBlockData, error) {
+	if outportBlockData == nil {
+		return nil, ErrNilBlockData
+	}
+
+	var miniBlocks []*hyperOutportBlocks.MiniBlock
+	if outportBlockData.Body != nil {
+		miniBlocks = copyMiniBlocks(outportBlockData.Body.MiniBlocks)
+	}
+	intraShardMiniBlocks := copyMiniBlocks(outportBlockData.IntraShardMiniBlocks)
+
+	blockData := &hyperOutportBlocks.MetaBlockData{
+		ShardID:    outportBlockData.ShardID,
+		HeaderType: outportBlockData.HeaderType,
+		HeaderHash: outportBlockData.HeaderHash,
+		Body: &hyperOutportBlocks.Body{
+			MiniBlocks: miniBlocks,
+		},
+		IntraShardMiniBlocks: intraShardMiniBlocks,
+	}
+
+	err := o.handleMetaHeader(outportBlockData.HeaderBytes, blockData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to handle meta header: %w", err)
+	}
+
+	return blockData, nil
 }
 
 func (o *outportBlockConverter) handleHeaderV1(headerBytes []byte, shardBlockData *hyperOutportBlocks.BlockData) error {
@@ -271,60 +343,121 @@ func (o *outportBlockConverter) handleHeaderV2(headerBytes []byte, shardBlockDat
 	return nil
 }
 
-func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.TransactionPool, shardOutportBlockV2 *hyperOutportBlocks.ShardOutportBlockV2) error {
-	if outportTxPool == nil {
-		return nil
-	}
-
-	shardOutportBlockV2.TransactionPool = &hyperOutportBlocks.TransactionPoolV2{}
-	shardOutportBlockV2.TransactionPool.ScheduledExecutedSCRSHashesPrevBlock = outportTxPool.ScheduledExecutedSCRSHashesPrevBlock
-	shardOutportBlockV2.TransactionPool.ScheduledExecutedInvalidTxsHashesPrevBlock = outportTxPool.ScheduledExecutedInvalidTxsHashesPrevBlock
-
-	if len(outportTxPool.Transactions) == 0 {
-		return nil
-	}
-
-	shardOutportBlockV2.TransactionPool.Transactions = make(map[string]*hyperOutportBlocks.TxInfoV2)
-	err := o.copyTransactions(outportTxPool.Transactions, shardOutportBlockV2.TransactionPool)
+func (o *outportBlockConverter) handleMetaHeader(headerBytes []byte, metaBlockData *hyperOutportBlocks.MetaBlockData) error {
+	blockHeader := hyperOutportBlocks.MetaHeader{}
+	err := o.protoMarshaller.Unmarshal(&blockHeader, headerBytes)
 	if err != nil {
-		return fmt.Errorf("failed to copy transactions: %w", err)
+		return fmt.Errorf("failed to unmarshal: %w", err)
 	}
 
-	err = o.copySmartContractResults(outportTxPool.SmartContractResults, shardOutportBlockV2.TransactionPool)
-	if err != nil {
-		return fmt.Errorf("failed to copy smart contract results: %w", err)
-	}
-
-	err = o.copyRewards(outportTxPool.Rewards, shardOutportBlockV2.TransactionPool)
-	if err != nil {
-		return fmt.Errorf("failed to copy rewards: %w", err)
-	}
-
-	err = o.copyReceipts(outportTxPool.Receipts, shardOutportBlockV2.TransactionPool)
-	if err != nil {
-		return fmt.Errorf("failed to copy receipts: %w", err)
-	}
-
-	err = o.copyInvalidTxs(outportTxPool.InvalidTxs, shardOutportBlockV2.TransactionPool)
-	if err != nil {
-		return fmt.Errorf("failed to copy invalid txs: %w", err)
-	}
-
-	err = o.copyLogs(outportTxPool.Logs, shardOutportBlockV2.TransactionPool)
-	if err != nil {
-		return fmt.Errorf("failed to copy logs: %w", err)
-	}
-
+	metaBlockData.Header = &blockHeader
 	return nil
 }
 
-func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAccount, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
-	if alteredAccounts == nil {
-		return
+func (o *outportBlockConverter) handleTransactionPool(outportTxPool *outport.TransactionPool) (*hyperOutportBlocks.TransactionPool, error) {
+	if outportTxPool == nil {
+		return nil, nil
+	}
+	if len(outportTxPool.Transactions) == 0 {
+		return nil, nil
 	}
 
-	shardAlteredAccounts := make(map[string]*hyperOutportBlocks.AlteredAccount, len(alteredAccounts))
-	for key, alteredAcc := range alteredAccounts {
+	transactions, err := o.copyTransactions(outportTxPool.Transactions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy transactions: %w", err)
+	}
+
+	scResults, err := o.copySmartContractResults(outportTxPool.SmartContractResults)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy smart contract results: %w", err)
+	}
+
+	rewards, err := o.copyRewards(outportTxPool.Rewards)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy rewards: %w", err)
+	}
+
+	receipts, err := o.copyReceipts(outportTxPool.Receipts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy receipts: %w", err)
+	}
+
+	invalidTransactions, err := o.copyInvalidTxs(outportTxPool.InvalidTxs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy invalid txs: %w", err)
+	}
+
+	logs, err := o.copyLogs(outportTxPool.Logs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy logs: %w", err)
+	}
+
+	return &hyperOutportBlocks.TransactionPool{
+		Transactions:                         transactions,
+		SmartContractResults:                 scResults,
+		Rewards:                              rewards,
+		Receipts:                             receipts,
+		InvalidTxs:                           invalidTransactions,
+		Logs:                                 logs,
+		ScheduledExecutedSCRSHashesPrevBlock: outportTxPool.ScheduledExecutedSCRSHashesPrevBlock,
+		ScheduledExecutedInvalidTxsHashesPrevBlock: outportTxPool.ScheduledExecutedInvalidTxsHashesPrevBlock,
+	}, nil
+}
+
+func (o *outportBlockConverter) handleTransactionPoolV2(outportTxPool *outport.TransactionPool) (*hyperOutportBlocks.TransactionPoolV2, error) {
+	if outportTxPool == nil {
+		return nil, nil
+	}
+
+	transactionPool := &hyperOutportBlocks.TransactionPoolV2{}
+	transactionPool.ScheduledExecutedSCRSHashesPrevBlock = outportTxPool.ScheduledExecutedSCRSHashesPrevBlock
+	transactionPool.ScheduledExecutedInvalidTxsHashesPrevBlock = outportTxPool.ScheduledExecutedInvalidTxsHashesPrevBlock
+
+	if len(outportTxPool.Transactions) == 0 {
+		return nil, nil
+	}
+
+	transactionPool.Transactions = make(map[string]*hyperOutportBlocks.TxInfoV2)
+	err := o.copyTransactionsV2(outportTxPool.Transactions, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy transactions: %w", err)
+	}
+
+	err = o.copySmartContractResultsV2(outportTxPool.SmartContractResults, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy smart contract results: %w", err)
+	}
+
+	err = o.copyRewardsV2(outportTxPool.Rewards, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy rewards: %w", err)
+	}
+
+	err = o.copyReceiptsV2(outportTxPool.Receipts, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy receipts: %w", err)
+	}
+
+	err = o.copyInvalidTxsV2(outportTxPool.InvalidTxs, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy invalid txs: %w", err)
+	}
+
+	err = o.copyLogsV2(outportTxPool.Logs, transactionPool)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy logs: %w", err)
+	}
+
+	return transactionPool, nil
+}
+
+func handleAlteredAccounts(outportAlteredAccounts map[string]*alteredAccount.AlteredAccount) map[string]*hyperOutportBlocks.AlteredAccount {
+	if outportAlteredAccounts == nil {
+		return nil
+	}
+
+	alteredAccounts := make(map[string]*hyperOutportBlocks.AlteredAccount, len(outportAlteredAccounts))
+	for key, alteredAcc := range outportAlteredAccounts {
 		tokens := make([]*hyperOutportBlocks.AccountTokenData, len(alteredAcc.Tokens))
 		for i, tokenData := range alteredAcc.Tokens {
 			var md *hyperOutportBlocks.TokenMetaData
@@ -352,12 +485,9 @@ func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAcc
 			}
 		}
 
-		shardAlteredAccounts[key] = &hyperOutportBlocks.AlteredAccount{
-			Address: alteredAcc.Address,
-			Nonce:   alteredAcc.Nonce,
-			Balance: alteredAcc.Balance,
-			Tokens:  tokens,
-			AdditionalData: &hyperOutportBlocks.AdditionalAccountData{
+		var additionalAccData *hyperOutportBlocks.AdditionalAccountData
+		if alteredAcc.AdditionalData != nil {
+			additionalAccData = &hyperOutportBlocks.AdditionalAccountData{
 				IsSender:         alteredAcc.AdditionalData.IsSender,
 				BalanceChanged:   alteredAcc.AdditionalData.BalanceChanged,
 				CurrentOwner:     alteredAcc.AdditionalData.CurrentOwner,
@@ -366,19 +496,27 @@ func handleAlteredAccounts(alteredAccounts map[string]*alteredAccount.AlteredAcc
 				CodeHash:         alteredAcc.AdditionalData.CodeHash,
 				RootHash:         alteredAcc.AdditionalData.RootHash,
 				CodeMetadata:     alteredAcc.AdditionalData.CodeMetadata,
-			},
+			}
+		}
+
+		alteredAccounts[key] = &hyperOutportBlocks.AlteredAccount{
+			Address:        alteredAcc.Address,
+			Nonce:          alteredAcc.Nonce,
+			Balance:        alteredAcc.Balance,
+			Tokens:         tokens,
+			AdditionalData: additionalAccData,
 		}
 	}
 
-	shardOutportBlock.AlteredAccounts = shardAlteredAccounts
+	return alteredAccounts
 }
 
-func handleHeaderGasConsumption(consumption *outport.HeaderGasConsumption, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
+func handleHeaderGasConsumption(consumption *outport.HeaderGasConsumption) *hyperOutportBlocks.HeaderGasConsumption {
 	if consumption == nil {
-		return
+		return nil
 	}
 
-	shardOutportBlock.HeaderGasConsumption = &hyperOutportBlocks.HeaderGasConsumption{
+	return &hyperOutportBlocks.HeaderGasConsumption{
 		GasProvided:    consumption.GasProvided,
 		GasRefunded:    consumption.GasRefunded,
 		GasPenalized:   consumption.GasPenalized,
@@ -386,13 +524,13 @@ func handleHeaderGasConsumption(consumption *outport.HeaderGasConsumption, shard
 	}
 }
 
-func handleStateChanges(stateChanges map[string]*stateChange.StateChanges, shardOutportBlock *hyperOutportBlocks.ShardOutportBlockV2) {
-	if stateChanges == nil {
-		return
+func handleStateChanges(outportStateChanges map[string]*stateChange.StateChanges) map[string]*hyperOutportBlocks.StateChanges {
+	if outportStateChanges == nil {
+		return nil
 	}
 
-	shardStateChangesMap := make(map[string]*hyperOutportBlocks.StateChanges, len(stateChanges))
-	for key, scs := range stateChanges {
+	stateChangesMap := make(map[string]*hyperOutportBlocks.StateChanges, len(outportStateChanges))
+	for key, scs := range outportStateChanges {
 		shardStateChanges := make([]*hyperOutportBlocks.StateChange, len(scs.StateChanges))
 
 		for i, sc := range scs.StateChanges {
@@ -417,10 +555,10 @@ func handleStateChanges(stateChanges map[string]*stateChange.StateChanges, shard
 			}
 		}
 
-		shardStateChangesMap[key] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
+		stateChangesMap[key] = &hyperOutportBlocks.StateChanges{StateChanges: shardStateChanges}
 	}
 
-	shardOutportBlock.StateChanges = shardStateChangesMap
+	return stateChangesMap
 }
 
 // HandleShardOutportBlock will convert an outport.OutportBlock to data.ShardOutportBlock.
@@ -535,7 +673,71 @@ func (o *outportBlockConverter) HandleShardOutportBlock(outportBlock *outport.Ou
 	return shardOutportBlock, nil
 }
 
-func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.TxInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.TxInfo) (map[string]*hyperOutportBlocks.TxInfo, error) {
+	var txInfo map[string]*hyperOutportBlocks.TxInfo
+	if sourceTxs != nil {
+		txInfo = make(map[string]*hyperOutportBlocks.TxInfo, len(sourceTxs))
+	}
+
+	for txHash, outportTxInfo := range sourceTxs {
+		// TxInfo - Transaction
+		if outportTxInfo.Transaction == nil {
+			continue
+		}
+		value, err := o.castBigInt(outportTxInfo.Transaction.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast transaction [%s] value: %w", txHash, err)
+		}
+
+		transaction := &hyperOutportBlocks.Transaction{
+			Nonce:             outportTxInfo.Transaction.Nonce,
+			Value:             value,
+			RcvAddr:           outportTxInfo.Transaction.RcvAddr,
+			RcvUserName:       outportTxInfo.Transaction.RcvUserName,
+			SndAddr:           outportTxInfo.Transaction.SndAddr,
+			SndUserName:       outportTxInfo.Transaction.SndUserName,
+			GasPrice:          outportTxInfo.Transaction.GasPrice,
+			GasLimit:          outportTxInfo.Transaction.GasLimit,
+			Data:              outportTxInfo.Transaction.Data,
+			ChainID:           outportTxInfo.Transaction.ChainID,
+			Version:           outportTxInfo.Transaction.Version,
+			Signature:         outportTxInfo.Transaction.Signature,
+			Options:           outportTxInfo.Transaction.Options,
+			GuardianAddr:      outportTxInfo.Transaction.GuardianAddr,
+			GuardianSignature: outportTxInfo.Transaction.GuardianSignature,
+		}
+
+		// TxInfo - FeeInfo
+		var feeInfo *hyperOutportBlocks.FeeInfo
+		if outportTxInfo.FeeInfo != nil {
+			fee, err := o.castBigInt(outportTxInfo.FeeInfo.Fee)
+			if err != nil {
+				return nil, fmt.Errorf("failed to cast transaction [%s] fee: %w", txHash, err)
+			}
+
+			initialPaidFee, err := o.castBigInt(outportTxInfo.FeeInfo.InitialPaidFee)
+			if err != nil {
+				return nil, fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", txHash, err)
+			}
+
+			feeInfo = &hyperOutportBlocks.FeeInfo{
+				GasUsed:        outportTxInfo.FeeInfo.GasUsed,
+				Fee:            fee,
+				InitialPaidFee: initialPaidFee,
+			}
+		}
+
+		txInfo[txHash] = &hyperOutportBlocks.TxInfo{
+			Transaction:    transaction,
+			FeeInfo:        feeInfo,
+			ExecutionOrder: outportTxInfo.ExecutionOrder,
+		}
+	}
+
+	return txInfo, nil
+}
+
+func (o *outportBlockConverter) copyTransactionsV2(sourceTxs map[string]*outport.TxInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for txHash, txInfo := range sourceTxs {
 		destTxInfo := &hyperOutportBlocks.TxInfoV2{}
 
@@ -595,7 +797,64 @@ func (o *outportBlockConverter) copyTransactions(sourceTxs map[string]*outport.T
 	return nil
 }
 
-func (o *outportBlockConverter) copySmartContractResults(sourceSCRs map[string]*outport.SCRInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copySmartContractResults(sourceSCRs map[string]*outport.SCRInfo) (map[string]*hyperOutportBlocks.SCRInfo, error) {
+	var scrInfo map[string]*hyperOutportBlocks.SCRInfo
+	if sourceSCRs != nil {
+		scrInfo = make(map[string]*hyperOutportBlocks.SCRInfo, len(sourceSCRs))
+	}
+	for scrHash, outportSCRInfo := range sourceSCRs {
+		value, err := o.castBigInt(outportSCRInfo.SmartContractResult.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast smart contract [%s] value: %w", scrHash, err)
+		}
+
+		relayedValue, err := o.castBigInt(outportSCRInfo.SmartContractResult.RelayedValue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast relayed transaction [%s] value: %w", scrHash, err)
+		}
+
+		fee, err := o.castBigInt(outportSCRInfo.FeeInfo.Fee)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast transaction [%s] fee: %w", scrHash, err)
+		}
+
+		initialPaidFee, err := o.castBigInt(outportSCRInfo.FeeInfo.InitialPaidFee)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast transaction [%s] initial paid fee: %w", scrHash, err)
+		}
+
+		scrInfo[scrHash] = &hyperOutportBlocks.SCRInfo{
+			SmartContractResult: &hyperOutportBlocks.SmartContractResult{
+				Nonce:          outportSCRInfo.SmartContractResult.Nonce,
+				Value:          value,
+				RcvAddr:        outportSCRInfo.SmartContractResult.RcvAddr,
+				SndAddr:        outportSCRInfo.SmartContractResult.SndAddr,
+				RelayerAddr:    outportSCRInfo.SmartContractResult.RelayerAddr,
+				RelayedValue:   relayedValue,
+				Code:           outportSCRInfo.SmartContractResult.Code,
+				Data:           outportSCRInfo.SmartContractResult.Data,
+				PrevTxHash:     outportSCRInfo.SmartContractResult.PrevTxHash,
+				OriginalTxHash: outportSCRInfo.SmartContractResult.OriginalTxHash,
+				GasLimit:       outportSCRInfo.SmartContractResult.GasLimit,
+				GasPrice:       outportSCRInfo.SmartContractResult.GasPrice,
+				CallType:       int64(outportSCRInfo.SmartContractResult.CallType),
+				CodeMetadata:   outportSCRInfo.SmartContractResult.CodeMetadata,
+				ReturnMessage:  outportSCRInfo.SmartContractResult.ReturnMessage,
+				OriginalSender: outportSCRInfo.SmartContractResult.OriginalSender,
+			},
+			FeeInfo: &hyperOutportBlocks.FeeInfo{
+				GasUsed:        outportSCRInfo.FeeInfo.GasUsed,
+				Fee:            fee,
+				InitialPaidFee: initialPaidFee,
+			},
+			ExecutionOrder: outportSCRInfo.ExecutionOrder,
+		}
+	}
+
+	return scrInfo, nil
+}
+
+func (o *outportBlockConverter) copySmartContractResultsV2(sourceSCRs map[string]*outport.SCRInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for scrHash, scrInfo := range sourceSCRs {
 		value, err := o.castBigInt(scrInfo.SmartContractResult.Value)
 		if err != nil {
@@ -660,7 +919,32 @@ func (o *outportBlockConverter) copySmartContractResults(sourceSCRs map[string]*
 	return nil
 }
 
-func (o *outportBlockConverter) copyRewards(sourceRewards map[string]*outport.RewardInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copyRewards(sourceRewards map[string]*outport.RewardInfo) (map[string]*hyperOutportBlocks.RewardInfo, error) {
+	var rewardInfo map[string]*hyperOutportBlocks.RewardInfo
+	if sourceRewards != nil {
+		rewardInfo = make(map[string]*hyperOutportBlocks.RewardInfo, len(sourceRewards))
+	}
+	for rewardHash, outportRewardInfo := range sourceRewards {
+		value, err := o.castBigInt(outportRewardInfo.Reward.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast smart contract [%s] value: %w", rewardHash, err)
+		}
+
+		rewardInfo[rewardHash] = &hyperOutportBlocks.RewardInfo{
+			Reward: &hyperOutportBlocks.RewardTx{
+				Round:   outportRewardInfo.Reward.Round,
+				Epoch:   outportRewardInfo.Reward.Epoch,
+				Value:   value,
+				RcvAddr: outportRewardInfo.Reward.RcvAddr,
+			},
+			ExecutionOrder: outportRewardInfo.ExecutionOrder,
+		}
+	}
+
+	return rewardInfo, nil
+}
+
+func (o *outportBlockConverter) copyRewardsV2(sourceRewards map[string]*outport.RewardInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for hash, reward := range sourceRewards {
 		value, err := o.castBigInt(reward.Reward.Value)
 		if err != nil {
@@ -683,7 +967,30 @@ func (o *outportBlockConverter) copyRewards(sourceRewards map[string]*outport.Re
 	return nil
 }
 
-func (o *outportBlockConverter) copyReceipts(sourceReceipts map[string]*receipt.Receipt, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copyReceipts(sourceReceipts map[string]*receipt.Receipt) (map[string]*hyperOutportBlocks.Receipt, error) {
+	var receipts map[string]*hyperOutportBlocks.Receipt
+	if sourceReceipts != nil {
+		receipts = make(map[string]*hyperOutportBlocks.Receipt, len(sourceReceipts))
+	}
+
+	for hash, outportReceipt := range sourceReceipts {
+		value, err := o.castBigInt(outportReceipt.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast smart contract [%s] value: %w", hash, err)
+		}
+
+		receipts[hash] = &hyperOutportBlocks.Receipt{
+			Value:   value,
+			SndAddr: outportReceipt.SndAddr,
+			Data:    outportReceipt.Data,
+			TxHash:  outportReceipt.TxHash,
+		}
+	}
+
+	return receipts, nil
+}
+
+func (o *outportBlockConverter) copyReceiptsV2(sourceReceipts map[string]*receipt.Receipt, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for hash, r := range sourceReceipts {
 		value, err := o.castBigInt(r.Value)
 		if err != nil {
@@ -703,7 +1010,59 @@ func (o *outportBlockConverter) copyReceipts(sourceReceipts map[string]*receipt.
 	return nil
 }
 
-func (o *outportBlockConverter) copyInvalidTxs(sourceInvalidTxs map[string]*outport.TxInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copyInvalidTxs(sourceInvalidTxs map[string]*outport.TxInfo) (map[string]*hyperOutportBlocks.TxInfo, error) {
+	var invalidTxs map[string]*hyperOutportBlocks.TxInfo
+	if sourceInvalidTxs != nil {
+		invalidTxs = make(map[string]*hyperOutportBlocks.TxInfo, len(sourceInvalidTxs))
+	}
+
+	for hash, invalidTx := range sourceInvalidTxs {
+		value, err := o.castBigInt(invalidTx.Transaction.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast receipt tx value: %w", err)
+		}
+
+		fee, err := o.castBigInt(invalidTx.FeeInfo.Fee)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast receipt tx fee: %w", err)
+		}
+
+		initialPaidFee, err := o.castBigInt(invalidTx.FeeInfo.InitialPaidFee)
+		if err != nil {
+			return nil, fmt.Errorf("failed to cast receipt tx initial paid fee: %w", err)
+		}
+
+		invalidTxs[hash] = &hyperOutportBlocks.TxInfo{
+			Transaction: &hyperOutportBlocks.Transaction{
+				Nonce:             invalidTx.Transaction.Nonce,
+				Value:             value,
+				RcvAddr:           invalidTx.Transaction.RcvAddr,
+				RcvUserName:       invalidTx.Transaction.RcvUserName,
+				SndAddr:           invalidTx.Transaction.SndAddr,
+				SndUserName:       invalidTx.Transaction.SndUserName,
+				GasPrice:          invalidTx.Transaction.GasPrice,
+				GasLimit:          invalidTx.Transaction.GasLimit,
+				Data:              invalidTx.Transaction.Data,
+				ChainID:           invalidTx.Transaction.ChainID,
+				Version:           invalidTx.Transaction.Version,
+				Signature:         invalidTx.Transaction.Signature,
+				Options:           invalidTx.Transaction.Options,
+				GuardianAddr:      invalidTx.Transaction.GuardianAddr,
+				GuardianSignature: invalidTx.Transaction.GuardianSignature,
+			},
+			FeeInfo: &hyperOutportBlocks.FeeInfo{
+				GasUsed:        invalidTx.FeeInfo.GasUsed,
+				Fee:            fee,
+				InitialPaidFee: initialPaidFee,
+			},
+			ExecutionOrder: invalidTx.ExecutionOrder,
+		}
+	}
+
+	return invalidTxs, nil
+}
+
+func (o *outportBlockConverter) copyInvalidTxsV2(sourceInvalidTxs map[string]*outport.TxInfo, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for txHash, invalidTx := range sourceInvalidTxs {
 		value, err := o.castBigInt(invalidTx.Transaction.Value)
 		if err != nil {
@@ -736,7 +1095,36 @@ func (o *outportBlockConverter) copyInvalidTxs(sourceInvalidTxs map[string]*outp
 	return nil
 }
 
-func (o *outportBlockConverter) copyLogs(sourceLogs []*outport.LogData, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
+func (o *outportBlockConverter) copyLogs(sourceLogs []*outport.LogData) ([]*hyperOutportBlocks.LogData, error) {
+	logs := make([]*hyperOutportBlocks.LogData, len(sourceLogs))
+
+	for i, logData := range sourceLogs {
+		events := make([]*hyperOutportBlocks.Event, len(logData.Log.Events))
+		for j, event := range logData.Log.Events {
+			e := &hyperOutportBlocks.Event{}
+
+			e.Address = event.Address
+			e.Identifier = event.Identifier
+			e.Topics = event.Topics
+			e.Data = event.Data
+			e.AdditionalData = event.AdditionalData
+
+			events[j] = e
+		}
+
+		logs[i] = &hyperOutportBlocks.LogData{
+			TxHash: logData.TxHash,
+			Log: &hyperOutportBlocks.Log{
+				Address: logData.Log.Address,
+				Events:  events,
+			},
+		}
+	}
+
+	return logs, nil
+}
+
+func (o *outportBlockConverter) copyLogsV2(sourceLogs []*outport.LogData, transactionPool *hyperOutportBlocks.TransactionPoolV2) error {
 	for _, logData := range sourceLogs {
 		events := make([]*hyperOutportBlocks.Event, len(logData.Log.Events))
 		for i, event := range logData.Log.Events {
@@ -767,31 +1155,6 @@ func (o *outportBlockConverter) copyLogs(sourceLogs []*outport.LogData, transact
 	}
 
 	return nil
-}
-
-// HandleMetaOutportBlock will convert an outport.OutportBlock to data.MetaOutportBlock.
-func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error) {
-	headerType := outportBlock.BlockData.HeaderType
-
-	// check if the header type is supported by this function.
-	if headerType != string(core.MetaHeader) {
-		return nil, fmt.Errorf("cannot convert to meta outport block. header type: %s not supported", outportBlock.BlockData.HeaderType)
-	}
-
-	// marshal with gogo, since the outportBlock is gogo protobuf (coming from the node).
-	bytes, err := o.gogoProtoMarshaller.Marshal(outportBlock)
-	if err != nil {
-		return nil, fmt.Errorf("marshal metaBlockCaster error: %w", err)
-	}
-
-	// unmarshall into google protobuf. This is the proto that will be used in firehose.
-	metaOutportBlock := &hyperOutportBlocks.MetaOutportBlock{}
-	err = o.protoMarshaller.Unmarshal(metaOutportBlock, bytes)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal metaBlockCaster error: %w", err)
-	}
-
-	return metaOutportBlock, nil
 }
 
 func (o *outportBlockConverter) castBigInt(i *big.Int) ([]byte, error) {
