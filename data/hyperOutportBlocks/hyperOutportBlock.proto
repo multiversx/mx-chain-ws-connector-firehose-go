@@ -42,24 +42,11 @@ message ShardOutportBlock {
   repeated uint64              SignersIndexes         = 8;
   uint64                       HighestFinalBlockNonce = 9;
   bytes                        HighestFinalBlockHash  = 10;
-}
-
-message ShardOutportBlockV2 {
-  uint32                       ShardID                = 1;
-  BlockData                    BlockData              = 2;
-  TransactionPoolV2            TransactionPool        = 3;
-  HeaderGasConsumption         HeaderGasConsumption   = 4;
-  map <string, AlteredAccount> AlteredAccounts        = 5;
-  repeated string              NotarizedHeadersHashes = 6;
-  uint32                       NumberOfShards         = 7;
-  repeated uint64              SignersIndexes         = 8;
-  uint64                       HighestFinalBlockNonce = 9;
-  bytes                        HighestFinalBlockHash  = 10;
   map <string, StateChanges>   StateChanges           = 11;
 }
 
-message TransactionPoolV2 {
-  map<string, TxInfoV2>   Transactions                               = 1;
+message TransactionPool {
+  map<string, TxInfo>     Transactions                               = 1;
   repeated string         ScheduledExecutedSCRSHashesPrevBlock       = 2;
   repeated string         ScheduledExecutedInvalidTxsHashesPrevBlock = 3;
 }
@@ -236,17 +223,6 @@ message PeerData {
   bytes      ValueChange = 5;
 }
 
-message TransactionPool {
-  map<string, TxInfo>     Transactions                               = 1;
-  map<string, SCRInfo>    SmartContractResults                       = 2;
-  map<string, RewardInfo> Rewards                                    = 3;
-  map<string, Receipt>    Receipts                                   = 4;
-  map<string, TxInfo>     InvalidTxs                                 = 5;
-  repeated LogData        Logs                                       = 6;
-  repeated string         ScheduledExecutedSCRSHashesPrevBlock       = 7;
-  repeated string         ScheduledExecutedInvalidTxsHashesPrevBlock = 8;
-}
-
 message FeeInfo {
   uint64 GasUsed        = 1;
   bytes  Fee            = 2;
@@ -254,12 +230,6 @@ message FeeInfo {
 }
 
 message TxInfo {
-  Transaction Transaction    = 1;
-  FeeInfo     FeeInfo        = 2;
-  uint32      ExecutionOrder = 3;
-}
-
-message TxInfoV2 {
   WrappedTx   Transaction    = 1;
   FeeInfo     FeeInfo        = 2;
   Receipt     Receipt        = 3;
@@ -301,9 +271,9 @@ message WrappedTx {
 }
 
 enum TxType {
-  SCR = 0;
-  Invalid = 1;
-  UserTx = 2;
+  UserTx = 0;
+  SCR = 1;
+  Invalid = 2;
   Reward = 3;
 }
 
