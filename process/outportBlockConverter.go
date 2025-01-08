@@ -50,7 +50,7 @@ func (o *outportBlockConverter) HandleMetaOutportBlock(outportBlock *outport.Out
 
 	// check if the header type is supported by this function.
 	if headerType != string(core.MetaHeader) {
-		return nil, fmt.Errorf("cannot convert to meta outport block. header type: %s not supported", outportBlock.BlockData.HeaderType)
+		return nil, fmt.Errorf("cannot convert to meta outport block. header type: %s not supported", headerType)
 	}
 
 	// unmarshall into google protobuf. This is the proto that will be used in firehose.
