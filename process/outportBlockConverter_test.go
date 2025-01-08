@@ -683,19 +683,6 @@ func checkFieldsV1(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 			}
 		}
 	}
-	//// Transaction Pool - Logs
-	//for _, l := range outportBlock.TransactionPool.Logs {
-	//	// Transaction Pool - Logs - Log data - Log
-	//	require.Equal(t, l.Log.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Address)
-	//
-	//	for k, e := range outportBlock.TransactionPool.Logs[0].Log.Events {
-	//		require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Address)
-	//		require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Identifier)
-	//		require.Equal(t, e.Topics, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Topics)
-	//		require.Equal(t, e.Data, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Data)
-	//		require.Equal(t, e.AdditionalData, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].AdditionalData)
-	//	}
-	//}
 
 	// Transaction Pool - ScheduledExecutedSCRSHashesPrevBlock
 	for i, s := range outportBlock.TransactionPool.ScheduledExecutedSCRSHashesPrevBlock {
