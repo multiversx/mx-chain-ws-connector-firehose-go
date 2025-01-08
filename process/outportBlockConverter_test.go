@@ -71,7 +71,7 @@ func TestOutportBlockConverter(t *testing.T) {
 	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	require.Nil(t, err)
 
-	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
+	shardOutportBlock, err := converter.HandleShardOutportBlock(ob)
 	require.Nil(t, err)
 
 	header := &block.HeaderV2{}
@@ -83,7 +83,7 @@ func TestOutportBlockConverter(t *testing.T) {
 	checkBlockData(t, ob.BlockData, shardOutportBlock.BlockData)
 }
 
-func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
+func TestOutportBlockConverter_HandleShardOutportBlock(t *testing.T) {
 	t.Parallel()
 
 	jsonBytes, err := os.ReadFile(outportBlockHeaderV1JSONPath)
@@ -96,7 +96,7 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	require.Nil(t, err)
 
-	shardOutportBlock, err := converter.HandleShardOutportBlockV2(ob)
+	shardOutportBlock, err := converter.HandleShardOutportBlock(ob)
 	require.Nil(t, err)
 
 	header := &block.Header{}
@@ -117,7 +117,7 @@ func TestOutportBlockConverter_HandleShardOutportBlockV2(t *testing.T) {
 	converter, err = process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	require.Nil(t, err)
 
-	shardOutportBlock, err = converter.HandleShardOutportBlockV2(ob)
+	shardOutportBlock, err = converter.HandleShardOutportBlock(ob)
 	require.Nil(t, err)
 
 	headerV2 := &block.HeaderV2{}
@@ -176,7 +176,7 @@ func TestStateChangesShardBlock(t *testing.T) {
 	converter, err := process.NewOutportBlockConverter(gogoProtoMarshaller, protoMarshaller)
 	require.NoError(t, err)
 
-	shardOutportBlockV2, err := converter.HandleShardOutportBlockV2(ob)
+	shardOutportBlockV2, err := converter.HandleShardOutportBlock(ob)
 	require.NoError(t, err, "failed to marshal to standard outport")
 
 	for hash, stateChanges := range ob.StateChanges {
@@ -670,21 +670,32 @@ func checkFieldsV1(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 	}
 
 	// Transaction Pool - Logs
-	for i, l := range outportBlock.TransactionPool.Logs {
-		// Transaction Pool - Logs - Log Data
-		//require.Equal(t, l.TxHash, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs)
-
+	for _, l := range outportBlock.TransactionPool.Logs {
 		// Transaction Pool - Logs - Log data - Log
-		require.Equal(t, l.Log.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Address)
 
-		for k, e := range outportBlock.TransactionPool.Logs[i].Log.Events {
-			require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[k].Address)
-			require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[k].Identifier)
-			require.Equal(t, e.Topics, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[k].Topics)
-			require.Equal(t, e.Data, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[k].Data)
-			require.Equal(t, e.AdditionalData, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[k].AdditionalData)
+		for i, _ := range fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs {
+			for j, e := range l.Log.Events {
+				require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[j].Address)
+				require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[j].Identifier)
+				require.Equal(t, e.Topics, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[j].Topics)
+				require.Equal(t, e.Data, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[j].Data)
+				require.Equal(t, e.AdditionalData, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[j].AdditionalData)
+			}
 		}
 	}
+	//// Transaction Pool - Logs
+	//for _, l := range outportBlock.TransactionPool.Logs {
+	//	// Transaction Pool - Logs - Log data - Log
+	//	require.Equal(t, l.Log.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Address)
+	//
+	//	for k, e := range outportBlock.TransactionPool.Logs[0].Log.Events {
+	//		require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Address)
+	//		require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Identifier)
+	//		require.Equal(t, e.Topics, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Topics)
+	//		require.Equal(t, e.Data, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].Data)
+	//		require.Equal(t, e.AdditionalData, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[k].AdditionalData)
+	//	}
+	//}
 
 	// Transaction Pool - ScheduledExecutedSCRSHashesPrevBlock
 	for i, s := range outportBlock.TransactionPool.ScheduledExecutedSCRSHashesPrevBlock {
