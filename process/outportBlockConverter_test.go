@@ -673,7 +673,7 @@ func checkFieldsV1(t *testing.T, outportBlock *outport.OutportBlock, fireOutport
 	for _, l := range outportBlock.TransactionPool.Logs {
 		// Transaction Pool - Logs - Log data - Log
 
-		for i, _ := range fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs {
+		for i := range fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs {
 			for j, e := range l.Log.Events {
 				require.Equal(t, e.Address, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[i].Events[j].Address)
 				require.Equal(t, e.Identifier, fireOutportBlock.GetTransactionPool().Transactions[l.TxHash].Logs[0].Events[j].Identifier)
