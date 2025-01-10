@@ -102,7 +102,6 @@ type PruningStorer interface {
 // OutportBlockConverter handles the conversion between gogo and google proto buffer definitions.
 type OutportBlockConverter interface {
 	HandleShardOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlock, error)
-	HandleShardOutportBlockV2(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.ShardOutportBlockV2, error)
 	HandleMetaOutportBlock(outportBlock *outport.OutportBlock) (*hyperOutportBlocks.MetaOutportBlock, error)
 	IsInterfaceNil() bool
 }
